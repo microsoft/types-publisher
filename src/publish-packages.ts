@@ -32,18 +32,35 @@ async function main(): Promise<void> {
 		}
 	}
 	else {
-		await nAtATime(100, allPackages, async typing => {
-			const packageName = typing.libraryName;
+		const packagesShouldPublish: common.AnyPackage[] = [];
 
-			console.log(`Publishing ${packageName}...`);
-			const publishLog = await publisher.publishPackage(typing, dry);
-			log.push(` * ${packageName}`);
-			publishLog.infos.forEach(line => log.push(`   * ${line}`));
-			publishLog.errors.forEach(err => {
+		log.push("Checking which packages we should publish");
+		await nAtATime(100, allPackages, async pkg => {
+			const [shouldPublish, checkLog] = await publisher.shouldPublish(pkg);
+
+			if (shouldPublish) {
+				packagesShouldPublish.push(pkg);
+			}
+
+			log.push(`Checking ${pkg.libraryName}...`);
+			writeLogs(checkLog);
+		});
+
+		for (const pkg of packagesShouldPublish) {
+			console.log(`Publishing ${pkg.libraryName}...`);
+			const publishLog = await publisher.publishPackage(pkg, dry);
+			writeLogs(publishLog);
+		}
+
+		function writeLogs(res: common.LogResult): void {
+			for (const line of res.infos) {
+				log.push(`   * ${line}`);
+			}
+			for (const err of res.errors) {
 				log.push(`   * ERROR: ${err}`);
 				console.error(` Error! ${err}`);
-			});
-		});
+			}
+		}
 
 		common.writeLogSync("publishing.md", log);
 		console.log("Done!");
