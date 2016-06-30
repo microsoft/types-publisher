@@ -9,7 +9,7 @@ declare module "fs-promise" {
 
 declare module "azure-storage" {
 	// Based on https://github.com/Azure/azure-storage-node/blob/master/typings/azure-storage/azure-storage.d.ts
-	// But works
+	// Subset that works for ts@next
 
 	export function createBlobService(): BlobService;
 
