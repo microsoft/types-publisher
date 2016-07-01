@@ -18,7 +18,7 @@ async function doUpdate(issue: string, accessToken: string, newIssueContent: str
 
 function createIssueContent(timeStamp: string, dataUrls: string[], logUrls: string[]): string {
 	const lines: string[] = [];
-	lines.push(`Here is the latest data as of **${timeStamp}**:`)
+	lines.push(`Here is the latest data as of **${timeStamp}**:`);
 	lines.push("");
 	lines.push(`### Data`);
 	lines.push(...dataUrls.map(link));
