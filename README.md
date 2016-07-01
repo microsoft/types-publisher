@@ -337,14 +337,12 @@ Optional. Example value `latest`
 
 If present, packages are published with the provided version tag.
 
+### azureContainer
+
+Name of the Azure container we upload data and logs to.
+
 ## Environment variables
-
-Azure requires the following environment variables to be set:
-
-#### AZURE_STORAGE_ACCOUNT
-
-This should always be "typespublisher" (without the quotes).
 
 #### AZURE_STORAGE_ACCESS
 
- To find (or refresh) this value, go to https://ms.portal.azure.com -> All resources -> typespublisher -> General -> Access keys
+To find (or refresh) this value, go to https://ms.portal.azure.com -> All resources -> typespublisher -> General -> Access keys

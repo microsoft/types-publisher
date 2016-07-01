@@ -16,6 +16,8 @@ interface PublishSettings {
 	// e.g. 'latest'
 	tag?: string;
 
+	azureContainer: string;
+
 	// Issue in types-publisher that we will use to track links to logs
 	logsIssue: string;
 }

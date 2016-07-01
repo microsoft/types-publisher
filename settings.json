@@ -5,5 +5,7 @@
 	"sourceBranch": "types-2.0",
 	"prereleaseTag": "alpha",
 	"tag": "latest",
+
+	"azureContainer": "typespublisher",
 	"logsIssue": "Microsoft/types-publisher/issues/40"
 }
