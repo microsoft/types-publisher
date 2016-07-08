@@ -4,9 +4,11 @@ import * as path from "path";
 import * as child_process from "child_process";
 import { Logger, ArrayLog, settings, writeLogSync } from "./lib/common";
 
-main();
+if (!module.parent) {
+	main();
+}
 
-function main() {
+export default function main(): void {
 	const log = new ArrayLog();
 	cloneIfNeeded(log);
 	checkBranch(log);

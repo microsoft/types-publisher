@@ -22,7 +22,8 @@
 		"src/publish-packages.ts",
 		"src/create-search-index.ts",
 		"src/check-parse-results.ts",
-		"src/upload-blobs.ts"
+		"src/upload-blobs.ts",
+		"src/full.ts"
 	],
 
 	"compilerOptions": {

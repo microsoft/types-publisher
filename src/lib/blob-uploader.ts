@@ -1,6 +1,5 @@
 import assert = require("assert");
 import * as fsp from "fs-promise";
-import moment = require("moment");
 import * as path from "path";
 import Container from "./azure-container";
 import { Logger, ArrayLog, writeLogSync } from "./common";
@@ -10,15 +9,10 @@ const container = new Container("typespublisher");
 const maxNumberOfOldLogsDirectories = 5;
 const githubAccessToken = process.env.GITHUB_ACCESS_TOKEN;
 
-export default async function uploadBlobsAndUpdateIssue() {
-	const timeStamp = currentISOTimeWithTimeZone();
+export default async function uploadBlobsAndUpdateIssue(timeStamp: string): Promise<void> {
 	const [dataUrls, logUrls] = await uploadBlobs(timeStamp);
 	await updateIssue(githubAccessToken, timeStamp, dataUrls, logUrls);
 };
-
-function currentISOTimeWithTimeZone(): string {
-	return moment().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
-}
 
 // View uploaded files at:
 // https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
