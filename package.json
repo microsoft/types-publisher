@@ -22,6 +22,7 @@
   "scripts": {
     "build": "node node_modules/typescript/lib/tsc.js",
     "clean": "node bin/clean.js",
+    "get-definitely-typed": "node bin/get-definitely-typed.js",
     "parse": "node bin/parse-definitions.js",
     "check": "node bin/check-parse-results.js",
     "generate": "node bin/generate-packages.js",
@@ -29,7 +30,7 @@
     "publish": "node bin/publish-packages.js",
     "publish-dry": "node bin/publish-packages.js --dry",
     "upload-blobs": "node bin/upload-blobs.js",
-    "full": "npm run clean && npm run build && npm run parse && npm run check && npm run generate && npm run index && npm run publish && npm run upload-blobs",
+    "full": "npm run build && npm run clean && npm run get-definitely-typed && npm run parse && npm run check && npm run generate && npm run index && npm run publish && npm run upload-blobs",
     "lint": "node node_modules/tslint/bin/tslint src/*.ts src/*/*.ts"
   },
   "repository": {

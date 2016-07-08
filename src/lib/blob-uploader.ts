@@ -3,7 +3,7 @@ import * as fsp from "fs-promise";
 import moment = require("moment");
 import * as path from "path";
 import Container from "./azure-container";
-import { Logger, ArrayLog } from "./common";
+import { Logger, ArrayLog, writeLogSync } from "./common";
 import updateIssue from "./issue-updater";
 
 const container = new Container("typespublisher");
@@ -34,7 +34,7 @@ async function uploadBlobs(timeStamp: string): Promise<[string[], string[]]> {
 	const blobLogs = "logs/upload-blobs.md";
 	const {infos, errors} = logger.result();
 	assert(!errors.length);
-	await fsp.writeFile(blobLogs, infos.join("\r\n") + "\r\n", { encoding: "utf8" });
+	writeLogSync(blobLogs, infos);
 	const uploadBlobsLogName = logsUploadedLocation(timeStamp) + "/upload-blobs.md";
 	await container.createBlobFromFile(uploadBlobsLogName, blobLogs);
 

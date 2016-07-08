@@ -16,6 +16,7 @@
 		"src/lib/azure-container.ts",
 
 		"src/clean.ts",
+		"src/get-definitely-typed.ts",
 		"src/parse-definitions.ts",
 		"src/generate-packages.ts",
 		"src/publish-packages.ts",
