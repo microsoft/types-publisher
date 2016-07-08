@@ -6,7 +6,7 @@ import { nAtATime } from "./lib/util";
 
 const typeData = common.readTypesDataFile();
 
-if (typeData === undefined || fs.readdirSync("./output").length === 0) {
+if (typeData === undefined || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
 	console.log("Run parse-definitions and generate-packages first!");
 }
 else {
