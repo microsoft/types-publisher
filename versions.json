@@ -6419,8 +6419,8 @@
         "lastContentHash": "761c5b2a4d6d9fdc721c861eaf5c79606f049367714e8f601c7ca2dfda824953"
     },
     "node": {
-        "lastVersion": 27,
-        "lastContentHash": "2b163e48e9e0a5957cfeb5e8001eeb6474e0cbdf1151c37936ce86467c300121"
+        "lastVersion": 28,
+        "lastContentHash": "407f58e205a0be57c5e54388a2104f1658ea0fe82a7a0e1fb1f4fdee3bc650dd"
     },
     "node-ffi": {
         "lastVersion": 11,
