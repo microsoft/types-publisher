@@ -10,7 +10,7 @@ import { currentTimeStamp, indent, parseJson } from "./util";
 const rollingLogs = new RollingLogs("webhook-logs.md", 1000);
 
 export default function server(key: string, dry: boolean): Server {
-	return listenToGithub(dry, key, updateOneAtATime(async (log, timeStamp) => {
+	return listenToGithub(key, dry, updateOneAtATime(async (log, timeStamp) => {
 		log.info(""); log.info("");
 		log.info(`# ${timeStamp}`);
 		log.info("");
@@ -35,31 +35,33 @@ function writeLog(log: ArrayLog): Promise<void> {
 	return rollingLogs.write(infos);
 }
 
-function listenToGithub(dry: boolean, key: string, onUpdate: (log: ArrayLog, timeStamp: string) => void): Server {
+function listenToGithub(key: string, dry: boolean, onUpdate: (log: ArrayLog, timeStamp: string) => void): Server {
 	return createServer(req => {
 		req.on("data", (data: string) => {
 			const log = new ArrayLog(true);
 			const timeStamp = currentTimeStamp();
-			if (checkSignature(key, data, req.headers["x-hub-signature"])) {
-				log.info(`Message from github: ${data}`);
-				const expectedRef = `refs/heads/${settings.sourceBranch}`;
 
-				try {
-					const actualRef = parseJson(data).ref;
-					if (actualRef === expectedRef) {
-						onUpdate(log, timeStamp);
-						return;
-					}
-					else {
-						log.info(`Ignoring push to ${actualRef}, expected ${expectedRef}.`);
-					}
-				} catch (err) {
-					log.info(err.stack);
-				}
-				writeLog(log);
-			} else {
+			if (!checkSignature(key, data, req.headers["x-hub-signature"])) {
 				log.error(`Request does not have the correct x-hub-signature: headers are ${JSON.stringify(req.headers, undefined, 4)}`);
+				return;
 			}
+
+			log.info(`Message from github: ${data}`);
+			const expectedRef = `refs/heads/${settings.sourceBranch}`;
+
+			try {
+				const actualRef = parseJson(data).ref;
+				if (actualRef === expectedRef) {
+					onUpdate(log, timeStamp);
+					return;
+				}
+				else {
+					log.info(`Ignoring push to ${actualRef}, expected ${expectedRef}.`);
+				}
+			} catch (err) {
+				log.info(err.stack);
+			}
+			writeLog(log);
 		});
 	});
 }
@@ -94,6 +96,7 @@ function updateOneAtATime(doOnce: (log: ArrayLog, timeStamp: string) => Promise<
 
 function checkSignature(key: string, data: string, actualSignature: string) {
 	const expectedSignature = `sha1=${getDigest()}`;
+	// Prevent timing attacks
 	return stringEqualsConstantTime(expectedSignature, actualSignature);
 
 	function getDigest(): string {
