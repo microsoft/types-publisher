@@ -238,7 +238,7 @@ export function readNotNeededPackages(): NotNeededPackage[] {
 
 export function computeHash(content: string) {
 	// Normalize line endings
-	content = content.replace(/\r\n/g, "\n");
+	content = content.replace(/\r\n?/g, "\n");
 
 	const h = crypto.createHash("sha256");
 	h.update(content, "utf-8");
