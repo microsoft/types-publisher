@@ -245,6 +245,10 @@ export function computeHash(content: string) {
 	return <string> h.digest("hex");
 }
 
+export function definitelyTypedPath(dirName: string): string {
+	return path.join(settings.definitelyTypedPath, dirName);
+}
+
 export function getOutputPath({typingsPackageName}: AnyPackage) {
 	return path.join(settings.outputPath, typingsPackageName);
 }
