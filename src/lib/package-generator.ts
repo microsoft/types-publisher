@@ -106,7 +106,7 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 		parseJson(await fsp.readFile(pkgPath, { encoding: "utf8" })) :
 		{};
 
-	const ignoredField = Object.keys(pkg).find(field => !["dependencies", "version", "description"].includes(field));
+	const ignoredField = Object.keys(pkg).find(field => !["dependencies", "description"].includes(field));
 	if (ignoredField) {
 		throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
 	}
@@ -132,13 +132,6 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 	}
 
 	const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
-
-	// Don't allow overriding these because they should always be the computed value. E.g. license must always be MIT.
-	const providedFields = ["name", "version", "author", "main", "repository", "scripts", "license", "typings"];
-	const unneededField = providedFields.find(f => pkg.hasOwnProperty(f));
-	if (unneededField) {
-		throw new Error(`${typing.typingsPackageName}: package.json should not specify ${unneededField}, because that is provided automatically.`);
-	}
 
 	// Use the ordering of fields from https://docs.npmjs.com/files/package.json
 	const out = {
