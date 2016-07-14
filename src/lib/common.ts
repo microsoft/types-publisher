@@ -62,7 +62,7 @@ export interface TypingsData extends AnyPackage {
 	// The minor version of the library
 	libraryMinorVersion: string;
 
-	// The full path to the containing folder of all files, e.g. "C:/github/DefinitelyTyped"
+	// The full path to the containing folder of all files, e.g. "C:/github/DefinitelyTyped/some-package"
 	root: string;
 
 	// Files that should be published with this definition, e.g. ["jquery.d.ts", "jquery-extras.d.ts"]
