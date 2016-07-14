@@ -100,7 +100,6 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 	const pkgPath = filePath(typing, "package.json");
 	interface PartialPackageJson {
 		dependencies?: { [name: string]: string };
-		version?: string;
 		description: string;
 	}
 	let pkg: PartialPackageJson = typing.hasPackageJson ?
@@ -132,18 +131,10 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 		typing.libraryDependencies.forEach(addDependency);
 	}
 
-	let version = pkg.version;
-	if (!version) {
-		version = `${typing.libraryMajorVersion}.${typing.libraryMinorVersion}.${fileVersion}`;
-		if (settings.prereleaseTag) {
-			version = `${version}-${settings.prereleaseTag}`;
-		}
-	}
-
 	const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
 
 	// Don't allow overriding these because they should always be the computed value. E.g. license must always be MIT.
-	const providedFields = ["name", "author", "main", "repository", "scripts", "license", "typings"];
+	const providedFields = ["name", "version", "author", "main", "repository", "scripts", "license", "typings"];
 	const unneededField = providedFields.find(f => pkg.hasOwnProperty(f));
 	if (unneededField) {
 		throw new Error(`${typing.typingsPackageName}: package.json should not specify ${unneededField}, because that is provided automatically.`);
@@ -152,7 +143,7 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 	// Use the ordering of fields from https://docs.npmjs.com/files/package.json
 	const out = {
 		name: fullPackageName(typing.typingsPackageName),
-		version,
+		version: versionString(typing, fileVersion),
 		description,
 		// keywords,
 		// homepage,
@@ -171,6 +162,14 @@ async function createPackageJSON(typing: TypingsData, fileVersion: number, avail
 	};
 
 	return JSON.stringify(out, undefined, 4);
+}
+
+function versionString(typing: TypingsData, fileVersion: number): string {
+	let version = `${typing.libraryMajorVersion}.${typing.libraryMinorVersion}.${fileVersion}`;
+	if (settings.prereleaseTag) {
+		version = `${version}-${settings.prereleaseTag}`;
+	}
+	return version;
 }
 
 function createNotNeededPackageJSON({libraryName, typingsPackageName, sourceRepoURL}: NotNeededPackage): string {
