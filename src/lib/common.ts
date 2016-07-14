@@ -66,6 +66,7 @@ export interface TypingsData extends AnyPackage {
 	root: string;
 
 	// Files that should be published with this definition, e.g. ["jquery.d.ts", "jquery-extras.d.ts"]
+	// Does *not* include a partial `package.json` because that will not be copied directly.
 	files: string[];
 
 	// Whether a "package.json" exists
