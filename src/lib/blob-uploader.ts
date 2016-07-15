@@ -9,6 +9,8 @@ const maxNumberOfOldLogsDirectories = 5;
 const githubAccessToken = process.env.GITHUB_ACCESS_TOKEN;
 
 export default async function uploadBlobsAndUpdateIssue(timeStamp: string): Promise<void> {
+	await container.ensureCreated({ publicAccessLevel: "blob" });
+	await container.setCorsProperties();
 	const [dataUrls, logUrls] = await uploadBlobs(timeStamp);
 	await updateIssue(githubAccessToken, timeStamp, dataUrls, logUrls);
 };
@@ -16,7 +18,6 @@ export default async function uploadBlobsAndUpdateIssue(timeStamp: string): Prom
 // View uploaded files at:
 // https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
 async function uploadBlobs(timeStamp: string): Promise<[string[], string[]]> {
-	await container.ensureCreated({ publicAccessLevel: "blob" });
 	const logger = new ArrayLog();
 	const [dataUrls, logUrls] = await Promise.all([
 		await uploadDirectory("data", "data", logger),
