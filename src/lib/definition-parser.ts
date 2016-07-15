@@ -134,7 +134,7 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 			sourceRepoURL,
 			sourceBranch: settings.sourceBranch,
 			kind: DefinitionFileKind[fileKind],
-			globals: Object.keys(mi.globalSymbols).filter(k => !!(mi.globalSymbols[k] & DeclarationFlags.Value)),
+			globals: Object.keys(mi.globalSymbols).filter(k => !!(mi.globalSymbols[k] & DeclarationFlags.Value)).sort(),
 			declaredModules: mi.declaredModules,
 			root: path.resolve(directory),
 			files: mi.declFiles,
@@ -238,7 +238,7 @@ function referencedFiles(src: ts.SourceFile, directory: string, subDirectory: st
 function imports(src: ts.SourceFile): string[] {
 	const out: string[] = [];
 
-	for (const node of src.getChildren()[0].getChildren()) {
+	for (const node of src.statements) {
 		switch (node.kind) {
 			case ts.SyntaxKind.ImportDeclaration: {
 				const decl = node as ts.ImportDeclaration;
@@ -299,7 +299,7 @@ async function getModuleInfo(directory: string, entryPointFilename: string, log:
 
 		src.typeReferenceDirectives.forEach(ref => referencedLibraries.add(ref.fileName));
 
-		for (const node of src.getChildren()[0].getChildren()) {
+		for (const node of src.statements) {
 			switch (node.kind) {
 				case ts.SyntaxKind.NamespaceExportDeclaration:
 					const globalName = (node as ts.NamespaceExportDeclaration).name.getText();
@@ -352,13 +352,13 @@ async function getModuleInfo(directory: string, entryPointFilename: string, log:
 				case ts.SyntaxKind.FunctionDeclaration:
 					// If these nodes have an 'export' modifier, the file is an external module
 					if (node.flags & ts.NodeFlags.Export) {
-						const declName = (node as ts.Declaration).name;
+						const declName = (node as ts.DeclarationStatement).name;
 						if (declName) {
-							log.push(`Found exported declaration "${(node as ts.Declaration).name.getText()}"`);
+							log.push(`Found exported declaration "${declName.getText()}"`);
 						}
 						isProperModule = true;
 					} else {
-						const declName = (node as ts.Declaration).name.getText();
+						const declName = (node as ts.DeclarationStatement).name.getText();
 						const isType = node.kind === ts.SyntaxKind.InterfaceDeclaration || node.kind === ts.SyntaxKind.TypeAliasDeclaration;
 						log.push(`Found global ${isType ? "type" : "value"} declaration "${declName}"`);
 						recordSymbol(declName, isType ? DeclarationFlags.Type : DeclarationFlags.Value);
