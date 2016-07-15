@@ -300,6 +300,8 @@ Scripts should save this log under a unique filename so any errors may be review
 
 This uploads the `data` and `logs` directories to Azure.
 `data` always overwrites any old data, while `logs` has a timestamp prepended so old logs can still be viewed.
+Blobs can be viewed [here](https://typespublisher.blob.core.windows.net/typespublisher/index.html)
+or on [Azure](https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher).
 
 # Testing the webhook
 
