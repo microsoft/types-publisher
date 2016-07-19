@@ -1,28 +1,32 @@
 import { AnyPackage, Logger, LogResult, ArrayLog, consoleLogger, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
 import { parseJson } from "./util";
+import assert = require("assert");
 import fetch = require("node-fetch");
 import fsp = require("fs-promise");
 import * as path from "path";
 import * as child_process from "child_process";
+import NpmClient from "./npm-client";
 
-export async function publishPackage(pkg: AnyPackage, dry: boolean): Promise<LogResult> {
-	const {libraryName, typingsPackageName} = pkg;
+export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: boolean): Promise<LogResult> {
 	const log = new ArrayLog();
 
-	const outputPath = getOutputPath(pkg);
+	const name = pkg.typingsPackageName;
+	log.info(`Publishing ${name}`);
 
-	log.info(`Publishing ${libraryName}`);
+	const packageDir = path.join("output", name);
+	const packageJson = parseJson(await fsp.readFile(path.join(packageDir, "package.json"), { encoding: "utf8" }));
 
-	const args: string[] = ["npm", "publish", path.resolve(outputPath), "--access public"];
-	if (settings.tag) {
-		args.push(`--tag ${settings.tag}`);
+	await client.publish(packageDir, packageJson, dry);
+	if (settings.tag && settings.tag !== "latest") { // "latest" is the default tag anyway
+		assert(packageJson.version);
+		await client.tag(name, packageJson.version, settings.tag);
 	}
 
-	if (await runCommand("Publish", log, dry, args)) {
-		if (isNotNeededPackage(pkg)) {
-			const message = notNeededReadme(pkg);
-			const deprecateArgs = ["npm", "deprecate", fullPackageName(typingsPackageName), JSON.stringify(message)];
-			await runCommand("Deprecate", log, dry, deprecateArgs);
+	if (isNotNeededPackage(pkg)) {
+		log.info(`Deprecating ${name}`);
+		const message = notNeededReadme(pkg);
+		if (!dry) {
+			await client.deprecate(name, message);
 		}
 	}
 

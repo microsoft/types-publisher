@@ -1,4 +1,5 @@
 interface PublishSettings {
+	npmRegistry: string;
 	npmUsername: string;
 	// e.g. 'typings', not '@typings'
 	scopeName: string;
