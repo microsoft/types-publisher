@@ -4,24 +4,33 @@ import * as fsp from "fs-promise";
 import * as path from "path";
 import * as child_process from "child_process";
 import * as rimraf from "rimraf";
+import * as yargs from "yargs";
 import { Logger, ArrayLog, settings, writeLogSync, readTypings } from "./lib/common";
 
 if (!module.parent) {
-	main();
+	const packageNames = yargs.argv._;
+	main(packageNames);
 }
 
-export default async function main() {
+export default async function main(packageNames?: string[]) {
 	const log = new ArrayLog();
 
-	const packageNames = readTypings().map(t => t.typingsPackageName).sort();
+	if (!packageNames || !packageNames.length) {
+		console.info("Validating all packages");
+		packageNames = readTypings().map(t => t.typingsPackageName).sort();
+	}
+	else {
+		console.info("Validating: " + JSON.stringify(packageNames));
+	}
+
 	await validatePackages(packageNames, settings.validateOutputPath, log);
 
 	const {infos, errors} = log.result();
-	assert(!errors.length);
 	writeLogSync("validate.md", infos);
+	assert(!errors.length);
 }
 
-export async function validatePackages(packageNames: string[], outPath: string, log: Logger) {
+async function validatePackages(packageNames: string[], outPath: string, log: Logger) {
 	log.info("");
 	log.info("Using output path: " + outPath);
 	log.info("Running tests....");
