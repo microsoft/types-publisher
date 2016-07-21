@@ -5,6 +5,7 @@ import * as path from "path";
 import * as child_process from "child_process";
 import * as rimraf from "rimraf";
 import * as yargs from "yargs";
+import { nAtATime } from "./lib/util";
 import { Logger, ArrayLog, settings, writeLogSync, readTypings } from "./lib/common";
 
 if (!module.parent) {
@@ -48,15 +49,16 @@ async function validatePackages(packageNames: string[], outPath: string, log: Lo
 		log.error("Could not recreate output directory. " + e);
 		return;
 	}
+
 	// Run the tests
-	for (const packageName of packageNames) {
+	await nAtATime(25, packageNames, async packageName => {
 		if (await validatePackage(packageName, outPath, log)) {
 			passed.push(packageName);
 		}
 		else {
 			failed.push(packageName);
 		}
-	}
+	});
 
 	// Write results
 	log.info("");
@@ -64,9 +66,12 @@ async function validatePackages(packageNames: string[], outPath: string, log: Lo
 	log.info(`Total  ${packageNames.length}`);
 	log.info(`Passed ${passed.length}`);
 	log.info(`Failed ${failed.length}`);
+	log.info("");
+	log.info(`Failed packages: ${JSON.stringify(failed)}`);
 }
 
-async function validatePackage(packageName: string, outputDirecory: string, log: Logger) {
+async function validatePackage(packageName: string, outputDirecory: string, mainLog: Logger) {
+	const log = new ArrayLog();
 	let passed = false;
 	try {
 		const packageDirectory = path.join(outputDirecory, packageName);
@@ -85,8 +90,22 @@ async function validatePackage(packageName: string, outputDirecory: string, log:
 		log.info("Error: " + e);
 		log.info("Failed!");
 	}
+
+	// Write the log as one entry to the main log
+	mergeLogs(mainLog, log);
+
 	console.info(`${packageName} -- ${passed ? "Passed" : "Failed"}.`);
 	return passed;
+}
+
+function mergeLogs(log1: Logger, log2: ArrayLog) {
+	const {infos, errors} = log2.result();
+	for (const info of infos) {
+		log1.info(info);
+	}
+	for (const error of errors) {
+		log1.error(error);
+	}
 }
 
 async function writePackage(packageDirectory: string, packageName: string) {
