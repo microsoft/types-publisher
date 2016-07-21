@@ -30,6 +30,7 @@
     "parse": "node bin/parse-definitions.js",
     "check": "node bin/check-parse-results.js",
     "generate": "node bin/generate-packages.js",
+    "validate": "node bin/validate.js",
     "index": "node bin/create-search-index.js",
     "publish": "node bin/publish-packages.js",
     "publish-dry": "node bin/publish-packages.js --dry",
