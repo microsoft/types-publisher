@@ -1,5 +1,3 @@
-import * as assert from "assert";
-import * as fs from "fs";
 import * as fsp from "fs-promise";
 import * as path from "path";
 import * as child_process from "child_process";
@@ -17,8 +15,8 @@ export default async function main() {
 	await validatePackages(packageNames, settings.validateOutputPath, log);
 
 	const {infos, errors} = log.result();
-	assert(!errors.length);
 	writeLogSync("validate.md", infos);
+	writeLogSync("validate-errors.md", errors);
 }
 
 export async function validatePackages(packageNames: string[], outPath: string, log: Logger) {
@@ -55,6 +53,7 @@ export async function validatePackages(packageNames: string[], outPath: string, 
 	log.info(`Total  ${packageNames.length}`);
 	log.info(`Passed ${passed.length}`);
 	log.info(`Failed ${failed.length}`);
+	log.info(`These packages failed: ${failed}`);
 }
 
 async function validatePackage(packageName: string, outputDirecory: string, log: Logger) {
@@ -83,24 +82,24 @@ async function validatePackage(packageName: string, outputDirecory: string, log:
 async function writePackage(packageDirectory: string, packageName: string) {
 	// Write package.json
 	await fsp.writeFile(path.join(packageDirectory, "package.json"), JSON.stringify({
-		"name": `${packageName}test`,
-		"version": "1.0.0",
-		"description": "test",
-		"author": "",
-		"license": "ISC",
-		"repository": "https://github.com/Microsoft/types-publisher",
-		"dependencies": { [`@types/${packageName}`]: "latest" }
+		name: `${packageName}_test`,
+		version: "1.0.0",
+		description: "test",
+		author: "",
+		license: "ISC",
+		repository: "https://github.com/Microsoft/types-publisher",
+		dependencies: { [`@types/${packageName}`]: settings.tag }
 	}, undefined, 4), { encoding: "utf8" });
 
 	// Write tsconfig.json
 	await fsp.writeFile(path.join(packageDirectory, "tsconfig.json"), JSON.stringify({
-		"compilerOptions": {
-			"module": "commonjs",
-			"target": "es5",
-			"noImplicitAny": false,
-			"strictNullChecks": false,
-			"noEmit": true,
-			"lib": ["es5", "es2015.promise", "dom"]
+		compilerOptions: {
+			module: "commonjs",
+			target: "es5",
+			noImplicitAny: false,
+			strictNullChecks: false,
+			noEmit: true,
+			lib: ["es5", "es2015.promise", "dom"]
 		}
 	}, undefined, 4), { encoding: "utf8" });
 
@@ -115,8 +114,8 @@ function runCommand(commandDescription: string, log: Logger, directory: string, 
 	return new Promise<boolean>((resolve, reject) => {
 		child_process.exec(cmd, { encoding: "utf8", cwd: directory }, (err, stdoutBuffer, stderrBuffer) => {
 			// These are wrongly typed as Buffer.
-			const stdout = <string><any>stdoutBuffer;
-			const stderr = <string><any>stderrBuffer;
+			const stdout = <string> <any> stdoutBuffer;
+			const stderr = <string> <any> stderrBuffer;
 			if (err) {
 				log.error(stderr);
 				log.info(stdout);
@@ -134,7 +133,7 @@ function runCommand(commandDescription: string, log: Logger, directory: string, 
 
 function deleteDirectory(path: string, log: Logger): Promise<boolean> {
 	return new Promise<boolean>((resolve, reject) => {
-		rimraf(path, (err) => {
+		rimraf(path, err => {
 			if (err) {
 				log.error(`rimraf failed: ${JSON.stringify(err)}`);
 				log.info(`rimraf failed, refer to error log`);
