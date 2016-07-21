@@ -4,22 +4,6 @@ import fetch = require("node-fetch");
 
 export interface SearchRecord {
 	// types package name
-	typePackageName: string;
-	// globals
-	globals: string[];
-	// modules
-	declaredExternalModules: string[];
-	// project name
-	projectName: string;
-	// library name
-	libraryName: string;
-	// downloads in the last month from NPM
-	downloads: number;
-	redirect?: string;
-}
-
-export interface MinifiedSearchRecord {
-	// types package name
 	t: string;
 	// globals
 	g: string[];
@@ -35,27 +19,15 @@ export interface MinifiedSearchRecord {
 	r: string;
 }
 
-export function minifySearchRecord(data: SearchRecord): MinifiedSearchRecord {
-	return {
-		t: data.typePackageName,
-		g: data.globals,
-		m: data.declaredExternalModules,
-		p: data.projectName,
-		l: data.libraryName,
-		d: data.downloads,
-		r: data.redirect
-	};
-}
-
 export async function createSearchRecord(info: AnyPackage, skipDownloads: boolean): Promise<SearchRecord> {
 	return {
-		projectName: info.projectName,
-		libraryName: info.libraryName,
-		globals: info.globals,
-		typePackageName: info.typingsPackageName,
-		declaredExternalModules: info.declaredModules,
-		downloads: await getDownloads(),
-		redirect: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
+		p: info.projectName,
+		l: info.libraryName,
+		g: info.globals,
+		t: info.typingsPackageName,
+		m: info.declaredModules,
+		d: await getDownloads(),
+		r: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
 	};
 
 	async function getDownloads(): Promise<number> {
