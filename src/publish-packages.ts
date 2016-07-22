@@ -3,7 +3,7 @@ import * as yargs from "yargs";
 import * as common from "./lib/common";
 import NpmClient from "./lib/npm-client";
 import * as publisher from "./lib/package-publisher";
-import { nAtATime } from "./lib/util";
+import { done, nAtATime } from "./lib/util";
 
 if (!module.parent) {
 	if (!common.existsTypesDataFile() || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
@@ -19,7 +19,7 @@ if (!module.parent) {
 			throw new Error("Select only one --singleName=foo or --shouldUnpublish");
 		}
 
-		go().catch(console.error);
+		done(go());
 
 		async function go(): Promise<void> {
 			if (shouldUnpublish) {

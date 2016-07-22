@@ -1,8 +1,7 @@
-import { AnyPackage, Logger, LogResult, ArrayLog, consoleLogger, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
-import { parseJson } from "./util";
 import assert = require("assert");
+import { AnyPackage, Logger, LogResult, ArrayLog, consoleLogger, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
+import { parseJson, readJson } from "./util";
 import fetch = require("node-fetch");
-import fsp = require("fs-promise");
 import * as path from "path";
 import * as child_process from "child_process";
 import NpmClient from "./npm-client";
@@ -14,7 +13,7 @@ export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: bo
 	log.info(`Publishing ${name}`);
 
 	const packageDir = path.join("output", name);
-	const packageJson = parseJson(await fsp.readFile(path.join(packageDir, "package.json"), { encoding: "utf8" }));
+	const packageJson = await readJson(path.join(packageDir, "package.json"));
 
 	await client.publish(packageDir, packageJson, dry);
 	if (settings.tag && settings.tag !== "latest") { // "latest" is the default tag anyway
@@ -45,8 +44,8 @@ export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogResul
 
 	const outputPath = getOutputPath(pkg);
 	// Read package.json for version number we would be publishing
-	const packageJson = await fsp.readFile(path.join(outputPath, "package.json"), { encoding: "utf8" });
-	const localVersion: string = parseJson(packageJson).version;
+	const packageJson = await readJson(path.join(outputPath, "package.json"));
+	const localVersion: string = packageJson.version;
 	log.info(`Local version from package.json is ${localVersion}`);
 
 	// Hit e.g. http://registry.npmjs.org/@ryancavanaugh%2fjquery for version data
