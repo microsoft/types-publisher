@@ -18,7 +18,7 @@ exports.notNeededPackagesPath = path.join(exports.settings.definitelyTypedPath, 
 var RejectionReason = exports.RejectionReason;
 exports.consoleLogger = { info: console.log, error: console.error };
 class ArrayLog {
-    constructor(alsoOutput = false) {
+    constructor(alsoOutput = true) {
         this.alsoOutput = alsoOutput;
         this.infos = [];
         this.errors = [];

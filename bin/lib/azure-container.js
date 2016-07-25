@@ -80,8 +80,11 @@ function readBlob(blobName) {
                 switch (res.statusCode) {
                     case 200:
                         readResponse(res);
+                        break;
                     default:
-                        reject(new Error(`Can't get ${url}`));
+                        console.log("!!!");
+                        console.log(typeof res.statusCode);
+                        reject(new Error(`Can't get ${url}: ${res.statusCode} ${res.headers}`));
                 }
             });
             req.on("error", reject);

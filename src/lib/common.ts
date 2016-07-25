@@ -109,7 +109,7 @@ export class ArrayLog implements Logger {
 	private infos: string[];
 	private errors: string[];
 
-	constructor(public alsoOutput = false) {
+	constructor(public alsoOutput = true) {
 		this.infos = [];
 		this.errors = [];
 	}
