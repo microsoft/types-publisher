@@ -8,11 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const yargs = require("yargs");
-const common = require("./lib/common");
+const common_1 = require("./lib/common");
 const versions_1 = require("./lib/versions");
 const util_1 = require("./lib/util");
 if (!module.parent) {
-    if (!common.existsTypesDataFile()) {
+    if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
     }
     else {
@@ -24,7 +24,7 @@ function main(forceUpdate) {
     return __awaiter(this, void 0, void 0, function* () {
         const versions = yield versions_1.default.loadFromBlob();
         const changes = [];
-        for (const typing of common.readTypings()) {
+        for (const typing of yield common_1.readTypings()) {
             if (versions.recordUpdate(typing, forceUpdate)) {
                 changes.push(typing.typingsPackageName);
             }

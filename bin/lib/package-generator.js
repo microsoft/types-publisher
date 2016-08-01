@@ -72,13 +72,7 @@ function clearOutputPath(outputPath, log) {
         log.push(`Create output path ${outputPath}`);
         yield fsp.mkdirp(outputPath);
         log.push(`Clear out old files`);
-        yield removeAllFiles(outputPath);
-    });
-}
-function removeAllFiles(dirPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const files = yield fsp.readdir(dirPath);
-        yield Promise.all(files.map(file => fsp.unlink(path.join(dirPath, file))));
+        yield fsp.emptyDir(outputPath);
     });
 }
 function patchDefinitionFile(input) {

@@ -38,7 +38,7 @@ function uploadBlobs(timeStamp) {
         const blobLogs = "upload-blobs.md";
         const { infos, errors } = logger.result();
         assert(!errors.length);
-        common_1.writeLogSync(blobLogs, infos);
+        yield common_1.writeLog(blobLogs, infos);
         logUrls.push(yield uploadFile(logsUploadedLocation(timeStamp) + "/" + blobLogs, common_1.logPath(blobLogs)));
         return [dataUrls, logUrls];
     });

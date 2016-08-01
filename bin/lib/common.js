@@ -1,13 +1,22 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator.throw(value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments)).next());
+    });
+};
 const assert = require("assert");
 const path = require("path");
-const fs = require("fs");
+const fs_1 = require("fs");
+const fsp = require("fs-promise");
 const crypto = require("crypto");
 const source_map_support_1 = require("source-map-support");
 const util_1 = require("./util");
 source_map_support_1.install();
 exports.home = path.join(__dirname, "..", "..");
-exports.settings = util_1.parseJson(fs.readFileSync(path.join(exports.home, "settings.json"), "utf-8"));
+exports.settings = util_1.parseJson(fs_1.readFileSync(path.join(exports.home, "settings.json"), "utf-8"));
 exports.typesDataFilename = "definitions.json";
 exports.notNeededPackagesPath = path.join(exports.settings.definitelyTypedPath, "notNeededPackages.json");
 (function (RejectionReason) {
@@ -52,79 +61,72 @@ function isFail(t) {
     return t.rejectionReason !== undefined;
 }
 exports.isFail = isFail;
-function mkdir(p) {
-    try {
-        fs.statSync(p);
-    }
-    catch (e) {
-        fs.mkdirSync(p);
-    }
-}
 const logDir = path.join(exports.home, "logs");
 function logPath(logName) {
     return path.join(logDir, logName);
 }
 exports.logPath = logPath;
-function writeLogSync(logName, contents) {
-    mkdir(logDir);
-    fs.writeFileSync(logPath(logName), contents.join("\r\n"), "utf-8");
+function writeLog(logName, contents) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield fsp.ensureDir(logDir);
+        yield util_1.writeFile(logPath(logName), contents.join("\r\n"));
+    });
 }
-exports.writeLogSync = writeLogSync;
+exports.writeLog = writeLog;
 function writeDataFile(filename, content, formatted = true) {
-    const dataDir = path.join(exports.home, "data");
-    mkdir(dataDir);
-    if (typeof content !== "string") {
-        content = JSON.stringify(content, undefined, formatted ? 4 : undefined);
-    }
-    fs.writeFileSync(path.join(dataDir, filename), content, "utf-8");
+    return __awaiter(this, void 0, void 0, function* () {
+        const dataDir = path.join(exports.home, "data");
+        yield fsp.ensureDir(dataDir);
+        yield util_1.writeFile(path.join(dataDir, filename), JSON.stringify(content, undefined, formatted ? 4 : undefined));
+    });
 }
 exports.writeDataFile = writeDataFile;
 const dataDir = path.join(exports.home, "data");
 function dataFilePath(filename) {
     return path.join(dataDir, filename);
 }
-function existsDataFile(filename) {
-    return fs.existsSync(dataFilePath(filename));
+function existsTypesDataFileSync() {
+    return fs_1.existsSync(dataFilePath(exports.typesDataFilename));
 }
-function readDataFile(filename) {
-    const fullPath = dataFilePath(filename);
-    if (fs.existsSync(fullPath)) {
-        return util_1.parseJson(fs.readFileSync(fullPath, "utf-8"));
-    }
-    else {
-        return undefined;
-    }
-}
-exports.readDataFile = readDataFile;
-function existsTypesDataFile() {
-    return existsDataFile(exports.typesDataFilename);
-}
-exports.existsTypesDataFile = existsTypesDataFile;
+exports.existsTypesDataFileSync = existsTypesDataFileSync;
 function readTypesDataFile() {
-    return readDataFile(exports.typesDataFilename);
+    return __awaiter(this, void 0, void 0, function* () {
+        return (yield util_1.readJson(dataFilePath(exports.typesDataFilename)));
+    });
 }
 exports.readTypesDataFile = readTypesDataFile;
-function typings(typeData) {
+function typingsFromData(typeData) {
     return Object.keys(typeData).map(packageName => typeData[packageName]);
 }
-exports.typings = typings;
+exports.typingsFromData = typingsFromData;
 function readTypings() {
-    return typings(readTypesDataFile());
+    return __awaiter(this, void 0, void 0, function* () {
+        return typingsFromData(yield readTypesDataFile());
+    });
 }
 exports.readTypings = readTypings;
 function readNotNeededPackages() {
-    const raw = util_1.parseJson(fs.readFileSync(exports.notNeededPackagesPath, "utf-8")).packages;
-    for (const pkg of raw) {
-        assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
-        assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
-        pkg.projectName = pkg.sourceRepoURL;
-        pkg.packageKind = "not-needed";
-        pkg.globals = [];
-        pkg.declaredModules = [];
-    }
-    return raw;
+    return __awaiter(this, void 0, void 0, function* () {
+        const raw = (yield util_1.readJson(exports.notNeededPackagesPath)).packages;
+        for (const pkg of raw) {
+            assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
+            assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
+            pkg.projectName = pkg.sourceRepoURL;
+            pkg.packageKind = "not-needed";
+            pkg.globals = [];
+            pkg.declaredModules = [];
+        }
+        return raw;
+    });
 }
 exports.readNotNeededPackages = readNotNeededPackages;
+function readAllPackages() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [typings, notNeeded] = yield Promise.all([readTypings(), readNotNeededPackages()]);
+        return typings.concat(notNeeded);
+    });
+}
+exports.readAllPackages = readAllPackages;
 function computeHash(content) {
     // Normalize line endings
     content = content.replace(/\r\n?/g, "\n");

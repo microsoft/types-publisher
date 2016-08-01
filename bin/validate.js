@@ -10,28 +10,34 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fsp = require("fs-promise");
 const path = require("path");
 const child_process = require("child_process");
-const rimraf = require("rimraf");
 const yargs = require("yargs");
 const util_1 = require("./lib/util");
 const common_1 = require("./lib/common");
 if (!module.parent) {
-    const packageNames = yargs.argv._;
-    main(packageNames);
+    if (!common_1.existsTypesDataFileSync()) {
+        console.log("Run parse-definitions first!");
+    }
+    else {
+        const packageNames = yargs.argv._;
+        main(packageNames);
+    }
 }
 function main(packageNames) {
     return __awaiter(this, void 0, void 0, function* () {
         const log = new common_1.ArrayLog();
         if (!packageNames || !packageNames.length) {
             console.info("Validating all packages");
-            packageNames = common_1.readTypings().map(t => t.typingsPackageName).sort();
+            packageNames = (yield common_1.readTypings()).map(t => t.typingsPackageName).sort();
         }
         else {
             console.info("Validating: " + JSON.stringify(packageNames));
         }
         yield validatePackages(packageNames, common_1.settings.validateOutputPath, log);
         const { infos, errors } = log.result();
-        common_1.writeLogSync("validate.md", infos);
-        common_1.writeLogSync("validate-errors.md", errors);
+        yield Promise.all([
+            common_1.writeLog("validate.md", infos),
+            common_1.writeLog("validate-errors.md", errors)
+        ]);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -45,10 +51,7 @@ function validatePackages(packageNames, outPath, log) {
         const failed = [];
         const passed = [];
         try {
-            // Refresh the output folder
-            if (yield fsp.exists(outPath)) {
-                yield deleteDirectory(outPath, log);
-            }
+            fsp.remove(outPath);
             yield fsp.mkdirp(outPath);
         }
         catch (e) {
@@ -86,7 +89,7 @@ function validatePackage(packageName, outputDirecory, mainLog) {
             yield writePackage(packageDirectory, packageName);
             if ((yield runCommand("npm", log, packageDirectory, "npm install")) &&
                 (yield runCommand("tsc", log, packageDirectory, "tsc"))) {
-                yield deleteDirectory(packageDirectory, log);
+                yield fsp.remove(packageDirectory);
                 log.info("Passed.");
                 passed = true;
             }
@@ -155,20 +158,6 @@ function runCommand(commandDescription, log, directory, ...args) {
             }
             else {
                 log.info(stdout);
-                resolve(true);
-            }
-        });
-    });
-}
-function deleteDirectory(path, log) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                log.error(`rimraf failed: ${JSON.stringify(err)}`);
-                log.info(`rimraf failed, refer to error log`);
-                resolve(false);
-            }
-            else {
                 resolve(true);
             }
         });

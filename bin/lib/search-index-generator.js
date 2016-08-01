@@ -8,28 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const util_1 = require("./util");
-function minifySearchRecord(data) {
-    return {
-        t: data.typePackageName,
-        g: data.globals,
-        m: data.declaredExternalModules,
-        p: data.projectName,
-        l: data.libraryName,
-        d: data.downloads,
-        r: data.redirect
-    };
-}
-exports.minifySearchRecord = minifySearchRecord;
 function createSearchRecord(info, skipDownloads) {
     return __awaiter(this, void 0, void 0, function* () {
         return {
-            projectName: info.projectName,
-            libraryName: info.libraryName,
-            globals: info.globals,
-            typePackageName: info.typingsPackageName,
-            declaredExternalModules: info.declaredModules,
-            downloads: yield getDownloads(),
-            redirect: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
+            p: info.projectName,
+            l: info.libraryName,
+            g: info.globals,
+            t: info.typingsPackageName,
+            m: info.declaredModules,
+            d: yield getDownloads(),
+            r: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
         };
         function getDownloads() {
             return __awaiter(this, void 0, void 0, function* () {

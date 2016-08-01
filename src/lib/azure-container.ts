@@ -75,9 +75,7 @@ export async function readBlob(blobName: string): Promise<string> {
 					readResponse(res);
 					break;
 				default:
-					console.log("!!!");
-					console.log(typeof res.statusCode);
-					reject(new Error(`Can't get ${url}: ${res.statusCode} ${res.headers}`));
+					reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
 			}
 		});
 		req.on("error", reject);

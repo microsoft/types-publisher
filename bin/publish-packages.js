@@ -9,12 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const fs = require("fs");
 const yargs = require("yargs");
-const common = require("./lib/common");
+const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const publisher = require("./lib/package-publisher");
 const util_1 = require("./lib/util");
 if (!module.parent) {
-    if (!common.existsTypesDataFile() || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
+    if (!common_1.existsTypesDataFileSync() || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
         console.log("Run parse-definitions and generate-packages first!");
     }
     else {
@@ -53,7 +53,7 @@ function main(client, dry) {
         }
         const packagesShouldPublish = [];
         log.push("Checking which packages we should publish");
-        yield util_1.nAtATime(100, allPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(100, yield common_1.readAllPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [shouldPublish, checkLog] = yield publisher.shouldPublish(pkg);
             if (shouldPublish) {
                 packagesShouldPublish.push(pkg);
@@ -76,7 +76,7 @@ function main(client, dry) {
                 console.error(` Error! ${err}`);
             }
         }
-        common.writeLogSync("publishing.md", log);
+        yield common_1.writeLog("publishing.md", log);
         console.log("Done!");
     });
 }
@@ -84,7 +84,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(client, name, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const pkg = allPackages().find(p => p.typingsPackageName === name);
+        const pkg = (yield common_1.readAllPackages()).find(p => p.typingsPackageName === name);
         if (pkg === undefined) {
             throw new Error(`Can't find a package named ${name}`);
         }
@@ -94,12 +94,9 @@ function single(client, name, dry) {
 }
 function unpublish(dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        for (const pkg of allPackages()) {
+        for (const pkg of yield common_1.readAllPackages()) {
             yield publisher.unpublishPackage(pkg, dry);
         }
     });
-}
-function allPackages() {
-    return common.readTypings().concat(common.readNotNeededPackages());
 }
 //# sourceMappingURL=publish-packages.js.map

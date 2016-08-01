@@ -82,9 +82,7 @@ function readBlob(blobName) {
                         readResponse(res);
                         break;
                     default:
-                        console.log("!!!");
-                        console.log(typeof res.statusCode);
-                        reject(new Error(`Can't get ${url}: ${res.statusCode} ${res.headers}`));
+                        reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
                 }
             });
             req.on("error", reject);

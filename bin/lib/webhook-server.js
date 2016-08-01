@@ -77,8 +77,7 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
         const log = new common_1.ArrayLog(true);
         const timeStamp = util_1.currentTimeStamp();
         try {
-            if (!checkSignature(key, data, headers["x-hub-signature"])) {
-                log.error(`Request does not have the correct x-hub-signature: headers are ${JSON.stringify(headers, undefined, 4)}`);
+            if (!checkSignature(key, data, headers, log)) {
                 return;
             }
             log.info(`Message from github: ${data}`);
@@ -146,9 +145,18 @@ function updateOneAtATime(doOnce) {
         }
     };
 }
-function checkSignature(key, data, actualSignature) {
+function checkSignature(key, data, headers, log) {
+    const signature = headers["x-hub-signature"];
+    const expected = expectedSignature(key, data);
+    if (stringEqualsConstantTime(signature, expected)) {
+        return true;
+    }
+    log.error(`Invalid request: expected ${expected}, got ${signature}`);
+    log.error(`Headers are: ${JSON.stringify(headers, undefined, 4)}`);
+    log.error(`Data is: ${data}`);
+    log.error("");
+    return false;
     // Use a constant-time compare to prevent timing attacks
-    return stringEqualsConstantTime(expectedSignature(key, data), actualSignature);
     function stringEqualsConstantTime(s1, s2) {
         return bufferEqualsConstantTime(new Buffer(s1), new Buffer(s2));
     }

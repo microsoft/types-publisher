@@ -1,12 +1,12 @@
 "use strict";
-const rimraf = require("rimraf");
+const fsp = require("fs-promise");
 if (!module.parent) {
     main();
 }
 function main() {
     for (const dir of ["data", "logs", "output"]) {
         console.log("Clean " + dir);
-        rimraf.sync(dir);
+        fsp.remove(dir);
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

@@ -83,9 +83,11 @@ function main() {
         });
         summaryLog.push("\r\n### Warnings\r\n");
         warningLog.forEach(w => summaryLog.push(w));
-        common_1.writeLogSync("parser-log-summary.md", summaryLog);
-        common_1.writeLogSync("parser-log-details.md", detailedLog);
-        common_1.writeDataFile(common_1.typesDataFilename, typings);
+        yield Promise.all([
+            common_1.writeLog("parser-log-summary.md", summaryLog),
+            common_1.writeLog("parser-log-details.md", detailedLog),
+            common_1.writeDataFile(common_1.typesDataFilename, typings)
+        ]);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -94,7 +96,7 @@ function single(singleName) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield processDir(singleName);
         const typings = { [singleName]: result.data };
-        common_1.writeDataFile(common_1.typesDataFilename, typings);
+        yield common_1.writeDataFile(common_1.typesDataFilename, typings);
         console.log(result);
     });
 }

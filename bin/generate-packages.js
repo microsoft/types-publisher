@@ -7,13 +7,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const common = require("./lib/common");
+const common_1 = require("./lib/common");
 const util_1 = require("./lib/util");
 const generator = require("./lib/package-generator");
 const versions_1 = require("./lib/versions");
 if (!module.parent) {
     if (!versions_1.default.existsSync()) {
         console.log("Run calculate-versions first!");
+    }
+    else if (!common_1.existsTypesDataFileSync()) {
+        console.log("Run parse-definitions first!");
     }
     else {
         util_1.done(main());
@@ -22,16 +25,16 @@ if (!module.parent) {
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const log = [];
-        const typeData = common.readTypesDataFile();
-        const typings = common.typings(typeData);
+        const typeData = yield common_1.readTypesDataFile();
+        const typings = common_1.typingsFromData(typeData);
         const versions = yield versions_1.default.loadFromLocalFile();
         yield util_1.nAtATime(10, typings, (typing) => __awaiter(this, void 0, void 0, function* () {
             return logGeneration(typing, yield generator.generatePackage(typing, typeData, versions));
         }));
-        yield util_1.nAtATime(10, common.readNotNeededPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(10, yield common_1.readNotNeededPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
             return logGeneration(pkg, yield generator.generateNotNeededPackage(pkg));
         }));
-        common.writeLogSync("package-generator.md", log);
+        yield common_1.writeLog("package-generator.md", log);
         function logGeneration(pkg, generateResult) {
             return __awaiter(this, void 0, void 0, function* () {
                 log.push(` * ${pkg.libraryName}`);
