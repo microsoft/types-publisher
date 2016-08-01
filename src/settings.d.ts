@@ -34,11 +34,6 @@ interface PublishSettings {
 	// Name of the azure container.
 	azureContainer: string;
 
-	versionsBlobName: string;
-
-	// Port the webhook will listen on.
-	webhookPort: number;
-
 	// Issue in types-publisher that we will use to report webhook errors.
 	errorsIssue: string;
 }

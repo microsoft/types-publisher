@@ -293,17 +293,22 @@ This uploads the `data` and `logs` directories to Azure.
 Blobs can be viewed [here](https://typespublisher.blob.core.windows.net/typespublisher/index.html)
 or on [Azure](https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher).
 
-This also uploads `versions.json` to [here](https://typespublisher.blob.core.windows.net/typespublisher/versions.json).
-
 # Testing the webhook
 
 (Since this is a test, make sure you are not logged in to npm (`npm logout`), and use the `--dry` flag.)
+
+### Testing the webhook without a repository
+
+The script `npm run make-server-run` will trigger the local webhook just like Github would.
+(For the production server, use `npm run make-production-server-run`.)
+
+### Testing the webhook with a repository
 
 * Create a dummy repository (e.g. `https://github.com/your/dummy-repo`)
 
 * Set up forwarding:
 	* Install [ngrok](https://ngrok.com)
-	* `ngrok http 80` (or whatever `webhookPort` you have in your `settings.json`)
+	* `ngrok http 80` (or whatever `PORT` environment variable you're using)
 	* Copy the forwarding URL (Looks like: http://deadbeef.ngrok.io)
 
 * Add a hook:
@@ -384,10 +389,6 @@ Name of the Azure storage account.
 
 Name of the Azure container.
 
-### webhookPort
-
-Port number used by the webhook.
-
 ### errorsIssue
 
 GitHub issue to use to report errors from the webhook.
@@ -420,6 +421,10 @@ Create a token [here](https://github.com/settings/tokens).
 
 This lets you run the webhook in dry mode in Azure, without needing command line flags.
 
+#### PORT
+
+This is the port the webhook uses for GET requests.
+
 ### Set environment variables in Azure
 
 * Go to https://ms.portal.azure.com
@@ -445,3 +450,35 @@ npm run validate node exress jquery
 will try to install the three packages, and run the tsc compiler on them.
 
 Specifing no options to the command will validate **all** known packages.
+
+
+# Publishing to azure
+
+Azure is set up to listen to the `production` branch, which is like `master` but includes `bin/`.
+
+## Update production branch
+
+    git checkout production
+    git merge master
+    git build
+    git add --all
+    git commit -m "Update bin/"
+    git push
+
+Azure is listening for changes to `production` and should restart itself.
+The server also serves a simple web page [here](http://types-publisher.azurewebsites.net).
+
+## Debugging Azure
+
+If the server is working normally, you can view log files [here](https://typespublisher.blob.core.windows.net/typespublisher/index.html).
+
+If the server goes down, you can view server logs on [ftp](ftp://waws-prod-bay-011.ftp.azurewebsites.windows.net).
+For FTP credentials, ask Andy or reset them by going to https://ms.portal.azure.com → types-publisher → Quick Start → Reset deployment credentials.
+You can also download a ZIP using the azure-cli command `azure site log download`.
+The most useful logs are in LogFiles/Application.
+
+## Testing Azure
+
+Instead of waiting for someone to push to DefinitelyTyped,
+you should test out your new deployment by running `npm run make-production-server-run`,
+which will trigger a full build .

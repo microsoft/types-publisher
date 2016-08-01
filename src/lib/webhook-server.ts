@@ -1,7 +1,7 @@
 import assert = require("assert");
 import bufferEqualsConstantTime = require("buffer-equals-constant");
 import { createHmac } from "crypto";
-import { createServer, Server } from "http";
+import { createServer, Server, ServerResponse } from "http";
 import full from "../full";
 import RollingLogs from "./rolling-logs";
 import { ArrayLog, settings } from "./common";
@@ -28,30 +28,37 @@ function writeLog(log: ArrayLog): Promise<void> {
 	return rollingLogs.write(infos);
 }
 
-const webResult = `
+function webResult(dry: boolean, timeStamp: string): string {
+	return `
 <html>
 <head></head>
 <body>
-	This is the TypeScript types-publisher webhook server. You probably meant to see:
+	This is the TypeScript types-publisher webhook server.<br/>
+	If you can read this, the webhook is running. (Dry mode: <strong>${dry}</strong>)<br/>
+	Latest deploy was on <strong>${timeStamp}</strong>.
+	You probably meant to see:
 	<ul>
 		<li><a href="https://typespublisher.blob.core.windows.net/typespublisher/index.html">Latest data</a></li>
 		<li><a href="https://github.com/Microsoft/types-publisher">GitHub</a></li>
+		<li><a href="https://github.com/Microsoft/types-publisher/issues/40">Server status issue</a></li>
 		<li><a href="https://ms.portal.azure.com/?resourceMenuPerf=true#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/Default-Web-WestUS/providers/Microsoft.Web/sites/types-publisher/App%20Services">Azure account (must have permission)</a></li>
 	</ul>
 </body>
 </html>
 `;
+}
 
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
 function listenToGithub(key: string, githubAccessToken: string, dry: boolean, onUpdate: (log: ArrayLog, timeStamp: string) => Promise<void> | undefined): Server {
+	const webText = webResult(dry, currentTimeStamp());
 	const server = createServer((req, resp) => {
 		switch (req.method) {
 			case "GET":
-				resp.write(webResult);
+				resp.write(webText);
 				resp.end();
 				break;
 			case "POST":
-				req.on("data", (data: string) => receiveUpdate(data, req.headers));
+				req.on("data", (data: string) => receiveUpdate(data, req.headers, resp));
 				break;
 			default:
 				// Don't respond
@@ -59,12 +66,11 @@ function listenToGithub(key: string, githubAccessToken: string, dry: boolean, on
 	});
 	return server;
 
-	function receiveUpdate(data: string, headers: any): void {
+	function receiveUpdate(data: string, headers: any, resp: ServerResponse): void {
 		const log = new ArrayLog(true);
 		const timeStamp = currentTimeStamp();
 		try {
-			if (!checkSignature(key, data, headers["x-hub-signature"])) {
-				log.error(`Request does not have the correct x-hub-signature: headers are ${JSON.stringify(headers, undefined, 4)}`);
+			if (!checkSignature(key, data, headers, log)) {
 				return;
 			}
 
@@ -73,6 +79,7 @@ function listenToGithub(key: string, githubAccessToken: string, dry: boolean, on
 
 			const actualRef = parseJson(data).ref;
 			if (actualRef === expectedRef) {
+				respond("Thanks for the update! Running full.");
 				const update = onUpdate(log, timeStamp);
 				if (update) {
 					update.catch(onError);
@@ -80,7 +87,9 @@ function listenToGithub(key: string, githubAccessToken: string, dry: boolean, on
 				return;
 			}
 			else {
-				log.info(`Ignoring push to ${actualRef}, expected ${expectedRef}.`);
+				const text = `Ignoring push to ${actualRef}, expected ${expectedRef}.`;
+				respond(text);
+				log.info(text);
 			}
 			writeLog(log).catch(onError);
 		} catch (error) {
@@ -95,6 +104,12 @@ function listenToGithub(key: string, githubAccessToken: string, dry: boolean, on
 				console.error(error.stack);
 				process.exit(1);
 			});
+		}
+
+		// This is for the benefit of `npm run make-[production-]server-run`. GitHub ignores this.
+		function respond(text: string): void {
+			resp.write(text);
+			resp.end();
 		}
 	}
 }
@@ -128,18 +143,28 @@ function updateOneAtATime(doOnce: (log: ArrayLog, timeStamp: string) => Promise<
 	};
 }
 
-function checkSignature(key: string, data: string, actualSignature: string) {
-	const expectedSignature = `sha1=${getDigest()}`;
-	// Prevent timing attacks
-	return stringEqualsConstantTime(expectedSignature, actualSignature);
-
-	function getDigest(): string {
-		const hmac = createHmac("sha1", key);
-		hmac.write(data);
-		return hmac.digest("hex");
+function checkSignature(key: string, data: string, headers: any, log: ArrayLog): boolean {
+	const signature = headers["x-hub-signature"];
+	const expected = expectedSignature(key, data);
+	if (stringEqualsConstantTime(signature, expected)) {
+		return true;
 	}
 
+	log.error(`Invalid request: expected ${expected}, got ${signature}`);
+	log.error(`Headers are: ${JSON.stringify(headers, undefined, 4)}`);
+	log.error(`Data is: ${data}`);
+	log.error("");
+	return false;
+
+	// Use a constant-time compare to prevent timing attacks
 	function stringEqualsConstantTime(s1: string, s2: string): boolean {
 		return bufferEqualsConstantTime(new Buffer(s1), new Buffer(s2));
 	}
+}
+
+export function expectedSignature(key: string, data: string): string {
+	const hmac = createHmac("sha1", key);
+	hmac.write(data);
+	const digest = hmac.digest("hex");
+	return `sha1=${digest}`;
 }

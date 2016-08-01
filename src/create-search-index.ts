@@ -1,10 +1,10 @@
 import * as yargs from "yargs";
-import { AnyPackage, existsTypesDataFile, readNotNeededPackages, readTypings, writeDataFile } from "./lib/common";
+import { existsTypesDataFileSync, readAllPackages, writeDataFile } from "./lib/common";
 import { done, nAtATime } from "./lib/util";
 import { createSearchRecord, SearchRecord } from "./lib/search-index-generator";
 
 if (!module.parent) {
-	if (!existsTypesDataFile()) {
+	if (!existsTypesDataFileSync()) {
 		console.log("Run parse-definitions first!");
 	} else {
 		const skipDownloads = yargs.argv.skipDownloads;
@@ -14,7 +14,7 @@ if (!module.parent) {
 }
 
 export default async function main(skipDownloads: boolean, full: boolean): Promise<void> {
-	let packages = (readTypings() as AnyPackage[]).concat(readNotNeededPackages());
+	let packages = await readAllPackages();
 	console.log(`Loaded ${packages.length} entries`);
 
 	const records = await nAtATime(100, packages, pkg => createSearchRecord(pkg, skipDownloads));
@@ -24,9 +24,9 @@ export default async function main(skipDownloads: boolean, full: boolean): Promi
 	console.log(`Done generating search index`);
 
 	console.log(`Writing out data files`);
-	writeDataFile("search-index-min.json", records, false);
+	await writeDataFile("search-index-min.json", records, false);
 	if (full) {
-		writeDataFile("search-index-full.json", records.map(verboseRecord), true);
+		await writeDataFile("search-index-full.json", records.map(verboseRecord), true);
 	}
 }
 
