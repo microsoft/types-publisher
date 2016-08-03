@@ -168,20 +168,26 @@ function entryPoint(directory, folderName, log) {
 function allReferencedFiles(directory, entryPointFilename, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const all = new Map();
-        function recur(filename) {
+        function recur(referencedFrom, filename) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (all.has(filename)) {
                     return;
                 }
                 log.push(`Parse ${filename}`);
-                let content = yield readFile(directory, filename);
+                let content;
+                try {
+                    content = yield readFile(directory, filename);
+                }
+                catch (err) {
+                    throw new Error(`In ${directory}, ${referencedFrom} references ${filename}, which does not exist.`);
+                }
                 const src = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
                 all.set(filename, src);
                 const refs = referencedFiles(src, directory, path.dirname(filename));
-                yield Promise.all(refs.map(recur));
+                yield Promise.all(refs.map(ref => recur(filename, ref)));
             });
         }
-        yield recur(entryPointFilename);
+        yield recur("", entryPointFilename);
         return all;
     });
 }

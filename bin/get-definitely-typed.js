@@ -20,8 +20,8 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const log = new common_1.ArrayLog();
         yield cloneIfNeeded(log);
-        checkBranch(log);
-        pull(log);
+        yield checkBranch(log);
+        yield pull(log);
         const { infos, errors } = log.result();
         assert(!errors.length);
         yield common_1.writeLog("get-definitely-typed.md", infos);

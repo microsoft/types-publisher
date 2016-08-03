@@ -17,7 +17,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const key = process.env["GITHUB_SECRET"];
         const githubAccessToken = process.env["GITHUB_ACCESS_TOKEN"];
-        const dry = yargs.argv.dry || process.env["WEBHOOK_FORCE_DRY"];
+        const dry = !!(yargs.argv.dry || process.env["WEBHOOK_FORCE_DRY"]);
         const port = process.env["PORT"];
         if (!(key && githubAccessToken && port)) {
             console.log("The environment variables GITHUB_SECRET and GITHUB_ACCESS_TOKEN and PORT must be set.");
