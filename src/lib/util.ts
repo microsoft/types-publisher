@@ -5,6 +5,7 @@ import recursiveReaddir = require("recursive-readdir");
 import { Stats } from "fs";
 import * as fsp from "fs-promise";
 import * as stream from "stream";
+import * as zlib from "zlib";
 
 export function parseJson(text: string): any {
 	try {
@@ -104,6 +105,16 @@ export function writeJson(path: string, content: any): Promise<void> {
 
 export function done(promise: Promise<void>): void {
 	promise.catch(console.error);
+}
+
+export function gzip(input: NodeJS.ReadableStream): NodeJS.ReadableStream {
+	return input.pipe(zlib.createGzip());
+}
+
+export function unGzip(input: NodeJS.ReadableStream): NodeJS.ReadableStream {
+	const output = zlib.createGunzip();
+	input.pipe(output);
+	return output;
 }
 
 export function streamOfString(text: string): NodeJS.ReadableStream {
