@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const assert = require("assert");
 const bufferEqualsConstantTime = require("buffer-equals-constant");
 const crypto_1 = require("crypto");
 const http_1 = require("http");
@@ -35,8 +34,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = server;
 function writeLog(log) {
     const { infos, errors } = log.result();
-    assert(!errors.length);
-    return rollingLogs.write(infos);
+    return rollingLogs.write(infos.concat(errors));
 }
 function webResult(dry, timeStamp) {
     return `
@@ -67,36 +65,17 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
                 resp.end();
                 break;
             case "POST":
-                req.on("data", (data) => receiveUpdate(data, req.headers, resp));
+                receiveUpdate(req, resp);
                 break;
             default:
         }
     });
     return server;
-    function receiveUpdate(data, headers, resp) {
+    function receiveUpdate(req, resp) {
         const log = new common_1.ArrayLog(true);
         const timeStamp = util_1.currentTimeStamp();
         try {
-            if (!checkSignature(key, data, headers, log)) {
-                return;
-            }
-            log.info(`Message from github: ${data}`);
-            const expectedRef = `refs/heads/${common_1.settings.sourceBranch}`;
-            const actualRef = util_1.parseJson(data).ref;
-            if (actualRef === expectedRef) {
-                respond("Thanks for the update! Running full.");
-                const update = onUpdate(log, timeStamp);
-                if (update) {
-                    update.catch(onError);
-                }
-                return;
-            }
-            else {
-                const text = `Ignoring push to ${actualRef}, expected ${expectedRef}.`;
-                respond(text);
-                log.info(text);
-            }
-            writeLog(log).catch(onError);
+            work().then(() => writeLog(log)).catch(onError);
         }
         catch (error) {
             writeLog(log).then(() => onError(error)).catch(onError);
@@ -108,6 +87,26 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
             }).then(() => {
                 console.error(error.stack);
                 process.exit(1);
+            });
+        }
+        function work() {
+            return __awaiter(this, void 0, void 0, function* () {
+                const data = yield util_1.stringOfStream(req);
+                if (!checkSignature(key, data, req.headers, log)) {
+                    return;
+                }
+                log.info(`Message from github: ${data}`);
+                const expectedRef = `refs/heads/${common_1.settings.sourceBranch}`;
+                const actualRef = util_1.parseJson(data).ref;
+                if (actualRef === expectedRef) {
+                    respond("Thanks for the update! Running full.");
+                    yield onUpdate(log, timeStamp);
+                }
+                else {
+                    const text = `Ignoring push to ${actualRef}, expected ${expectedRef}.`;
+                    respond(text);
+                    log.info(text);
+                }
             });
         }
         // This is for the benefit of `npm run make-[production-]server-run`. GitHub ignores this.

@@ -10,8 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
 const https = require("https");
-const stream = require("stream");
-const zlib = require("zlib");
 const common_1 = require("./common");
 const util_1 = require("./util");
 const name = common_1.settings.azureContainer;
@@ -45,7 +43,7 @@ function createBlobFromFile(blobName, fileName) {
 exports.createBlobFromFile = createBlobFromFile;
 function createBlobFromText(blobName, text) {
     return __awaiter(this, void 0, void 0, function* () {
-        return createBlobFromStream(blobName, streamOfString(text));
+        return createBlobFromStream(blobName, util_1.streamOfString(text));
     });
 }
 exports.createBlobFromText = createBlobFromText;
@@ -56,16 +54,7 @@ function createBlobFromStream(blobName, stream) {
             contentType: "application/json; charset=utf-8"
         }
     };
-    return streamDone(gzip(stream).pipe(service.createWriteStreamToBlockBlob(name, blobName, options)));
-}
-function streamOfString(text) {
-    const s = new stream.Readable();
-    s.push(text);
-    s.push(null);
-    return s;
-}
-function gzip(input) {
-    return input.pipe(zlib.createGzip());
+    return streamDone(util_1.gzip(stream).pipe(service.createWriteStreamToBlockBlob(name, blobName, options)));
 }
 function streamDone(stream) {
     return new Promise((resolve, reject) => {
@@ -79,26 +68,18 @@ function readBlob(blobName) {
             const req = https.get(url, res => {
                 switch (res.statusCode) {
                     case 200:
-                        readResponse(res);
+                        if (res.headers["content-encoding"] !== "GZIP") {
+                            reject(new Error(`${url} is not gzipped`));
+                        }
+                        else {
+                            resolve(util_1.stringOfStream(util_1.unGzip(res)));
+                        }
                         break;
                     default:
                         reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
                 }
             });
             req.on("error", reject);
-            function readResponse(res) {
-                if (res.headers["content-encoding"] !== "GZIP") {
-                    reject(new Error(`${url} is not gzipped`));
-                }
-                const output = zlib.createGunzip();
-                res.pipe(output);
-                let body = "";
-                output.on("data", (data) => {
-                    body += data.toString("utf8");
-                });
-                output.on("error", () => reject());
-                output.on("end", () => resolve(body));
-            }
         });
     });
 }

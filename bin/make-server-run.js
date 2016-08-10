@@ -15,15 +15,15 @@ const yargs = require("yargs");
 if (!module.parent) {
     const remote = yargs.argv.remote;
     const key = process.env["GITHUB_SECRET"];
-    if (!key) {
-        throw new Error("Must provide GITHUB_SECRET");
+    const port = parseInt(process.env["PORT"], 10);
+    if (!(key && port)) {
+        throw new Error("Must provide GITHUB_SECRET and PORT");
     }
-    util_1.done(main(key, remote));
+    util_1.done(main(key, port, remote));
 }
-function main(key, remote) {
+function main(key, port, remote) {
     return __awaiter(this, void 0, void 0, function* () {
-        // lvh.me reroutes to localhost
-        const url = remote ? "http://types-publisher.azurewebsites.net" : "http://lvh.me";
+        const url = remote ? "http://types-publisher.azurewebsites.net" : `http://localhost:${port}`;
         const body = JSON.stringify({ ref: `refs/heads/${common_1.settings.sourceBranch}` });
         const headers = { "x-hub-signature": webhook_server_1.expectedSignature(key, body) };
         const resp = yield fetch(url, { method: "POST", body, headers });

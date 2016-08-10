@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
+const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const util_1 = require("./lib/util");
 const generator = require("./lib/package-generator");
@@ -19,15 +20,14 @@ if (!module.parent) {
         console.log("Run parse-definitions first!");
     }
     else {
-        util_1.done(main());
+        const singleName = yargs.argv.single;
+        util_1.done((singleName ? single(singleName) : main()));
     }
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const log = [];
-        const typeData = yield common_1.readTypesDataFile();
-        const typings = common_1.typingsFromData(typeData);
-        const versions = yield versions_1.default.loadFromLocalFile();
+        const { typeData, typings, versions } = yield loadPrerequisites();
         yield util_1.nAtATime(10, typings, (typing) => __awaiter(this, void 0, void 0, function* () {
             return logGeneration(typing, yield generator.generatePackage(typing, typeData, versions));
         }));
@@ -45,4 +45,22 @@ function main() {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
+function single(singleName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { typeData, typings, versions } = yield loadPrerequisites();
+        const typing = typings.find(t => t.typingsPackageName === singleName);
+        if (!typing) {
+            throw new Error(`No package ${singleName} to generate.`);
+        }
+        const generateResult = yield generator.generatePackage(typing, typeData, versions);
+        console.log(generateResult.log.join("\n"));
+    });
+}
+function loadPrerequisites() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [typeData, versions] = yield Promise.all([yield common_1.readTypesDataFile(), yield versions_1.default.loadFromLocalFile()]);
+        const typings = common_1.typingsFromData(typeData);
+        return { typeData, typings, versions };
+    });
+}
 //# sourceMappingURL=generate-packages.js.map

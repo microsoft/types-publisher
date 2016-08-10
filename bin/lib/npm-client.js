@@ -13,6 +13,7 @@ const RegClient = require("npm-registry-client");
 const tar_1 = require("tar");
 const url = require("url");
 const common_1 = require("./common");
+const util_1 = require("./util");
 const registry = common_1.settings.npmRegistry;
 assert(registry.endsWith("/"));
 const username = common_1.settings.npmUsername;
@@ -36,7 +37,7 @@ class NpmClient {
     }
     publish(publishedDirectory, packageJson, dry) {
         return new Promise((resolve, reject) => {
-            const body = createTar(publishedDirectory, reject);
+            const body = createTgz(publishedDirectory, reject);
             const params = {
                 access: "public",
                 auth: this.auth,
@@ -106,7 +107,11 @@ function logIn(client, password) {
         return { token };
     });
 }
-// To output this for testing: `createTar(...).pipe(fs.createWriteStream("test.tar"))`
+// To output this for testing: Export it and:
+// `require("./bin/lib/npm-client").createTgz("./output/foo", err => { throw err }).pipe(fs.createWriteStream("foo.tgz"))`
+function createTgz(dir, onError) {
+    return util_1.gzip(createTar(dir, onError));
+}
 function createTar(dir, onError) {
     const packer = tar_1.Pack({ noProprietary: true })
         .on("error", onError);

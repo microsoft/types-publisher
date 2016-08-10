@@ -15,6 +15,11 @@ const crypto = require("crypto");
 const source_map_support_1 = require("source-map-support");
 const util_1 = require("./util");
 source_map_support_1.install();
+if (process.env["LONGJOHN"]) {
+    console.log("=== USING LONGJOHN ===");
+    const longjohn = require("longjohn");
+    longjohn.async_trace_limit = -1; // unlimited
+}
 exports.home = path.join(__dirname, "..", "..");
 exports.settings = util_1.parseJson(fs_1.readFileSync(path.join(exports.home, "settings.json"), "utf-8"));
 exports.typesDataFilename = "definitions.json";

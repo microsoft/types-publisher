@@ -12,6 +12,8 @@ const fetch = require("node-fetch");
 const moment = require("moment");
 const recursiveReaddir = require("recursive-readdir");
 const fsp = require("fs-promise");
+const stream = require("stream");
+const zlib = require("zlib");
 function parseJson(text) {
     try {
         return JSON.parse(text);
@@ -122,4 +124,32 @@ function done(promise) {
     promise.catch(console.error);
 }
 exports.done = done;
+function gzip(input) {
+    return input.pipe(zlib.createGzip());
+}
+exports.gzip = gzip;
+function unGzip(input) {
+    const output = zlib.createGunzip();
+    input.pipe(output);
+    return output;
+}
+exports.unGzip = unGzip;
+function streamOfString(text) {
+    const s = new stream.Readable();
+    s.push(text);
+    s.push(null);
+    return s;
+}
+exports.streamOfString = streamOfString;
+function stringOfStream(stream) {
+    let body = "";
+    stream.on("data", (data) => {
+        body += data.toString("utf8");
+    });
+    return new Promise((resolve, reject) => {
+        stream.on("error", reject);
+        stream.on("end", () => resolve(body));
+    });
+}
+exports.stringOfStream = stringOfStream;
 //# sourceMappingURL=util.js.map

@@ -56,9 +56,10 @@ function pull(log) {
 }
 function runCmd(cmd, cwd) {
     return new Promise((resolve, reject) => {
+        const minute = 60 * 1000;
         const options = {
             cwd,
-            timeout: 60 * 1000,
+            timeout: 10 * minute,
             encoding: "utf8"
         };
         child_process.exec(cmd, options, (err, stdout, stderr) => {
