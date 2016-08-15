@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as yargs from "yargs";
 import { AnyPackage, existsTypesDataFileSync, readAllPackages } from "./lib/common";
-import { LogWithErrors, quietLogger, writeLog } from "./lib/logging";
+import { LogWithErrors, logger, writeLog } from "./lib/logging";
 import NpmClient from "./lib/npm-client";
 import * as publisher from "./lib/package-publisher";
 import { done, nAtATime } from "./lib/util";
@@ -40,7 +40,7 @@ if (!module.parent) {
 }
 
 export default async function main(client: NpmClient, dry: boolean): Promise<void> {
-	const [log, logResult] = quietLogger();
+	const [log, logResult] = logger();
 	if (dry) {
 		log("=== DRY RUN ===");
 	}

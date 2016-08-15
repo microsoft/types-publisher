@@ -3,7 +3,7 @@ import * as fsp from "fs-promise";
 import * as path from "path";
 import * as child_process from "child_process";
 import { settings } from "./lib/common";
-import { loudLoggerWithErrors, LoggerWithErrors, joinLogWithErrors, writeLog } from "./lib/logging";
+import { loggerWithErrors, LoggerWithErrors, joinLogWithErrors, writeLog } from "./lib/logging";
 import { done } from "./lib/util";
 
 if (!module.parent) {
@@ -11,7 +11,7 @@ if (!module.parent) {
 }
 
 export default async function main(): Promise<void> {
-	const [log, logResult] = loudLoggerWithErrors();
+	const [log, logResult] = loggerWithErrors();
 	await cloneIfNeeded(log);
 	await checkBranch(log);
 	await pull(log);

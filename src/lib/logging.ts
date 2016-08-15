@@ -46,7 +46,7 @@ function alsoConsoleLogger(consoleLog: Logger): [Logger, () => Log] {
 }
 
 /** Logger that writes to console in addition to recording a result. */
-export function loudLogger(): [Logger, () => Log]  {
+export function logger(): [Logger, () => Log]  {
 	return alsoConsoleLogger(console.log);
 }
 
@@ -66,8 +66,8 @@ export function quietLoggerWithErrors(): [LoggerWithErrors, () => LogWithErrors]
 }
 
 /** Records `info` and `error` messages, calling appropriate console methods as well. */
-export function loudLoggerWithErrors(): [LoggerWithErrors, () => LogWithErrors] {
-	return loggerWithErrorsHelper(loudLogger);
+export function loggerWithErrors(): [LoggerWithErrors, () => LogWithErrors] {
+	return loggerWithErrorsHelper(logger);
 }
 
 /**

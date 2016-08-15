@@ -4,7 +4,7 @@ import * as child_process from "child_process";
 import * as yargs from "yargs";
 import { nAtATime, writeFile, writeJson } from "./lib/util";
 import { existsTypesDataFileSync, settings, readTypings } from "./lib/common";
-import { LoggerWithErrors, quietLoggerWithErrors, loudLoggerWithErrors, moveLogsWithErrors, writeLog } from "./lib/logging";
+import { LoggerWithErrors, quietLoggerWithErrors, loggerWithErrors, moveLogsWithErrors, writeLog } from "./lib/logging";
 
 if (!module.parent) {
 	if (!existsTypesDataFileSync()) {
@@ -16,7 +16,7 @@ if (!module.parent) {
 }
 
 export default async function main(packageNames?: string[]) {
-	const [log, logResult] = loudLoggerWithErrors();
+	const [log, logResult] = loggerWithErrors();
 
 	if (!packageNames || !packageNames.length) {
 		log.info("Validating all packages");

@@ -4,7 +4,7 @@ import { createServer, IncomingMessage, Server, ServerResponse } from "http";
 import full from "../full";
 import RollingLogs from "./rolling-logs";
 import { settings } from "./common";
-import { LoggerWithErrors, LogWithErrors, joinLogWithErrors, loudLoggerWithErrors } from "./logging";
+import { LoggerWithErrors, LogWithErrors, joinLogWithErrors, loggerWithErrors } from "./logging";
 import { reopenIssue } from "./issue-updater";
 import NpmClient from "./npm-client";
 import { currentTimeStamp, parseJson, stringOfStream } from "./util";
@@ -65,7 +65,7 @@ function listenToGithub(key: string, githubAccessToken: string, dry: boolean, on
 	return server;
 
 	function receiveUpdate(req: IncomingMessage, resp: ServerResponse): void {
-		const [log, logResult] = loudLoggerWithErrors();
+		const [log, logResult] = loggerWithErrors();
 		const timeStamp = currentTimeStamp();
 		try {
 			work().then(() => writeLog(logResult())).catch(onError);

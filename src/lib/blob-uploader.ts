@@ -2,7 +2,7 @@ import assert = require("assert");
 import * as fsp from "fs-promise";
 import * as path from "path";
 import * as container from "./azure-container";
-import { Logger, loudLogger, logPath, writeLog } from "./logging";
+import { Logger, logger, logPath, writeLog } from "./logging";
 import { unique } from "./util";
 
 const maxNumberOfOldLogsDirectories = 5;
@@ -17,7 +17,7 @@ export default async function uploadBlobsAndUpdateIssue(timeStamp: string): Prom
 // View uploaded files at:
 // https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
 async function uploadBlobs(timeStamp: string): Promise<[string[], string[]]> {
-	const [log, logResult] = loudLogger();
+	const [log, logResult] = logger();
 	const [dataUrls, logUrls] = await Promise.all([
 		await uploadDirectory("data", "data", log),
 		await uploadLogs(timeStamp, log)

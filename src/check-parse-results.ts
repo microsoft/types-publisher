@@ -1,5 +1,5 @@
 import { TypingsData, existsTypesDataFileSync, readTypings } from "./lib/common";
-import { Logger, loudLogger, writeLog } from "./lib/logging";
+import { Logger, logger, writeLog } from "./lib/logging";
 import { done } from "./lib/util";
 
 if (!module.parent) {
@@ -12,7 +12,7 @@ if (!module.parent) {
 
 export default async function main(): Promise<void> {
 	const infos = await readTypings();
-	const [log, logResult] = loudLogger();
+	const [log, logResult] = logger();
 	check(infos, info => info.libraryName, "Library Name", log);
 	check(infos, info => info.projectName, "Project Name", log);
 	await writeLog("conflicts.md", logResult());

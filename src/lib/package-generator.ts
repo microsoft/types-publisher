@@ -1,12 +1,12 @@
 import { TypesDataFile, TypingsData, NotNeededPackage, fullPackageName, notNeededReadme, settings, getOutputPath } from "./common";
-import { Logger, quietLogger } from "./logging";
+import { Log, Logger, quietLogger } from "./logging";
 import { readFile, readJson, writeFile } from "./util";
 import Versions from "./versions";
 import * as fsp from "fs-promise";
 import * as path from "path";
 
 /** Generates the package to disk */
-export async function generatePackage(typing: TypingsData, availableTypes: TypesDataFile, versions: Versions): Promise<string[]> {
+export async function generatePackage(typing: TypingsData, availableTypes: TypesDataFile, versions: Versions): Promise<Log> {
 	const [log, logResult] = quietLogger();
 
 	const outputPath = getOutputPath(typing);

@@ -1,13 +1,13 @@
 import assert = require("assert");
 import { AnyPackage, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
-import { consoleLogger, quietLogger, LogWithErrors, LoggerWithErrors, quietLoggerWithErrors } from "./logging";
+import { consoleLogger, quietLogger, Log, LogWithErrors, LoggerWithErrors, quietLoggerWithErrors } from "./logging";
 import { parseJson, readJson } from "./util";
 import fetch = require("node-fetch");
 import * as path from "path";
 import * as child_process from "child_process";
 import NpmClient from "./npm-client";
 
-export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: boolean): Promise<string[]> {
+export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: boolean): Promise<Log> {
 	const [log, logResult] = quietLogger();
 
 	const name = pkg.typingsPackageName;

@@ -1,6 +1,6 @@
 import * as yargs from "yargs";
 import { AnyPackage, existsTypesDataFileSync, NotNeededPackage, readNotNeededPackages, readTypesDataFile, TypesDataFile, TypingsData, typingsFromData } from "./lib/common";
-import { Log, quietLogger, moveLogs, writeLog } from "./lib/logging";
+import { Log, logger, moveLogs, writeLog } from "./lib/logging";
 import { done, nAtATime } from "./lib/util";
 import * as generator from "./lib/package-generator";
 import Versions from "./lib/versions";
@@ -17,8 +17,8 @@ if (!module.parent) {
 }
 
 export default async function main(): Promise<void> {
-	console.log("\n## Generating packages\n");
-	const[log, logResult] = quietLogger();
+	const [log, logResult] = logger();
+	log("\n## Generating packages\n");
 	const { typeData, typings, notNeededPackages, versions } = await loadPrerequisites();
 
 	await nAtATime(10, typings, async typing =>

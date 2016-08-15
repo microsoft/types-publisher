@@ -1,7 +1,7 @@
 import * as parser from "./lib/definition-parser";
 import * as yargs from "yargs";
 import { TypingsData, RejectionReason, settings, definitelyTypedPath, isSuccess, isFail, writeDataFile, typesDataFilename } from "./lib/common";
-import { LogWithErrors, quietLogger, loudLogger, moveLogs, writeLog } from "./lib/logging";
+import { LogWithErrors, logger, quietLogger, moveLogs, writeLog } from "./lib/logging";
 import { done, filterAsyncOrdered } from "./lib/util";
 
 import fsp = require("fs-promise");
@@ -40,7 +40,7 @@ async function filterPaths(paths: string[]): Promise<string[]> {
 }
 
 export default async function main(): Promise<void> {
-	const [summaryLog, summaryLogResult] = loudLogger();
+	const [summaryLog, summaryLogResult] = logger();
 	const [detailedLog, detailedLogResult] = quietLogger();
 
 	summaryLog("# Typing Publish Report Summary");
@@ -54,7 +54,7 @@ export default async function main(): Promise<void> {
 	summaryLog(`Found ${folders.length} typings folders in ${settings.definitelyTypedPath}`);
 
 	const outcomes: { [name: string]: number} = {};
-	const [warningLog, warningLogResult] = quietLogger();
+	const [warningLog, warningLogResult] = logger();
 	const typings: { [name: string]: TypingsData } = {};
 
 	for (const s of folders) {
