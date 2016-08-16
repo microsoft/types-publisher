@@ -11,7 +11,7 @@ const assert = require("assert");
 const fsp = require("fs-promise");
 const path = require("path");
 const container = require("./azure-container");
-const common_1 = require("./common");
+const logging_1 = require("./logging");
 const util_1 = require("./util");
 const maxNumberOfOldLogsDirectories = 5;
 function uploadBlobsAndUpdateIssue(timeStamp) {
@@ -29,17 +29,15 @@ exports.default = uploadBlobsAndUpdateIssue;
 // https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
 function uploadBlobs(timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
-        const logger = new common_1.ArrayLog();
+        const [log, logResult] = logging_1.logger();
         const [dataUrls, logUrls] = yield Promise.all([
-            yield uploadDirectory("data", "data", logger),
-            yield uploadLogs(timeStamp, logger)
+            yield uploadDirectory("data", "data", log),
+            yield uploadLogs(timeStamp, log)
         ]);
         // Finally, output blob logs and upload them.
         const blobLogs = "upload-blobs.md";
-        const { infos, errors } = logger.result();
-        assert(!errors.length);
-        yield common_1.writeLog(blobLogs, infos);
-        logUrls.push(yield uploadFile(logsUploadedLocation(timeStamp) + "/" + blobLogs, common_1.logPath(blobLogs)));
+        yield logging_1.writeLog(blobLogs, logResult());
+        logUrls.push(yield uploadFile(logsUploadedLocation(timeStamp) + "/" + blobLogs, logging_1.logPath(blobLogs)));
         return [dataUrls, logUrls];
     });
 }
@@ -71,7 +69,7 @@ function uploadDirectory(uploadedDirPath, dirPath, log, filter) {
 function logAndUploadFile(blobName, filePath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const url = container.urlOfBlob(blobName);
-        log.info(`Uploading ${filePath} to ${url}`);
+        log(`Uploading ${filePath} to ${url}`);
         yield container.createBlobFromFile(blobName, filePath);
         return url;
     });
@@ -87,7 +85,7 @@ function deleteDirectory(uploadedDirPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const blobs = yield container.listBlobs(uploadedDirPath);
         const blobNames = blobs.map(b => b.name);
-        log.info(`Deleting directory ${uploadedDirPath}: delete files ${blobNames}`);
+        log(`Deleting directory ${uploadedDirPath}: delete files ${blobNames}`);
         yield Promise.all(blobNames.map(b => container.deleteBlob(b)));
     });
 }
@@ -99,13 +97,13 @@ function removeOldDirectories(prefix, maxDirectories, log) {
             return path.dirname(name.slice(prefix.length));
         }));
         if (dirNames.length <= maxDirectories) {
-            log.info(`No need to remove old directories: have ${dirNames.length}, can go up to ${maxDirectories}.`);
+            log(`No need to remove old directories: have ${dirNames.length}, can go up to ${maxDirectories}.`);
             return;
         }
         // For ISO 8601 times, sorting lexicographically *is* sorting by time.
         const sortedNames = dirNames.sort();
         const toDelete = sortedNames.slice(0, sortedNames.length - maxDirectories);
-        log.info(`Too many old logs, so removing the following directories: [${toDelete}]`);
+        log(`Too many old logs, so removing the following directories: [${toDelete}]`);
         yield Promise.all(toDelete.map(d => deleteDirectory(prefix + d, log)));
     });
 }

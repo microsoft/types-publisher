@@ -22,10 +22,12 @@ if (!module.parent) {
 }
 function main(forceUpdate) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log("\n## Calculating versions\n");
         const versions = yield versions_1.default.loadFromBlob();
         const changes = [];
         for (const typing of yield common_1.readTypings()) {
             if (versions.recordUpdate(typing, forceUpdate)) {
+                console.log(`Changed: ${typing.typingsPackageName}`);
                 changes.push(typing.typingsPackageName);
             }
         }

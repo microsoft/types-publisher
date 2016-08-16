@@ -13,6 +13,7 @@ const http_1 = require("http");
 const full_1 = require("../full");
 const rolling_logs_1 = require("./rolling-logs");
 const common_1 = require("./common");
+const logging_1 = require("./logging");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
 const util_1 = require("./util");
@@ -32,9 +33,8 @@ function server(key, githubAccessToken, dry) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = server;
-function writeLog(log) {
-    const { infos, errors } = log.result();
-    return rollingLogs.write(infos.concat(errors));
+function writeLog(logs) {
+    return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
 function webResult(dry, timeStamp) {
     return `
@@ -72,13 +72,13 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
     });
     return server;
     function receiveUpdate(req, resp) {
-        const log = new common_1.ArrayLog(true);
+        const [log, logResult] = logging_1.loggerWithErrors();
         const timeStamp = util_1.currentTimeStamp();
         try {
-            work().then(() => writeLog(log)).catch(onError);
+            work().then(() => writeLog(logResult())).catch(onError);
         }
         catch (error) {
-            writeLog(log).then(() => onError(error)).catch(onError);
+            writeLog(logResult()).then(() => onError(error)).catch(onError);
         }
         function onError(error) {
             server.close();

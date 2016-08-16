@@ -30,30 +30,6 @@ exports.notNeededPackagesPath = path.join(exports.settings.definitelyTypedPath, 
     RejectionReason[RejectionReason["ReferencePaths"] = 2] = "ReferencePaths";
 })(exports.RejectionReason || (exports.RejectionReason = {}));
 var RejectionReason = exports.RejectionReason;
-exports.consoleLogger = { info: console.log, error: console.error };
-class ArrayLog {
-    constructor(alsoOutput = true) {
-        this.alsoOutput = alsoOutput;
-        this.infos = [];
-        this.errors = [];
-    }
-    info(message) {
-        if (this.alsoOutput) {
-            console.log(message);
-        }
-        this.infos.push(message);
-    }
-    error(message) {
-        if (this.alsoOutput) {
-            console.error(message);
-        }
-        this.errors.push(message);
-    }
-    result() {
-        return { infos: this.infos, errors: this.errors };
-    }
-}
-exports.ArrayLog = ArrayLog;
 function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }
@@ -66,18 +42,6 @@ function isFail(t) {
     return t.rejectionReason !== undefined;
 }
 exports.isFail = isFail;
-const logDir = path.join(exports.home, "logs");
-function logPath(logName) {
-    return path.join(logDir, logName);
-}
-exports.logPath = logPath;
-function writeLog(logName, contents) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield fsp.ensureDir(logDir);
-        yield util_1.writeFile(logPath(logName), contents.join("\r\n"));
-    });
-}
-exports.writeLog = writeLog;
 function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
         const dataDir = path.join(exports.home, "data");
@@ -114,7 +78,13 @@ function readNotNeededPackages() {
     return __awaiter(this, void 0, void 0, function* () {
         const raw = (yield util_1.readJson(exports.notNeededPackagesPath)).packages;
         for (const pkg of raw) {
+            for (const key in pkg) {
+                if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
+                    throw new Error(`Unexpected key in not-needed package: ${key}`);
+                }
+            }
             assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
+            assert(typeof pkg.asOfVersion === "string" || typeof pkg.asOfVersion === "undefined");
             assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
             pkg.projectName = pkg.sourceRepoURL;
             pkg.packageKind = "not-needed";

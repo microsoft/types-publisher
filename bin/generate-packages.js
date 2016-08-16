@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const logging_1 = require("./lib/logging");
 const util_1 = require("./lib/util");
 const generator = require("./lib/package-generator");
 const versions_1 = require("./lib/versions");
@@ -26,19 +27,20 @@ if (!module.parent) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = [];
-        const { typeData, typings, versions } = yield loadPrerequisites();
+        const [log, logResult] = logging_1.logger();
+        log("\n## Generating packages\n");
+        const { typeData, typings, notNeededPackages, versions } = yield loadPrerequisites();
         yield util_1.nAtATime(10, typings, (typing) => __awaiter(this, void 0, void 0, function* () {
             return logGeneration(typing, yield generator.generatePackage(typing, typeData, versions));
         }));
-        yield util_1.nAtATime(10, yield common_1.readNotNeededPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(10, notNeededPackages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             return logGeneration(pkg, yield generator.generateNotNeededPackage(pkg));
         }));
-        yield common_1.writeLog("package-generator.md", log);
-        function logGeneration(pkg, generateResult) {
+        yield logging_1.writeLog("package-generator.md", logResult());
+        function logGeneration(pkg, logs) {
             return __awaiter(this, void 0, void 0, function* () {
-                log.push(` * ${pkg.libraryName}`);
-                generateResult.log.forEach(line => log.push(`   * ${line}`));
+                log(` * ${pkg.libraryName}`);
+                logging_1.moveLogs(log, logs, line => `   * ${line}`);
             });
         }
     });
@@ -47,20 +49,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(singleName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { typeData, typings, versions } = yield loadPrerequisites();
+        const { typeData, typings, notNeededPackages, versions } = yield loadPrerequisites();
+        let generateResult;
         const typing = typings.find(t => t.typingsPackageName === singleName);
-        if (!typing) {
-            throw new Error(`No package ${singleName} to generate.`);
+        if (typing) {
+            generateResult = yield generator.generatePackage(typing, typeData, versions);
         }
-        const generateResult = yield generator.generatePackage(typing, typeData, versions);
-        console.log(generateResult.log.join("\n"));
+        if (!typing) {
+            const notNeededPackage = notNeededPackages.find(t => t.typingsPackageName === singleName);
+            if (!notNeededPackage) {
+                throw new Error(`No package ${singleName} to generate.`);
+            }
+            generateResult = yield generator.generateNotNeededPackage(notNeededPackage);
+        }
+        console.log(generateResult.join("\n"));
     });
 }
 function loadPrerequisites() {
     return __awaiter(this, void 0, void 0, function* () {
-        const [typeData, versions] = yield Promise.all([yield common_1.readTypesDataFile(), yield versions_1.default.loadFromLocalFile()]);
+        const [typeData, notNeededPackages, versions] = yield Promise.all([yield common_1.readTypesDataFile(), yield common_1.readNotNeededPackages(), yield versions_1.default.loadFromLocalFile()]);
         const typings = common_1.typingsFromData(typeData);
-        return { typeData, typings, versions };
+        return { typeData, typings, notNeededPackages, versions };
     });
 }
 //# sourceMappingURL=generate-packages.js.map

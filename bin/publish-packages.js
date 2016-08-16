@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fs = require("fs");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const logging_1 = require("./lib/logging");
 const npm_client_1 = require("./lib/npm-client");
 const publisher = require("./lib/package-publisher");
 const util_1 = require("./lib/util");
@@ -23,7 +24,7 @@ if (!module.parent) {
         // For testing only. Do not use on real @types repo.
         const shouldUnpublish = !!yargs.argv.unpublish;
         if (singleName && shouldUnpublish) {
-            throw new Error("Select only one --singleName=foo or --shouldUnpublish");
+            throw new Error("Selet only one --single=foo or --shouldUnpublish");
         }
         util_1.done(go());
         function go() {
@@ -46,37 +47,35 @@ if (!module.parent) {
 }
 function main(client, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = [];
+        const [log, logResult] = logging_1.logger();
         if (dry) {
-            console.log("=== DRY RUN ===");
-            log.push("=== DRY RUN ===");
+            log("=== DRY RUN ===");
         }
         const packagesShouldPublish = [];
-        log.push("Checking which packages we should publish");
+        log("Checking which packages we should publish");
         yield util_1.nAtATime(100, yield common_1.readAllPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [shouldPublish, checkLog] = yield publisher.shouldPublish(pkg);
             if (shouldPublish) {
                 packagesShouldPublish.push(pkg);
             }
-            log.push(`Checking ${pkg.libraryName}...`);
+            log(`Checking ${pkg.libraryName}...`);
             writeLogs(checkLog);
         }));
         packagesShouldPublish.sort((pkgA, pkgB) => pkgA.libraryName.localeCompare(pkgB.libraryName));
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.libraryName}...`);
             const publishLog = yield publisher.publishPackage(client, pkg, dry);
-            writeLogs(publishLog);
+            writeLogs({ infos: publishLog, errors: [] });
         }
         function writeLogs(res) {
             for (const line of res.infos) {
-                log.push(`   * ${line}`);
+                log(`   * ${line}`);
             }
             for (const err of res.errors) {
-                log.push(`   * ERROR: ${err}`);
-                console.error(` Error! ${err}`);
+                log(`   * ERROR: ${err}`);
             }
         }
-        yield common_1.writeLog("publishing.md", log);
+        yield logging_1.writeLog("publishing.md", logResult());
         console.log("Done!");
     });
 }

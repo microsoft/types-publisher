@@ -13,6 +13,7 @@ const child_process = require("child_process");
 const yargs = require("yargs");
 const util_1 = require("./lib/util");
 const common_1 = require("./lib/common");
+const logging_1 = require("./lib/logging");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
@@ -24,19 +25,19 @@ if (!module.parent) {
 }
 function main(packageNames) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = new common_1.ArrayLog();
+        const [log, logResult] = logging_1.loggerWithErrors();
         if (!packageNames || !packageNames.length) {
-            console.info("Validating all packages");
+            log.info("Validating all packages");
             packageNames = (yield common_1.readTypings()).map(t => t.typingsPackageName).sort();
         }
         else {
-            console.info("Validating: " + JSON.stringify(packageNames));
+            log.info("Validating: " + JSON.stringify(packageNames));
         }
         yield validatePackages(packageNames, common_1.settings.validateOutputPath, log);
-        const { infos, errors } = log.result();
+        const { infos, errors } = logResult();
         yield Promise.all([
-            common_1.writeLog("validate.md", infos),
-            common_1.writeLog("validate-errors.md", errors)
+            logging_1.writeLog("validate.md", infos),
+            logging_1.writeLog("validate-errors.md", errors)
         ]);
     });
 }
@@ -79,7 +80,7 @@ function validatePackages(packageNames, outPath, log) {
 }
 function validatePackage(packageName, outputDirecory, mainLog) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = new common_1.ArrayLog();
+        const [log, logResult] = logging_1.quietLoggerWithErrors();
         let passed = false;
         try {
             const packageDirectory = path.join(outputDirecory, packageName);
@@ -99,19 +100,10 @@ function validatePackage(packageName, outputDirecory, mainLog) {
             log.info("Failed!");
         }
         // Write the log as one entry to the main log
-        mergeLogs(mainLog, log);
+        logging_1.moveLogsWithErrors(mainLog, logResult());
         console.info(`${packageName} -- ${passed ? "Passed" : "Failed"}.`);
         return passed;
     });
-}
-function mergeLogs(log1, log2) {
-    const { infos, errors } = log2.result();
-    for (const info of infos) {
-        log1.info(info);
-    }
-    for (const error of errors) {
-        log1.error(error);
-    }
 }
 function writePackage(packageDirectory, packageName) {
     return __awaiter(this, void 0, void 0, function* () {

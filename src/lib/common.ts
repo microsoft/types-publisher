@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "fs";
 import * as fsp from "fs-promise";
 import crypto = require("crypto");
 import { install } from "source-map-support";
+import { LogWithErrors } from "./logging";
 import { parseJson, readJson, writeFile } from "./util";
 install();
 if (process.env["LONGJOHN"]) {
@@ -41,6 +42,11 @@ export interface AnyPackage {
 
 export interface NotNeededPackage extends AnyPackage {
 	packageKind: "not-needed";
+	/**
+	 * If this is available, @types typings are deprecated as of this version.
+	 * This is useful for packages that previously had DefinitelyTyped definitions but which now provide their own.
+	 */
+	asOfVersion?: string;
 }
 
 export interface TypesDataFile {
@@ -89,54 +95,12 @@ export enum RejectionReason {
 
 export interface TypingParseFailResult {
 	rejectionReason: RejectionReason;
-	log: string[];
-	warnings: string[];
+	logs: LogWithErrors;
 }
 
 export interface TypingParseSucceedResult {
 	data: TypingsData;
-	log: string[];
-	warnings: string[];
-}
-
-export interface Logger {
-	info(message: string): void;
-	error(message: string): void;
-}
-
-export const consoleLogger: Logger = { info: console.log, error: console.error };
-
-export interface LogResult {
-	infos: string[];
-	errors: string[];
-}
-
-export class ArrayLog implements Logger {
-	private infos: string[];
-	private errors: string[];
-
-	constructor(public alsoOutput = true) {
-		this.infos = [];
-		this.errors = [];
-	}
-
-	info(message: string): void {
-		if (this.alsoOutput) {
-			console.log(message);
-		}
-		this.infos.push(message);
-	}
-
-	error(message: string): void {
-		if (this.alsoOutput) {
-			console.error(message);
-		}
-		this.errors.push(message);
-	}
-
-	result(): LogResult {
-		return { infos: this.infos, errors: this.errors };
-	}
+	logs: LogWithErrors;
 }
 
 export function isNotNeededPackage(pkg: AnyPackage): pkg is NotNeededPackage {
@@ -149,17 +113,6 @@ export function isSuccess(t: TypingParseSucceedResult | TypingParseFailResult): 
 
 export function isFail(t: TypingParseSucceedResult | TypingParseFailResult): t is TypingParseFailResult {
 	return (t as TypingParseFailResult).rejectionReason !== undefined;
-}
-
-const logDir = path.join(home, "logs");
-
-export function logPath(logName: string) {
-	return path.join(logDir, logName);
-}
-
-export async function writeLog(logName: string, contents: string[]): Promise<void> {
-	await fsp.ensureDir(logDir);
-	await writeFile(logPath(logName), contents.join("\r\n"));
 }
 
 export async function writeDataFile(filename: string, content: {}, formatted = true) {
@@ -190,8 +143,15 @@ export async function readTypings(): Promise<TypingsData[]> {
 export async function readNotNeededPackages(): Promise<NotNeededPackage[]> {
 	const raw: any[] = (await readJson(notNeededPackagesPath)).packages;
 	for (const pkg of raw) {
+		for (const key in pkg) {
+			if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
+				throw new Error(`Unexpected key in not-needed package: ${key}`);
+			}
+		}
 		assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
+		assert(typeof pkg.asOfVersion === "string" || typeof pkg.asOfVersion === "undefined");
 		assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
+
 		pkg.projectName = pkg.sourceRepoURL;
 		pkg.packageKind = "not-needed";
 		pkg.globals = [];

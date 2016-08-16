@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const common_1 = require("./lib/common");
+const logging_1 = require("./lib/logging");
 const util_1 = require("./lib/util");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
@@ -20,30 +21,27 @@ if (!module.parent) {
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const infos = yield common_1.readTypings();
-        const libConflicts = yield check(infos, info => info.libraryName, "Library Name");
-        const projConflicts = yield check(infos, info => info.projectName, "Project Name");
-        yield common_1.writeLog("conflicts.md", libConflicts.concat(projConflicts));
+        const [log, logResult] = logging_1.logger();
+        check(infos, info => info.libraryName, "Library Name", log);
+        check(infos, info => info.projectName, "Project Name", log);
+        yield logging_1.writeLog("conflicts.md", logResult());
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function check(infos, func, key) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const lookup = {};
-        const result = [];
-        infos.forEach(info => {
-            const name = func(info);
-            if (name !== undefined) {
-                (lookup[name] || (lookup[name] = [])).push(info.typingsPackageName);
-            }
-        });
-        for (const k of Object.keys(lookup)) {
-            if (lookup[k].length > 1) {
-                result.push(` * Duplicate ${key} descriptions "${k}"`);
-                lookup[k].forEach(n => result.push(`   * ${n}`));
-            }
+function check(infos, func, key, log) {
+    const lookup = {};
+    infos.forEach(info => {
+        const name = func(info);
+        if (name !== undefined) {
+            (lookup[name] || (lookup[name] = [])).push(info.typingsPackageName);
         }
-        return result;
     });
+    for (const k of Object.keys(lookup)) {
+        if (lookup[k].length > 1) {
+            log(` * Duplicate ${key} descriptions "${k}"`);
+            lookup[k].forEach(n => log(`   * ${n}`));
+        }
+    }
 }
 //# sourceMappingURL=check-parse-results.js.map

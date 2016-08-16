@@ -8,33 +8,34 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const common_1 = require("./common");
+const logging_1 = require("./logging");
 const util_1 = require("./util");
 const fsp = require("fs-promise");
 const path = require("path");
 /** Generates the package to disk */
 function generatePackage(typing, availableTypes, versions) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = [];
+        const [log, logResult] = logging_1.quietLogger();
         const outputPath = common_1.getOutputPath(typing);
         yield clearOutputPath(outputPath, log);
-        log.push("Generate package.json, metadata.json, and README.md");
+        log("Generate package.json, metadata.json, and README.md");
         const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), availableTypes);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
-        log.push("Write metadata files to disk");
+        log("Write metadata files to disk");
         const outputs = [
             writeOutputFile("package.json", packageJson),
             writeOutputFile("types-metadata.json", metadataJson),
             writeOutputFile("README.md", readme)
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
-            log.push(`Copy and patch ${file}`);
+            log(`Copy and patch ${file}`);
             let content = yield util_1.readFile(filePath(typing, file));
             content = patchDefinitionFile(content);
             return writeOutputFile(file, content);
         })));
         yield Promise.all(outputs);
-        return { log };
+        return logResult();
         function writeOutputFile(filename, content) {
             return __awaiter(this, void 0, void 0, function* () {
                 const full = path.join(outputPath, filename);
@@ -50,17 +51,17 @@ function generatePackage(typing, availableTypes, versions) {
 exports.generatePackage = generatePackage;
 function generateNotNeededPackage(pkg) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = [];
+        const [log, logResult] = logging_1.quietLogger();
         const outputPath = common_1.getOutputPath(pkg);
         yield clearOutputPath(outputPath, log);
-        log.push("Generate package.json and README.md");
+        log("Generate package.json and README.md");
         const packageJson = createNotNeededPackageJSON(pkg);
         const readme = common_1.notNeededReadme(pkg);
-        log.push("Write metadata files to disk");
+        log("Write metadata files to disk");
         yield writeOutputFile("package.json", packageJson);
         yield writeOutputFile("README.md", readme);
         // Not-needed packages never change version
-        return { log };
+        return logResult();
         function writeOutputFile(filename, content) {
             return util_1.writeFile(path.join(outputPath, filename), content);
         }
@@ -69,9 +70,9 @@ function generateNotNeededPackage(pkg) {
 exports.generateNotNeededPackage = generateNotNeededPackage;
 function clearOutputPath(outputPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        log.push(`Create output path ${outputPath}`);
+        log(`Create output path ${outputPath}`);
         yield fsp.mkdirp(outputPath);
-        log.push(`Clear out old files`);
+        log(`Clear out old files`);
         yield fsp.emptyDir(outputPath);
     });
 }
@@ -150,10 +151,10 @@ function versionString(typing, version) {
     }
     return versionString;
 }
-function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL }) {
+function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL, asOfVersion }) {
     return JSON.stringify({
         name: common_1.fullPackageName(typingsPackageName),
-        version: "0.0.0",
+        version: asOfVersion || "0.0.0",
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",
         scripts: {},

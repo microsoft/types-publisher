@@ -1,35 +1,37 @@
 import assert = require("assert");
-import { AnyPackage, Logger, LogResult, ArrayLog, consoleLogger, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
+import { AnyPackage, fullPackageName, isNotNeededPackage, getOutputPath, notNeededReadme, settings } from "./common";
+import { consoleLogger, quietLogger, Log, LogWithErrors, LoggerWithErrors, quietLoggerWithErrors } from "./logging";
 import { parseJson, readJson } from "./util";
 import fetch = require("node-fetch");
 import * as path from "path";
 import * as child_process from "child_process";
 import NpmClient from "./npm-client";
 
-export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: boolean): Promise<LogResult> {
-	const log = new ArrayLog();
+export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: boolean): Promise<Log> {
+	const [log, logResult] = quietLogger();
 
 	const name = pkg.typingsPackageName;
-	log.info(`Publishing ${name}`);
+	log(`Publishing ${name}`);
 
 	const packageDir = path.join("output", name);
 	const packageJson = await readJson(path.join(packageDir, "package.json"));
+	const version = packageJson.version;
+	assert(typeof version === "string");
 
 	await client.publish(packageDir, packageJson, dry);
-	if (settings.tag && settings.tag !== "latest") { // "latest" is the default tag anyway
-		assert(packageJson.version);
-		await client.tag(name, packageJson.version, settings.tag);
+	if (settings.tag && settings.tag !== "latest" && !dry) { // "latest" is the default tag anyway
+		await client.tag(name, version, settings.tag);
 	}
 
 	if (isNotNeededPackage(pkg)) {
-		log.info(`Deprecating ${name}`);
+		log(`Deprecating ${name}`);
 		const message = notNeededReadme(pkg);
 		if (!dry) {
-			await client.deprecate(name, message);
+			await client.deprecate(name, version, message);
 		}
 	}
 
-	return log.result();
+	return logResult();
 }
 
 // Used for testing only.
@@ -39,8 +41,8 @@ export async function unpublishPackage(pkg: AnyPackage, dry: boolean): Promise<v
 	await runCommand("Unpublish", consoleLogger, dry, args);
 }
 
-export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogResult]> {
-	const log = new ArrayLog();
+export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogWithErrors]> {
+	const [log, logResult] = quietLoggerWithErrors();
 
 	const outputPath = getOutputPath(pkg);
 	// Read package.json for version number we would be publishing
@@ -60,7 +62,7 @@ export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogResul
 		bodyString = await (await fetch(registryUrl)).text();
 	} catch (err) {
 		log.error(JSON.stringify(err));
-		return [false, log.result()];
+		return [false, logResult()];
 	}
 
 	interface NpmRegistryResult {
@@ -72,7 +74,7 @@ export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogResul
 
 	const body: NpmRegistryResult = parseJson(bodyString);
 
-	return [shouldPublish(), log.result()];
+	return [shouldPublish(), logResult()];
 	function shouldPublish() {
 		if (body.error === "Not found") {
 			// OK, just haven't published this one before
@@ -94,7 +96,7 @@ export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogResul
 }
 
 // Returns whether the command succeeded.
-function runCommand(commandDescription: string, log: Logger, dry: boolean, args: string[]): Promise<boolean> {
+function runCommand(commandDescription: string, log: LoggerWithErrors, dry: boolean, args: string[]): Promise<boolean> {
 	const cmd = args.join(" ");
 	log.info(`Run ${cmd}`);
 	if (!dry) {

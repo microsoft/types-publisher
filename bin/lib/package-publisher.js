@@ -9,30 +9,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const assert = require("assert");
 const common_1 = require("./common");
+const logging_1 = require("./logging");
 const util_1 = require("./util");
 const fetch = require("node-fetch");
 const path = require("path");
 const child_process = require("child_process");
 function publishPackage(client, pkg, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = new common_1.ArrayLog();
+        const [log, logResult] = logging_1.quietLogger();
         const name = pkg.typingsPackageName;
-        log.info(`Publishing ${name}`);
+        log(`Publishing ${name}`);
         const packageDir = path.join("output", name);
         const packageJson = yield util_1.readJson(path.join(packageDir, "package.json"));
+        const version = packageJson.version;
+        assert(typeof version === "string");
         yield client.publish(packageDir, packageJson, dry);
-        if (common_1.settings.tag && common_1.settings.tag !== "latest") {
-            assert(packageJson.version);
-            yield client.tag(name, packageJson.version, common_1.settings.tag);
+        if (common_1.settings.tag && common_1.settings.tag !== "latest" && !dry) {
+            yield client.tag(name, version, common_1.settings.tag);
         }
         if (common_1.isNotNeededPackage(pkg)) {
-            log.info(`Deprecating ${name}`);
+            log(`Deprecating ${name}`);
             const message = common_1.notNeededReadme(pkg);
             if (!dry) {
-                yield client.deprecate(name, message);
+                yield client.deprecate(name, version, message);
             }
         }
-        return log.result();
+        return logResult();
     });
 }
 exports.publishPackage = publishPackage;
@@ -41,13 +43,13 @@ function unpublishPackage(pkg, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const name = common_1.fullPackageName(pkg.typingsPackageName);
         const args = ["npm", "unpublish", name, "--force"];
-        yield runCommand("Unpublish", common_1.consoleLogger, dry, args);
+        yield runCommand("Unpublish", logging_1.consoleLogger, dry, args);
     });
 }
 exports.unpublishPackage = unpublishPackage;
 function shouldPublish(pkg) {
     return __awaiter(this, void 0, void 0, function* () {
-        const log = new common_1.ArrayLog();
+        const [log, logResult] = logging_1.quietLoggerWithErrors();
         const outputPath = common_1.getOutputPath(pkg);
         // Read package.json for version number we would be publishing
         const packageJson = yield util_1.readJson(path.join(outputPath, "package.json"));
@@ -64,10 +66,10 @@ function shouldPublish(pkg) {
         }
         catch (err) {
             log.error(JSON.stringify(err));
-            return [false, log.result()];
+            return [false, logResult()];
         }
         const body = util_1.parseJson(bodyString);
-        return [shouldPublish(), log.result()];
+        return [shouldPublish(), logResult()];
         function shouldPublish() {
             if (body.error === "Not found") {
                 // OK, just haven't published this one before

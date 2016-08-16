@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const parser = require("./lib/definition-parser");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const logging_1 = require("./lib/logging");
 const util_1 = require("./lib/util");
 const fsp = require("fs-promise");
 if (!module.parent) {
@@ -21,7 +22,7 @@ function processDir(name) {
         let data;
         let outcome;
         const info = yield parser.getTypingInfo(name);
-        const log = info.log;
+        const logs = info.logs;
         if (common_1.isSuccess(info)) {
             data = info.data;
             outcome = `Succeeded (${info.data.kind})`;
@@ -30,7 +31,7 @@ function processDir(name) {
             data = undefined;
             outcome = `Failed (${common_1.RejectionReason[info.rejectionReason]})`;
         }
-        return { data, log, warnings: info.warnings, outcome: outcome };
+        return { data, logs, outcome: outcome };
     });
 }
 function filterPaths(paths) {
@@ -44,48 +45,48 @@ function filterPaths(paths) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const summaryLog = [];
-        const detailedLog = [];
-        summaryLog.push("# Typing Publish Report Summary");
-        summaryLog.push(`Started at ${(new Date()).toUTCString()}`);
+        const [summaryLog, summaryLogResult] = logging_1.logger();
+        const [detailedLog, detailedLogResult] = logging_1.quietLogger();
+        summaryLog("# Typing Publish Report Summary");
+        summaryLog(`Started at ${(new Date()).toUTCString()}`);
         // TypesData
         const paths = yield fsp.readdir(common_1.settings.definitelyTypedPath);
         const folders = yield filterPaths(paths);
-        summaryLog.push(`Found ${folders.length} typings folders in ${common_1.settings.definitelyTypedPath}`);
+        summaryLog(`Found ${folders.length} typings folders in ${common_1.settings.definitelyTypedPath}`);
         const outcomes = {};
-        const warningLog = [];
+        const [warningLog, warningLogResult] = logging_1.logger();
         const typings = {};
         for (const s of folders) {
             const result = yield processDir(s);
             // Record outcome
             outcomes[result.outcome] = (outcomes[result.outcome] || 0) + 1;
-            detailedLog.push(`# ${s}`);
+            detailedLog(`# ${s}`);
             // Push warnings
-            if (result.warnings.length > 0) {
-                warningLog.push(` * ${s}`);
-                result.warnings.forEach(w => {
-                    warningLog.push(`   * ${w}`);
-                    detailedLog.push(`**Warning**: ${w}`);
+            if (result.logs.errors.length > 0) {
+                warningLog(` * ${s}`);
+                result.logs.errors.forEach(w => {
+                    warningLog(`   * ${w}`);
+                    detailedLog(`**Warning**: ${w}`);
                 });
             }
             if (result.data !== undefined) {
                 typings[s] = result.data;
             }
             // Flush detailed log
-            result.log.forEach(e => detailedLog.push(e));
+            result.logs.infos.forEach(e => detailedLog(e));
         }
-        summaryLog.push("\r\n### Overall Results\r\n");
-        summaryLog.push(" * Pass / fail");
+        summaryLog("\r\n### Overall Results\r\n");
+        summaryLog(" * Pass / fail");
         const outcomeKeys = Object.keys(outcomes);
         outcomeKeys.sort();
         outcomeKeys.forEach(k => {
-            summaryLog.push(`   * ${k}: ${outcomes[k]}`);
+            summaryLog(`   * ${k}: ${outcomes[k]}`);
         });
-        summaryLog.push("\r\n### Warnings\r\n");
-        warningLog.forEach(w => summaryLog.push(w));
+        summaryLog("\r\n### Warnings\r\n");
+        logging_1.moveLogs(summaryLog, warningLogResult());
         yield Promise.all([
-            common_1.writeLog("parser-log-summary.md", summaryLog),
-            common_1.writeLog("parser-log-details.md", detailedLog),
+            logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
+            logging_1.writeLog("parser-log-details.md", detailedLogResult()),
             common_1.writeDataFile(common_1.typesDataFilename, typings)
         ]);
     });
