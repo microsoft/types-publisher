@@ -78,7 +78,8 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 		log.error(entryPointResult.message);
 		return { logs: logResult(), rejectionReason: RejectionReason.TooManyFiles };
 	}
-	const entryPointFilename = entryPointResult.filename;
+	const allEntryPointFilenames = entryPointResult.filenames;
+	const entryPointFilename = allEntryPointFilenames[0];
 	const entryPointContent = await readFile(directory, entryPointFilename);
 
 	const mi = await getModuleInfo(directory, entryPointFilename, log.info);
@@ -114,7 +115,18 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 	}
 
 	const hasPackageJson = await fsp.exists(path.join(directory, "package.json"));
-	const allFiles = hasPackageJson ? mi.declFiles.concat(["package.json"]) : mi.declFiles;
+	const allFiles = mi.declFiles.slice();
+	if (allEntryPointFilenames.length > 1) {
+		log.info("Found more than one entry point:")
+		for (let i = 1; i < allEntryPointFilenames.length; i++) {
+			log.info(`Processing additional entry point: ${allEntryPointFilenames[i]}`);
+			const mi = await getModuleInfo(directory, allEntryPointFilenames[i], log.info);
+			allFiles.concat(mi.declFiles);
+		}
+	}
+	if (hasPackageJson) {
+		allFiles.push("package.json");
+	}
 
 	return {
 		logs: logResult(),
@@ -143,22 +155,33 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 
 interface EntryPointSuccess {
 	kind: "success";
-	filename: string;
+	filenames: string[];
 }
 interface EntryPointFailure {
 	kind: "failure";
 	message: string;
 }
 async function entryPoint(directory: string, folderName: string, log: Logger): Promise<EntryPointSuccess | EntryPointFailure> {
+	// If there is a tsconfig.json with a "files" propoerty use this as the enty point
+	if (await fsp.exists(path.join(directory, "tsconfig.json"))) {
+		const files: string[] = JSON.parse(await readFile(directory, "tsconfig.json")).files;
+		const filenames = files && files.filter(file => file.endsWith(".d.ts"));
+		log(`Found ${filenames.length} '.d.ts' files listed in tsconfig.json (${filenames.join(", ")})`);
+		if (filenames && filenames.length) {
+			return { kind: "success", filenames };
+		}
+	}
+
+	// otherwise, load all files from the directory
 	const declFiles = await readdirRecursive(directory, (file, stats) =>
-		// Only include type declaration files.
+			// Only include type declaration files.
 		stats.isDirectory() || file.endsWith(".d.ts"));
 	declFiles.sort();
 
-	log(`Found ${declFiles.length} '.d.ts' files (${declFiles.join(", ")})`);
+	log(`Found ${declFiles.length} '.d.ts' files in directory (${declFiles.join(", ")})`);
 
 	if (declFiles.length === 1) {
-		return { kind: "success", filename: declFiles[0] };
+		return { kind: "success", filenames: [declFiles[0]] };
 	} else {
 		// You can have [foldername].d.ts, or index.d.ts to rescue yourself from this situation
 		const candidates = [folderName + ".d.ts", "index.d.ts"];
@@ -170,7 +193,7 @@ async function entryPoint(directory: string, folderName: string, log: Logger): P
 			};
 		} else {
 			log(`Used ${filename} as entry point`);
-			return { kind: "success", filename };
+			return { kind: "success", filenames: [filename] };
 		}
 	}
 }
