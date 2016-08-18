@@ -14,12 +14,11 @@ if (!module.parent) {
 	}
 	else {
 		const dry = !!yargs.argv.dry;
-		const fix = !!yargs.argv.fix;
 		const singleName = yargs.argv.single;
 		// For testing only. Do not use on real @types repo.
 		const shouldUnpublish = !!yargs.argv.unpublish;
 
-		if (fix + singleName + shouldUnpublish > 1) {
+		if (singleName && shouldUnpublish) {
 			throw new Error("Select only one of --fix or -single=foo or --shouldUnpublish");
 		}
 
@@ -31,10 +30,7 @@ if (!module.parent) {
 			}
 			else {
 				const client = await NpmClient.create();
-				if (fix) {
-					await republishToFixNotGzipped(client, dry);
-				}
-				else if (singleName) {
+				if (singleName) {
 					await single(client, singleName, dry);
 				}
 				else {
@@ -101,67 +97,4 @@ async function unpublish(dry: boolean): Promise<void> {
 	for (const pkg of await readAllPackages()) {
 		await publisher.unpublishPackage(pkg, dry);
 	}
-}
-
-async function republishToFixNotGzipped(client: NpmClient, dry: boolean): Promise<void> {
-	for (const pkg of await readAllPackages()) {
-		const name = pkg.typingsPackageName;
-		if (await isGzipped(name)) {
-			console.log(`${name} is OK`);
-		}
-		else {
-			console.log(`${name} needs republish`);
-			const publishLog = await publisher.publishPackage(client, pkg, dry);
-			for (const log of publishLog) {
-				console.log(log);
-			}
-		}
-	}
-}
-
-async function isGzipped(packageName: string): Promise<boolean> {
-	const {shasum, tarball} = await fetchInfo(packageName);
-	const tgz = await fetchStream(tarball);
-	const unGzipper = unGzip(tgz);
-	unGzipper.on("data", (chunk: any) => {
-		(<any> tgz).destroy();
-	});
-	try {
-		await streamPromise(unGzipper);
-		return true;
-	}
-	catch (error) {
-		// If there's an error when trying to unzip it, that's probably because it wasn't zipped in the first place.
-		return false;
-	}
-}
-
-function fetchStream(url: string): Promise<NodeJS.ReadableStream> {
-	return new Promise(resolve => {
-		https.get(url, resolve);
-	});
-}
-
-interface Info {
-	shasum: string;
-	tarball: string;
-}
-
-async function fetchInfo(packageName: string): Promise<Info> {
-	return new Promise<Info>((resolve, reject) => {
-		child_process.exec(`npm info ${fullPackageName(packageName)}`, { encoding: "utf8" }, (err, stdout) => {
-			if (err) {
-				reject(err);
-			}
-			else {
-				resolve(getDistSectionOfNpmInfo(stdout));
-			}
-		});
-	});
-}
-
-function getDistSectionOfNpmInfo(info: string): Info {
-	const match = /\{ shasum: '(\w+)',\s*tarball: '([^']+)' \}/m.exec(info);
-	const [shasum, tarball] = match.slice(1);
-	return {shasum, tarball};
 }
