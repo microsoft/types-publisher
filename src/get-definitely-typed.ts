@@ -32,9 +32,15 @@ async function cloneIfNeeded(log: LoggerWithErrors): Promise<void> {
 
 async function checkBranch(log: LoggerWithErrors): Promise<void> {
 	log.info(`Checking that branch is ${settings.sourceBranch}...`);
-	const branch = (await runCmd("git rev-parse --abbrev-ref HEAD", settings.definitelyTypedPath, log)).trim();
-	if (branch !== settings.sourceBranch) {
-		throw new Error(`Must be on ${settings.sourceBranch}; currently on ${branch}`);
+
+	const status = await runCmd("git status", settings.definitelyTypedPath, log);
+	const expectedStatus =
+`On branch ${settings.sourceBranch}
+Your branch is up-to-date with 'origin/${settings.sourceBranch}'.
+nothing to commit, working directory clean
+`;
+	if (status !== expectedStatus) {
+		throw new Error("DefinitelyTyped is at the wrong branch or is not a clean checkout");
 	}
 }
 
