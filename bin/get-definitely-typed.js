@@ -7,73 +7,47 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const assert = require("assert");
 const fsp = require("fs-promise");
-const path = require("path");
-const child_process = require("child_process");
+const nodegit_1 = require("nodegit");
 const common_1 = require("./lib/common");
-const logging_1 = require("./lib/logging");
 const util_1 = require("./lib/util");
 if (!module.parent) {
     util_1.done(main());
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.loggerWithErrors();
-        yield cloneIfNeeded(log);
-        yield checkBranch(log);
-        yield pull(log);
-        yield logging_1.writeLog("get-definitely-typed.md", logging_1.joinLogWithErrors(logResult()));
+        const repo = yield getRepo();
+        yield pull(repo);
+        yield checkStatus(repo);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function cloneIfNeeded(log) {
+function getRepo() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!fsp.exists(common_1.settings.definitelyTypedPath)) {
-            yield runCmd(`git clone ${common_1.settings.sourceRepository}`, path.dirname(common_1.settings.definitelyTypedPath), log);
-            assert(yield fsp.exists(common_1.settings.definitelyTypedPath));
-            yield runCmd(`git checkout ${common_1.settings.sourceBranch}`, common_1.settings.definitelyTypedPath, log);
+        if (fsp.exists(common_1.settings.definitelyTypedPath)) {
+            return yield nodegit_1.Repository.open(common_1.settings.definitelyTypedPath);
+        }
+        else {
+            const repo = yield nodegit_1.Clone(common_1.settings.sourceRepository, common_1.settings.definitelyTypedPath);
+            yield repo.checkoutBranch(common_1.settings.sourceBranch);
+            return repo;
         }
     });
 }
-function checkBranch(log) {
+function pull(repo) {
     return __awaiter(this, void 0, void 0, function* () {
-        log.info(`Checking that branch is ${common_1.settings.sourceBranch}...`);
-        const branch = (yield runCmd("git rev-parse --abbrev-ref HEAD", common_1.settings.definitelyTypedPath, log)).trim();
-        if (branch !== common_1.settings.sourceBranch) {
-            throw new Error(`Must be on ${common_1.settings.sourceBranch}; currently on ${branch}`);
+        yield repo.fetchAll();
+        yield repo.mergeBranches(common_1.settings.sourceBranch, `origin/${common_1.settings.sourceBranch}`);
+    });
+}
+function checkStatus(repo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const statuses = yield repo.getStatus();
+        if (statuses.length) {
+            const changedFiles = statuses.map(s => s.path());
+            throw new Error(`The following files are dirty: ${changedFiles}`);
         }
-    });
-}
-function pull(log) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield runCmd("git pull", common_1.settings.definitelyTypedPath, log);
-    });
-}
-function runCmd(cmd, cwd, log) {
-    log.info(`exec: ${cmd}`);
-    return new Promise((resolve, reject) => {
-        const minute = 60 * 1000;
-        const options = {
-            cwd,
-            timeout: 10 * minute,
-            encoding: "utf8"
-        };
-        child_process.exec(cmd, options, (err, stdout, stderr) => {
-            if (stdout) {
-                log.info(`Response: ${stdout}`);
-            }
-            if (stderr) {
-                log.error(`Error response: ${stderr}`);
-            }
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve(stdout);
-            }
-        });
     });
 }
 //# sourceMappingURL=get-definitely-typed.js.map

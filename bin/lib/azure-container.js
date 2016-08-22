@@ -94,7 +94,7 @@ function listBlobs(prefix) {
     return __awaiter(this, void 0, void 0, function* () {
         const once = (token) => promisifyErrorOrResult(cb => service.listBlobsSegmentedWithPrefix(name, prefix, token, cb));
         const out = [];
-        let token = null;
+        let token = undefined;
         do {
             const { entries, continuationToken } = yield once(token);
             out.push(...entries);

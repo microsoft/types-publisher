@@ -44,6 +44,9 @@ var DeclarationFlags;
 })(DeclarationFlags || (DeclarationFlags = {}));
 function getNamespaceFlags(ns) {
     let result = DeclarationFlags.None;
+    if (!ns.body) {
+        throw new Error("@types should not use shorthand ambient modules");
+    }
     if (ns.body.kind === ts.SyntaxKind.ModuleDeclaration) {
         return getNamespaceFlags(ns.body);
     }
@@ -78,7 +81,7 @@ function getTypingInfo(folderName) {
         if (entryPointResult.kind === "failure") {
             log.info(entryPointResult.message);
             log.error(entryPointResult.message);
-            return { logs: logResult(), rejectionReason: common_1.RejectionReason.TooManyFiles };
+            return { kind: "fail", logs: logResult(), rejectionReason: common_1.RejectionReason.TooManyFiles };
         }
         const entryPointFilename = entryPointResult.filename;
         const entryPointContent = yield readFile(directory, entryPointFilename);
@@ -110,6 +113,7 @@ function getTypingInfo(folderName) {
         const hasPackageJson = yield fsp.exists(path.join(directory, "package.json"));
         const allFiles = hasPackageJson ? mi.declFiles.concat(["package.json"]) : mi.declFiles;
         return {
+            kind: "success",
             logs: logResult(),
             data: {
                 authors,

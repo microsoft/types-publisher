@@ -34,14 +34,6 @@ function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }
 exports.isNotNeededPackage = isNotNeededPackage;
-function isSuccess(t) {
-    return t.data !== undefined;
-}
-exports.isSuccess = isSuccess;
-function isFail(t) {
-    return t.rejectionReason !== undefined;
-}
-exports.isFail = isFail;
 function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
         const dataDir = path.join(exports.home, "data");
@@ -122,9 +114,12 @@ function fullPackageName(typingsPackageName) {
     return `@${exports.settings.scopeName}/${typingsPackageName.toLowerCase()}`;
 }
 exports.fullPackageName = fullPackageName;
-function notNeededReadme({ libraryName, typingsPackageName, sourceRepoURL }) {
-    return `This is a stub types definition for ${libraryName} (${sourceRepoURL}).
-${libraryName} provides its own type definitions, so you don't need ${fullPackageName(typingsPackageName)} installed!`;
+function notNeededReadme({ libraryName, typingsPackageName, sourceRepoURL }, useNewline = true) {
+    const lines = [
+        `This is a stub types definition for ${libraryName} (${sourceRepoURL}).`,
+        `${libraryName} provides its own type definitions, so you don't need ${fullPackageName(typingsPackageName)} installed!`
+    ];
+    return lines.join(useNewline ? "\n" : " ");
 }
 exports.notNeededReadme = notNeededReadme;
 //# sourceMappingURL=common.js.map

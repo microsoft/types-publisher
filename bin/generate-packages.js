@@ -55,7 +55,7 @@ function single(singleName) {
         if (typing) {
             generateResult = yield generator.generatePackage(typing, typeData, versions);
         }
-        if (!typing) {
+        else {
             const notNeededPackage = notNeededPackages.find(t => t.typingsPackageName === singleName);
             if (!notNeededPackage) {
                 throw new Error(`No package ${singleName} to generate.`);

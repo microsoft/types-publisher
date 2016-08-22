@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const assert = require("assert");
 const fetch = require("node-fetch");
 const moment = require("moment");
+const path = require("path");
 const recursiveReaddir = require("recursive-readdir");
 const fsp = require("fs-promise");
 const stream = require("stream");
@@ -58,7 +59,7 @@ function mapAsyncOrdered(arr, mapper) {
 exports.mapAsyncOrdered = mapAsyncOrdered;
 function readdirRecursive(dirPath, keepIf) {
     function relativePath(file) {
-        const prefix = `${dirPath}\\`;
+        const prefix = dirPath + path.sep;
         assert(file.startsWith(prefix));
         return file.slice(prefix.length);
     }

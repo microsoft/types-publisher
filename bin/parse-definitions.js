@@ -23,15 +23,15 @@ function processDir(name) {
         let outcome;
         const info = yield parser.getTypingInfo(name);
         const logs = info.logs;
-        if (common_1.isSuccess(info)) {
+        if (info.kind === "success") {
             data = info.data;
             outcome = `Succeeded (${info.data.kind})`;
         }
-        else if (common_1.isFail(info)) {
+        else {
             data = undefined;
             outcome = `Failed (${common_1.RejectionReason[info.rejectionReason]})`;
         }
-        return { data, logs, outcome: outcome };
+        return { data, logs, outcome };
     });
 }
 function filterPaths(paths) {

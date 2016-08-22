@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const assert = require("assert");
 const fstream_1 = require("fstream");
 const RegClient = require("npm-registry-client");
+const path = require("path");
 const tar_1 = require("tar");
 const url = require("url");
 const common_1 = require("./common");
@@ -36,27 +37,31 @@ class NpmClient {
         });
     }
     publish(publishedDirectory, packageJson, dry) {
-        return new Promise((resolve, reject) => {
-            const body = createTgz(publishedDirectory, reject);
-            const params = {
-                access: "public",
-                auth: this.auth,
-                metadata: packageJson,
-                body
-            };
-            if (dry) {
-                resolve();
-            }
-            else {
-                this.client.publish(registry, params, err => {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve();
-                    }
-                });
-            }
+        return __awaiter(this, void 0, void 0, function* () {
+            const readme = yield util_1.readFile(path.join(publishedDirectory, "README.md"));
+            return new Promise((resolve, reject) => {
+                const body = createTgz(publishedDirectory, reject);
+                const metadata = Object.assign({ readme }, packageJson);
+                const params = {
+                    access: "public",
+                    auth: this.auth,
+                    metadata,
+                    body
+                };
+                if (dry) {
+                    resolve();
+                }
+                else {
+                    this.client.publish(registry, params, err => {
+                        if (err) {
+                            reject(err);
+                        }
+                        else {
+                            resolve();
+                        }
+                    });
+                }
+            });
         });
     }
     tag(packageName, version, tag) {

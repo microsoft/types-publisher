@@ -29,9 +29,10 @@ function publishPackage(client, pkg, dry) {
         }
         if (common_1.isNotNeededPackage(pkg)) {
             log(`Deprecating ${name}`);
-            const message = common_1.notNeededReadme(pkg);
+            // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
+            const message = common_1.notNeededReadme(pkg, /*useNewline*/ false);
             if (!dry) {
-                yield client.deprecate(name, version, message);
+                yield client.deprecate(common_1.fullPackageName(name), version, message);
             }
         }
         return logResult();
@@ -91,7 +92,6 @@ function shouldPublish(pkg) {
     });
 }
 exports.shouldPublish = shouldPublish;
-// Returns whether the command succeeded.
 function runCommand(commandDescription, log, dry, args) {
     const cmd = args.join(" ");
     log.info(`Run ${cmd}`);
@@ -105,18 +105,18 @@ function runCommand(commandDescription, log, dry, args) {
                     log.error(`${commandDescription} failed: ${JSON.stringify(err)}`);
                     log.info(`${commandDescription} failed, refer to error log`);
                     log.error(stderr);
-                    resolve(false);
                 }
                 else {
                     log.info("Ran successfully");
                     log.info(stdout);
-                    resolve(true);
                 }
+                resolve();
             });
         });
     }
     else {
         log.info("(dry run)");
+        return Promise.resolve();
     }
 }
 //# sourceMappingURL=package-publisher.js.map

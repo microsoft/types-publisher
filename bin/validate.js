@@ -52,7 +52,7 @@ function validatePackages(packageNames, outPath, log) {
         const failed = [];
         const passed = [];
         try {
-            fsp.remove(outPath);
+            yield fsp.remove(outPath);
             yield fsp.mkdirp(outPath);
         }
         catch (e) {
@@ -88,8 +88,8 @@ function validatePackage(packageName, outputDirecory, mainLog) {
             log.info("Processing `" + packageName + "`...");
             yield fsp.mkdirp(packageDirectory);
             yield writePackage(packageDirectory, packageName);
-            if ((yield runCommand("npm", log, packageDirectory, "npm install")) &&
-                (yield runCommand("tsc", log, packageDirectory, "tsc"))) {
+            if ((yield runCommand("npm", log, packageDirectory, "../../node_modules/npm/bin/npm-cli.js", "install")) &&
+                (yield runCommand("tsc", log, packageDirectory, "../../node_modules/typescript/lib/tsc.js"))) {
                 yield fsp.remove(packageDirectory);
                 log.info("Passed.");
                 passed = true;
@@ -133,11 +133,11 @@ function writePackage(packageDirectory, packageName) {
     });
 }
 // Returns whether the command succeeded.
-function runCommand(commandDescription, log, directory, ...args) {
-    const cmd = args.join(" ");
-    log.info(`Run ${cmd}`);
+function runCommand(commandDescription, log, directory, cmd, ...args) {
+    const nodeCmd = `node ${cmd} ${args.join(" ")}`;
+    log.info(`Run ${nodeCmd}`);
     return new Promise((resolve, reject) => {
-        child_process.exec(cmd, { encoding: "utf8", cwd: directory }, (err, stdoutBuffer, stderrBuffer) => {
+        child_process.exec(nodeCmd, { encoding: "utf8", cwd: directory }, (err, stdoutBuffer, stderrBuffer) => {
             // These are wrongly typed as Buffer.
             const stdout = stdoutBuffer;
             const stderr = stderrBuffer;
