@@ -69,7 +69,7 @@ declare module "azure-storage" {
 	export interface BlobService {
 		createContainerIfNotExists(container: string, options: CreateContainerOptions, callback: ErrorOrResult<ContainerResult>): void;
 		createWriteStreamToBlockBlob(container: string, blob: string, options: CreateBlobRequestOptions): NodeJS.WritableStream;
-		listBlobsSegmentedWithPrefix(container: string, prefix: string, currentToken: ContinuationToken, callback: ErrorOrResult<ListBlobsResult>): void;
+		listBlobsSegmentedWithPrefix(container: string, prefix: string, currentToken: ContinuationToken | undefined, callback: ErrorOrResult<ListBlobsResult>): void;
 		deleteBlob(container: string, blob: string, callback: ErrorOrResponse): void;
 
 		createOrReplaceAppendBlob(container: string, blob: string, options: CreateBlobRequestOptions, callback: ErrorOrResponse): void;
@@ -234,5 +234,25 @@ declare module "azure-storage" {
 	export interface ListBlobsResult {
 		entries: BlobResult[];
 		continuationToken?: ContinuationToken;
+	}
+}
+
+// Based on http://www.nodegit.org/api/
+declare module "nodegit" {
+	export function Clone(url: string, local_path: string): Promise<Repository>;
+
+	export namespace Repository {
+		export function open(path: string): Repository;
+	}
+
+	export interface Repository {
+		checkoutBranch(branch: string): Promise<void>;
+		fetchAll(): Promise<void>;
+		mergeBranches(to: string, from: string): Promise<void>;
+		getStatus(): Promise<StatusFile[]>;
+	}
+
+	export interface StatusFile {
+		path(): string;
 	}
 }

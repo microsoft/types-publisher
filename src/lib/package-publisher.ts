@@ -25,9 +25,10 @@ export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: bo
 
 	if (isNotNeededPackage(pkg)) {
 		log(`Deprecating ${name}`);
-		const message = notNeededReadme(pkg);
+		// Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
+		const message = notNeededReadme(pkg, /*useNewline*/ false);
 		if (!dry) {
-			await client.deprecate(name, version, message);
+			await client.deprecate(fullPackageName(name), version, message);
 		}
 	}
 
@@ -95,8 +96,7 @@ export async function shouldPublish(pkg: AnyPackage): Promise<[boolean, LogWithE
 	}
 }
 
-// Returns whether the command succeeded.
-function runCommand(commandDescription: string, log: LoggerWithErrors, dry: boolean, args: string[]): Promise<boolean> {
+function runCommand(commandDescription: string, log: LoggerWithErrors, dry: boolean, args: string[]): Promise<void> {
 	const cmd = args.join(" ");
 	log.info(`Run ${cmd}`);
 	if (!dry) {
@@ -109,16 +109,16 @@ function runCommand(commandDescription: string, log: LoggerWithErrors, dry: bool
 					log.error(`${commandDescription} failed: ${JSON.stringify(err)}`);
 					log.info(`${commandDescription} failed, refer to error log`);
 					log.error(stderr);
-					resolve(false);
 				}
 				else {
 					log.info("Ran successfully");
 					log.info(stdout);
-					resolve(true);
 				}
+				resolve();
 			});
 		});
 	} else {
 		log.info("(dry run)");
+		return Promise.resolve();
 	}
 }
