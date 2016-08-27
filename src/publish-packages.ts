@@ -1,10 +1,12 @@
+import * as child_process from "child_process";
 import * as fs from "fs";
+import * as https from "https";
 import * as yargs from "yargs";
-import { AnyPackage, existsTypesDataFileSync, readAllPackages } from "./lib/common";
+import { AnyPackage, existsTypesDataFileSync, fullPackageName, readAllPackages } from "./lib/common";
 import { LogWithErrors, logger, writeLog } from "./lib/logging";
 import NpmClient from "./lib/npm-client";
 import * as publisher from "./lib/package-publisher";
-import { done, nAtATime } from "./lib/util";
+import { done, filterAsyncOrdered, nAtATime, streamPromise, unGzip } from "./lib/util";
 
 if (!module.parent) {
 	if (!existsTypesDataFileSync() || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
@@ -17,7 +19,7 @@ if (!module.parent) {
 		const shouldUnpublish = !!yargs.argv.unpublish;
 
 		if (singleName && shouldUnpublish) {
-			throw new Error("Selet only one --single=foo or --shouldUnpublish");
+			throw new Error("Select only one of --fix or -single=foo or --shouldUnpublish");
 		}
 
 		done(go());

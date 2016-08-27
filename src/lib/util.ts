@@ -125,13 +125,18 @@ export function streamOfString(text: string): NodeJS.ReadableStream {
 	return s;
 }
 
-export function stringOfStream(stream: NodeJS.ReadableStream): Promise<string> {
+export async function stringOfStream(stream: NodeJS.ReadableStream): Promise<string> {
 	let body = "";
 	stream.on("data", (data: Buffer) => {
 		body += data.toString("utf8");
 	});
+	await streamPromise(stream);
+	return body;
+}
+
+export function streamPromise(stream: NodeJS.ReadableStream): Promise<void> {
 	return new Promise((resolve, reject) => {
 		stream.on("error", reject);
-		stream.on("end", () => resolve(body));
+		stream.on("end", resolve);
 	});
 }
