@@ -1,7 +1,7 @@
 import { TypesDataFile, TypingsData, NotNeededPackage, fullPackageName, notNeededReadme, settings, getOutputPath } from "./common";
 import { Log, Logger, quietLogger } from "./logging";
 import { readFile, readJson, writeFile } from "./util";
-import Versions from "./versions";
+import Versions, { VersionInfo } from "./versions";
 import * as fsp from "fs-promise";
 import * as path from "path";
 
@@ -13,7 +13,7 @@ export async function generatePackage(typing: TypingsData, availableTypes: Types
 	await clearOutputPath(outputPath, log);
 
 	log("Generate package.json, metadata.json, and README.md");
-	const packageJson = await createPackageJSON(typing, versions.getVersion(typing), availableTypes);
+	const packageJson = await createPackageJSON(typing, versions.versionInfo(typing), availableTypes);
 	const metadataJson = createMetadataJSON(typing);
 	const readme = createReadme(typing);
 
@@ -88,7 +88,7 @@ function filePath(typing: TypingsData, fileName: string): string {
 	return path.join(typing.root, fileName);
 }
 
-async function createPackageJSON(typing: TypingsData, version: number, availableTypes: { [name: string]: TypingsData }): Promise<string> {
+async function createPackageJSON(typing: TypingsData, { lastVersion, lastContentHash }: VersionInfo, availableTypes: { [name: string]: TypingsData }): Promise<string> {
 	// typing may provide a partial `package.json` for us to complete
 	const pkgPath = filePath(typing, "package.json");
 	interface PartialPackageJson {
@@ -103,14 +103,14 @@ async function createPackageJSON(typing: TypingsData, version: number, available
 	}
 
 	const dependencies = pkg.dependencies || {};
-	addInferredDependencies(dependencies, typing, availableTypes, version);
+	addInferredDependencies(dependencies, typing, availableTypes, lastVersion);
 
 	const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
 
 	// Use the ordering of fields from https://docs.npmjs.com/files/package.json
 	const out = {
 		name: fullPackageName(typing.typingsPackageName),
-		version: versionString(typing, version),
+		version: versionString(typing, lastVersion),
 		description,
 		// keywords,
 		// homepage,
@@ -125,7 +125,8 @@ async function createPackageJSON(typing: TypingsData, version: number, available
 		},
 		scripts: {},
 		dependencies,
-		typings: typing.definitionFilename
+		typings: typing.definitionFilename,
+		typesPublisherContentHash: lastContentHash
 	};
 
 	return JSON.stringify(out, undefined, 4);
