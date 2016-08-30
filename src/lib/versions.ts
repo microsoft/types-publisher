@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { readJsonBlob } from "./azure-container";
-import { TypingsData } from "./common";
+import { AnyPackage, TypingsData } from "./common";
 import { readFile, readJson, writeFile } from "./util";
 
 const versionsFilename = "data/versions.json";
@@ -52,7 +52,7 @@ export default class Versions {
 // List of package names that have changed
 export type Changes = string[];
 
-export async function readChanges(): Promise<Changes> {
+async function readChanges(): Promise<Changes> {
 	return (await readFile(changesFilename)).split("\n");
 }
 
@@ -65,4 +65,15 @@ interface VersionMap {
 		lastVersion: number;
 		lastContentHash: string;
 	};
+}
+
+export async function changedPackages(allPackages: AnyPackage[]): Promise<AnyPackage[]> {
+	const changes = await readChanges();
+	return changes.map(changedPackageName => {
+		const pkg = allPackages.find(p => p.typingsPackageName === changedPackageName);
+		if (pkg === undefined) {
+			throw new Error(`Expected to find a package named ${changedPackageName}`);
+		}
+		return pkg;
+	});
 }
