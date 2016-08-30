@@ -1,4 +1,11 @@
-import { BlobResult, ContainerResult, ContinuationToken, CreateBlobRequestOptions, CreateContainerOptions, ErrorOrResponse, ErrorOrResult, ListBlobsResult, ServicePropertiesResult, createBlobService } from "azure-storage";
+import { BlobService, common, ErrorOrResponse, ErrorOrResult, createBlobService } from "azure-storage";
+type BlobResult = BlobService.BlobResult;
+type ContainerResult = BlobService.ContainerResult;
+type CreateBlobRequestOptions = BlobService.CreateBlobRequestOptions;
+type CreateContainerOptions = BlobService.CreateContainerOptions;
+type ListBlobsResult = BlobService.ListBlobsResult;
+type ContinuationToken = common.ContinuationToken;
+type ServiceProperties = common.models.ServicePropertiesResult.ServiceProperties;
 import * as fs from "fs";
 import * as https from "https";
 import { settings } from "./common";
@@ -8,7 +15,7 @@ const name = settings.azureContainer;
 const service = createBlobService(settings.azureStorageAccount, process.env["AZURE_STORAGE_ACCESS_KEY"]);
 
 export function setCorsProperties(): Promise<void> {
-	const properties: ServicePropertiesResult.ServiceProperties = {
+	const properties: ServiceProperties = {
 		Cors: {
 			CorsRule: [
 				{
