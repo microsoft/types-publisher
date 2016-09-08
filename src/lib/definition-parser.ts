@@ -89,9 +89,9 @@ interface Metadata {
 	projectName: string;
 }
 
-function parseMetadata(entryPointContent: string): Metadata {
+function parseMetadata(mainFileContent: string): Metadata {
 	function regexMatch(rx: RegExp, defaultValue: string): string {
-		const match = rx.exec(entryPointContent);
+		const match = rx.exec(mainFileContent);
 		return match ? match[1] : defaultValue;
 	}
 
@@ -128,20 +128,20 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 
 	log.info(`Reading contents of ${directory}`);
 
-	// There is a *single* entry point, containing metadata comments.
+	// There is a *single* main file, containing metadata comments.
 	// But there may be many entryFilenames, which are the starting points of inferring all files to be included.
-	const entryPointResult = await entryPoint(directory, folderName, log.info);
-	if (entryPointResult.kind === "failure") {
-		log.info(entryPointResult.message);
-		log.error(entryPointResult.message);
+	const mainFileResult = await mainFile(directory, folderName, log.info);
+	if (mainFileResult.kind === "failure") {
+		log.info(mainFileResult.message);
+		log.error(mainFileResult.message);
 		return { kind: "fail", logs: logResult(), rejectionReason: RejectionReason.TooManyFiles };
 	}
-	const entryPointFilename = entryPointResult.filename;
-	const entryPointContent = await readFile(directory, entryPointFilename);
+	const mainFilename = mainFileResult.filename;
+	const mainFileContent = await readFile(directory, mainFilename);
 
-	const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName } = parseMetadata(entryPointContent);
+	const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName } = parseMetadata(mainFileContent);
 
-	const allEntryFilenames = await entryFilesFromTsConfig(directory, log.info) || [entryPointFilename];
+	const allEntryFilenames = await entryFilesFromTsConfig(directory, log.info) || [mainFilename];
 	const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles, fileKind } = await moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log);
 
 	const hasPackageJson = await fsp.exists(path.join(directory, "package.json"));
@@ -153,7 +153,7 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 		logs: logResult(),
 		data: {
 			authors,
-			definitionFilename: entryPointFilename,
+			definitionFilename: mainFilename,
 			libraryDependencies: referencedLibraries,
 			moduleDependencies,
 			libraryMajorVersion,
@@ -174,15 +174,15 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 	};
 }
 
-interface EntryPointSuccess {
+interface MainFileSuccess {
 	kind: "success";
 	filename: string;
 }
-interface EntryPointFailure {
+interface MainFileFailure {
 	kind: "failure";
 	message: string;
 }
-async function entryPoint(directory: string, folderName: string, log: Logger): Promise<EntryPointSuccess | EntryPointFailure> {
+async function mainFile(directory: string, folderName: string, log: Logger): Promise<MainFileSuccess | MainFileFailure> {
 	// otherwise, load all files from the directory
 	const declFiles = await readdirRecursive(directory, (file, stats) =>
 			// Only include type declaration files.
@@ -198,7 +198,7 @@ async function entryPoint(directory: string, folderName: string, log: Logger): P
 		const candidates = [folderName + ".d.ts", "index.d.ts"];
 		const existingCandidates = candidates.filter(c => declFiles.includes(c));
 		if (existingCandidates.length > 1) {
-			throw new Error(`Conflicting entry points: ${existingCandidates}`);
+			throw new Error(`Conflicting main files: ${existingCandidates}`);
 		} else if (!existingCandidates.length) {
 			return {
 				kind: "failure",
