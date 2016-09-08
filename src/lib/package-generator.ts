@@ -142,7 +142,7 @@ function addInferredDependencies(dependencies: { [name: string]: string }, typin
 			// 1st case: Don't add a dependency if it was specified in the package.json or if it has already been added.
 			// 2nd case: If it's not a package we know of, just ignore it.
 			// For example, we may have an import of "http", where the package is depending on "node" to provide that.
-			dependencies[fullPackageName(depdendency)] = "latest";
+			dependencies[fullPackageName(depdendency)] = "*";
 			// To use a non-latest version, that version must be made explicit in the partial package.json from a DefinitelyTyped directory.
 		}
 	}
