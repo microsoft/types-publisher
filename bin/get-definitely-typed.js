@@ -44,8 +44,8 @@ function pull(repo) {
 function checkStatus(repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const statuses = yield repo.getStatus();
-        if (statuses.length) {
-            const changedFiles = statuses.map(s => s.path());
+        const changedFiles = statuses.map(s => s.path()).filter(path => !nodegit_1.Ignore.pathIsIgnored(repo, path));
+        if (changedFiles.length) {
             throw new Error(`The following files are dirty: ${changedFiles}`);
         }
     });

@@ -98,8 +98,8 @@ function getTypingInfo(folderName) {
             return match ? match[1] : defaultValue;
         }
         const authors = regexMatch(/^\/\/ Definitions by: (.+)$/m, "Unknown");
-        const libraryMajorVersion = regexMatch(/^\/\/ Type definitions for [^\d\n]+ v?(\d+)/m, "0");
-        const libraryMinorVersion = regexMatch(/^\/\/ Type definitions for [^\d\n]+ v?\d+\.(\d+)/m, "0");
+        const libraryMajorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0");
+        const libraryMinorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0");
         const libraryName = regexMatch(/^\/\/ Type definitions for (.+)$/m, "Unknown").trim();
         const projectName = regexMatch(/^\/\/ Project: (.+)$/m, "");
         const packageName = path.basename(directory);
@@ -186,7 +186,7 @@ function allReferencedFiles(directory, entryPointFilename, log) {
                 }
                 const src = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
                 all.set(filename, src);
-                const refs = referencedFiles(src, directory, path.dirname(filename));
+                const refs = referencedFiles(src, path.dirname(filename));
                 yield Promise.all(refs.map(ref => recur(filename, ref)));
             });
         }
@@ -198,7 +198,7 @@ function allReferencedFiles(directory, entryPointFilename, log) {
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function referencedFiles(src, directory, subDirectory) {
+function referencedFiles(src, subDirectory) {
     const out = [];
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local

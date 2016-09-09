@@ -13,6 +13,11 @@ const util_1 = require("./util");
 const fsp = require("fs-promise");
 const path = require("path");
 /** Generates the package to disk */
+function generateAnyPackage(pkg, availableTypes, versions) {
+    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg) : generatePackage(pkg, availableTypes, versions);
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = generateAnyPackage;
 function generatePackage(typing, availableTypes, versions) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
@@ -48,7 +53,6 @@ function generatePackage(typing, availableTypes, versions) {
         }
     });
 }
-exports.generatePackage = generatePackage;
 function generateNotNeededPackage(pkg) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
@@ -67,7 +71,6 @@ function generateNotNeededPackage(pkg) {
         }
     });
 }
-exports.generateNotNeededPackage = generateNotNeededPackage;
 function clearOutputPath(outputPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         log(`Create output path ${outputPath}`);

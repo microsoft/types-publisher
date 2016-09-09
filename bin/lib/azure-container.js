@@ -114,7 +114,7 @@ function urlOfBlob(blobName) {
 exports.urlOfBlob = urlOfBlob;
 function promisifyErrorOrResult(callsBack) {
     return new Promise((resolve, reject) => {
-        callsBack((err, result, response) => {
+        callsBack((err, result) => {
             if (err) {
                 reject(err);
             }
@@ -126,7 +126,7 @@ function promisifyErrorOrResult(callsBack) {
 }
 function promisifyErrorOrResponse(callsBack) {
     return new Promise((resolve, reject) => {
-        callsBack((err, response) => {
+        callsBack(err => {
             if (err) {
                 reject(err);
             }

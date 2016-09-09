@@ -105,6 +105,7 @@ function runCommand(commandDescription, log, dry, args) {
                     log.error(`${commandDescription} failed: ${JSON.stringify(err)}`);
                     log.info(`${commandDescription} failed, refer to error log`);
                     log.error(stderr);
+                    reject(new Error(stderr));
                 }
                 else {
                     log.info("Ran successfully");

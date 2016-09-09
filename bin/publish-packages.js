@@ -24,7 +24,7 @@ if (!module.parent) {
         // For testing only. Do not use on real @types repo.
         const shouldUnpublish = !!yargs.argv.unpublish;
         if (singleName && shouldUnpublish) {
-            throw new Error("Selet only one --single=foo or --shouldUnpublish");
+            throw new Error("Select only one of --single=foo or --shouldUnpublish");
         }
         util_1.done(go());
         function go() {

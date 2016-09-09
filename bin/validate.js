@@ -136,7 +136,7 @@ function writePackage(packageDirectory, packageName) {
 function runCommand(commandDescription, log, directory, cmd, ...args) {
     const nodeCmd = `node ${cmd} ${args.join(" ")}`;
     log.info(`Run ${nodeCmd}`);
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
         child_process.exec(nodeCmd, { encoding: "utf8", cwd: directory }, (err, stdoutBuffer, stderrBuffer) => {
             // These are wrongly typed as Buffer.
             const stdout = stdoutBuffer;
