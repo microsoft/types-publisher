@@ -14,9 +14,13 @@ const logging_1 = require("./lib/logging");
 const npm_client_1 = require("./lib/npm-client");
 const publisher = require("./lib/package-publisher");
 const util_1 = require("./lib/util");
+const versions_1 = require("./lib/versions");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync() || !fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
-        console.log("Run parse-definitions and generate-packages first!");
+    if (!common_1.existsTypesDataFileSync()) {
+        console.log("Run parse-definitions first!");
+    }
+    else if (!fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
+        console.log("Run generate-packages first!");
     }
     else {
         const dry = !!yargs.argv.dry;
@@ -51,17 +55,7 @@ function main(client, dry) {
         if (dry) {
             log("=== DRY RUN ===");
         }
-        const packagesShouldPublish = [];
-        log("Checking which packages we should publish");
-        yield util_1.nAtATime(100, yield common_1.readAllPackages(), (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const [shouldPublish, checkLog] = yield publisher.shouldPublish(pkg);
-            if (shouldPublish) {
-                packagesShouldPublish.push(pkg);
-            }
-            log(`Checking ${pkg.libraryName}...`);
-            writeLogs(checkLog);
-        }));
-        packagesShouldPublish.sort((pkgA, pkgB) => pkgA.libraryName.localeCompare(pkgB.libraryName));
+        const packagesShouldPublish = yield versions_1.changedPackages(yield common_1.readAllPackages());
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.libraryName}...`);
             const publishLog = yield publisher.publishPackage(client, pkg, dry);

@@ -33,7 +33,7 @@ class Versions {
         return util_1.writeFile(versionsFilename, this.render());
     }
     recordUpdate(typing, forceUpdate) {
-        const { lastVersion, lastContentHash } = this.getLastVersionAndContentHash(typing);
+        const { lastVersion, lastContentHash } = this.versionInfo(typing);
         const shouldIncrement = forceUpdate || lastContentHash !== typing.contentHash;
         if (shouldIncrement) {
             const key = typing.typingsPackageName;
@@ -42,10 +42,7 @@ class Versions {
         }
         return shouldIncrement;
     }
-    getVersion(typing) {
-        return this.getLastVersionAndContentHash(typing).lastVersion;
-    }
-    getLastVersionAndContentHash(typing) {
+    versionInfo(typing) {
         return this.data[typing.typingsPackageName] || { lastVersion: 0, lastContentHash: "" };
     }
     render() {
@@ -59,9 +56,21 @@ function readChanges() {
         return (yield util_1.readFile(changesFilename)).split("\n");
     });
 }
-exports.readChanges = readChanges;
 function writeChanges(changes) {
     return util_1.writeFile(changesFilename, changes.join("\n"));
 }
 exports.writeChanges = writeChanges;
+function changedPackages(allPackages) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const changes = yield readChanges();
+        return changes.map(changedPackageName => {
+            const pkg = allPackages.find(p => p.typingsPackageName === changedPackageName);
+            if (pkg === undefined) {
+                throw new Error(`Expected to find a package named ${changedPackageName}`);
+            }
+            return pkg;
+        });
+    });
+}
+exports.changedPackages = changedPackages;
 //# sourceMappingURL=versions.js.map

@@ -28,15 +28,20 @@ function currentTimeStamp() {
     return moment().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 }
 exports.currentTimeStamp = currentTimeStamp;
-function nAtATime(n, input, use) {
+function nAtATime(n, inputs, use) {
     return __awaiter(this, void 0, void 0, function* () {
-        let res = [];
-        for (let i = 0; i < input.length; i += n) {
-            const thisInputs = input.slice(i, i + n);
-            const thisBatch = yield Promise.all(thisInputs.map(use));
-            res.push(...thisBatch);
-        }
-        return res;
+        const results = new Array(inputs.length);
+        // We have n "threads" which each run `continuouslyWork`.
+        // They all share `nextIndex`, so each work item is done only once.
+        let nextIndex = 0;
+        yield Promise.all(initArray(n, () => __awaiter(this, void 0, void 0, function* () {
+            while (nextIndex !== inputs.length) {
+                const index = nextIndex;
+                nextIndex++;
+                results[index] = yield use(inputs[index]);
+            }
+        })));
+        return results;
     });
 }
 exports.nAtATime = nAtATime;
@@ -153,4 +158,11 @@ function stringOfStream(stream) {
     });
 }
 exports.stringOfStream = stringOfStream;
+function initArray(length, makeElement) {
+    const arr = new Array(length);
+    for (let i = 0; i < length; i++) {
+        arr[i] = makeElement();
+    }
+    return arr;
+}
 //# sourceMappingURL=util.js.map

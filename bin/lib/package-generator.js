@@ -24,7 +24,7 @@ function generatePackage(typing, availableTypes, versions) {
         const outputPath = common_1.getOutputPath(typing);
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
-        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), availableTypes);
+        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), availableTypes);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
@@ -91,7 +91,7 @@ function createMetadataJSON(typing) {
 function filePath(typing, fileName) {
     return path.join(typing.root, fileName);
 }
-function createPackageJSON(typing, version, availableTypes) {
+function createPackageJSON(typing, { lastVersion, lastContentHash }, availableTypes) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
         const pkgPath = filePath(typing, "package.json");
@@ -101,12 +101,12 @@ function createPackageJSON(typing, version, availableTypes) {
             throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
         }
         const dependencies = pkg.dependencies || {};
-        addInferredDependencies(dependencies, typing, availableTypes, version);
+        addInferredDependencies(dependencies, typing, availableTypes);
         const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
             name: common_1.fullPackageName(typing.typingsPackageName),
-            version: versionString(typing, version),
+            version: versionString(typing, lastVersion),
             description,
             // keywords,
             // homepage,
@@ -121,28 +121,20 @@ function createPackageJSON(typing, version, availableTypes) {
             },
             scripts: {},
             dependencies,
-            typings: typing.definitionFilename
+            typings: typing.definitionFilename,
+            typesPublisherContentHash: lastContentHash
         };
         return JSON.stringify(out, undefined, 4);
     });
 }
-function addInferredDependencies(dependencies, typing, availableTypes, version) {
-    function addDependency(d) {
-        if (dependencies.hasOwnProperty(d) || !availableTypes.hasOwnProperty(d)) {
-            // 1st case: don't add a dependency if it was specified in the package.json or if it has already been added.
+function addInferredDependencies(dependencies, typing, availableTypes) {
+    function addDependency(depdendency) {
+        if (!Object.prototype.hasOwnProperty.call(dependencies, depdendency) && availableTypes.hasOwnProperty(depdendency)) {
+            // 1st case: Don't add a dependency if it was specified in the package.json or if it has already been added.
             // 2nd case: If it's not a package we know of, just ignore it.
             // For example, we may have an import of "http", where the package is depending on "node" to provide that.
-            return;
+            dependencies[common_1.fullPackageName(depdendency)] = "*";
         }
-        const type = availableTypes[d];
-        // In normal releases, we want to allow patch updates, so we use `foo.bar.*`.
-        // In a prerelease, we can only reference *exact* packages.
-        // See https://github.com/npm/node-semver#prerelease-tags
-        const patch = common_1.settings.prereleaseTag ?
-            `${version}-${common_1.settings.prereleaseTag}` :
-            "*";
-        const semver = `${type.libraryMajorVersion}.${type.libraryMinorVersion}.${patch}`;
-        dependencies[common_1.fullPackageName(d)] = semver;
     }
     typing.moduleDependencies.forEach(addDependency);
     typing.libraryDependencies.forEach(addDependency);

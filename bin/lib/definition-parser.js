@@ -72,66 +72,75 @@ function getNamespaceFlags(ns) {
     });
     return result;
 }
-function getTypingInfo(folderName) {
+function parseMetadata(mainFileContent) {
+    function regexMatch(rx, defaultValue) {
+        const match = rx.exec(mainFileContent);
+        return match ? match[1] : defaultValue;
+    }
+    const authors = regexMatch(/^\/\/ Definitions by: (.+)$/m, "Unknown");
+    const libraryMajorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0");
+    const libraryMinorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0");
+    const libraryName = regexMatch(/^\/\/ Type definitions for (.+)$/m, "Unknown").trim();
+    const projectName = regexMatch(/^\/\/ Project: (.+)$/m, "");
+    return { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName };
+}
+function moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.quietLoggerWithErrors();
-        const directory = common_1.definitelyTypedPath(folderName);
-        log.info(`Reading contents of ${directory}`);
-        const entryPointResult = yield entryPoint(directory, folderName, log.info);
-        if (entryPointResult.kind === "failure") {
-            log.info(entryPointResult.message);
-            log.error(entryPointResult.message);
-            return { kind: "fail", logs: logResult(), rejectionReason: common_1.RejectionReason.TooManyFiles };
-        }
-        const entryPointFilename = entryPointResult.filename;
-        const entryPointContent = yield readFile(directory, entryPointFilename);
-        const mi = yield getModuleInfo(directory, entryPointFilename, log.info);
-        let fileKind = getFileKind(mi, log.info);
-        if (mi.declaredModules.length === 1 && fileKind !== DefinitionFileKind.ModuleAugmentation && mi.declaredModules[0].toLowerCase() !== folderName.toLowerCase()) {
+        const mi = yield getModuleInfo(directory, folderName, allEntryFilenames, log.info);
+        const fileKind = getFileKind(mi, log.info);
+        if (mi.declaredModules.length === 1 && fileKind !== DefinitionFileKind.ModuleAugmentation && mi.declaredModules[0].toLowerCase() !== folderName) {
             log.error(`Declared module \`${mi.declaredModules[0]}\` is in folder with incorrect name \`${folderName}\``);
         }
         if (mi.declaredModules.length === 0 && fileKind === DefinitionFileKind.ProperModule) {
             mi.declaredModules.push(folderName);
         }
-        function regexMatch(rx, defaultValue) {
-            const match = rx.exec(entryPointContent);
-            return match ? match[1] : defaultValue;
+        return Object.assign({ fileKind }, mi);
+    });
+}
+function getTypingInfo(folderName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [log, logResult] = logging_1.quietLoggerWithErrors();
+        const directory = common_1.definitelyTypedPath(folderName);
+        if (folderName !== folderName.toLowerCase()) {
+            throw new Error(`Package name \`${folderName}\` should be strictly lowercase`);
         }
-        const authors = regexMatch(/^\/\/ Definitions by: (.+)$/m, "Unknown");
-        const libraryMajorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0");
-        const libraryMinorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0");
-        const libraryName = regexMatch(/^\/\/ Type definitions for (.+)$/m, "Unknown").trim();
-        const projectName = regexMatch(/^\/\/ Project: (.+)$/m, "");
-        const packageName = path.basename(directory);
-        const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
-        if (packageName !== packageName.toLowerCase()) {
-            log.error(`Package name \`${packageName}\` should be strictly lowercase`);
+        log.info(`Reading contents of ${directory}`);
+        // There is a *single* main file, containing metadata comments.
+        // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
+        const mainFileResult = yield mainFile(directory, folderName, log.info);
+        if (mainFileResult.kind === "failure") {
+            log.info(mainFileResult.message);
+            log.error(mainFileResult.message);
+            return { kind: "fail", logs: logResult(), rejectionReason: common_1.RejectionReason.TooManyFiles };
         }
-        if (mi.referencedLibraries.concat(mi.moduleDependencies).some(s => s === libraryName)) {
-            throw new Error(`Package references itself: ${libraryName}`);
-        }
+        const mainFilename = mainFileResult.filename;
+        const mainFileContent = yield readFile(directory, mainFilename);
+        const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName } = parseMetadata(mainFileContent);
+        const allEntryFilenames = (yield entryFilesFromTsConfig(directory, log.info)) || [mainFilename];
+        const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles, fileKind } = yield moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log);
         const hasPackageJson = yield fsp.exists(path.join(directory, "package.json"));
-        const allFiles = hasPackageJson ? mi.declFiles.concat(["package.json"]) : mi.declFiles;
+        const allFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
+        const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
         return {
             kind: "success",
             logs: logResult(),
             data: {
                 authors,
-                definitionFilename: entryPointFilename,
-                libraryDependencies: mi.referencedLibraries,
-                moduleDependencies: mi.moduleDependencies,
+                definitionFilename: mainFilename,
+                libraryDependencies: referencedLibraries,
+                moduleDependencies,
                 libraryMajorVersion,
                 libraryMinorVersion,
                 libraryName,
-                typingsPackageName: folderName.toLowerCase(),
+                typingsPackageName: folderName,
                 projectName,
                 sourceRepoURL,
                 sourceBranch: common_1.settings.sourceBranch,
                 kind: DefinitionFileKind[fileKind],
-                globals: Object.keys(mi.globalSymbols).filter(k => !!(mi.globalSymbols[k] & DeclarationFlags.Value)).sort(),
-                declaredModules: mi.declaredModules,
+                globals: Object.keys(globalSymbols).filter(k => !!(globalSymbols[k] & DeclarationFlags.Value)).sort(),
+                declaredModules,
                 root: path.resolve(directory),
-                files: mi.declFiles,
+                files: declFiles,
                 hasPackageJson,
                 contentHash: yield hash(directory, allFiles)
             }
@@ -139,36 +148,53 @@ function getTypingInfo(folderName) {
     });
 }
 exports.getTypingInfo = getTypingInfo;
-function entryPoint(directory, folderName, log) {
+function mainFile(directory, folderName, log) {
     return __awaiter(this, void 0, void 0, function* () {
+        // otherwise, load all files from the directory
         const declFiles = yield util_1.readdirRecursive(directory, (file, stats) => 
         // Only include type declaration files.
         stats.isDirectory() || file.endsWith(".d.ts"));
         declFiles.sort();
-        log(`Found ${declFiles.length} '.d.ts' files (${declFiles.join(", ")})`);
+        log(`Found ${declFiles.length} '.d.ts' files in directory (${declFiles.join(", ")})`);
         if (declFiles.length === 1) {
             return { kind: "success", filename: declFiles[0] };
         }
         else {
             // You can have [foldername].d.ts, or index.d.ts to rescue yourself from this situation
             const candidates = [folderName + ".d.ts", "index.d.ts"];
-            const filename = candidates.find(c => declFiles.includes(c));
-            if (filename === undefined) {
+            const existingCandidates = candidates.filter(c => declFiles.includes(c));
+            if (existingCandidates.length > 1) {
+                throw new Error(`Conflicting main files: ${existingCandidates}`);
+            }
+            else if (!existingCandidates.length) {
                 return {
                     kind: "failure",
                     message: "Exiting, found either zero or more than one .d.ts file and none of " + candidates.map(c => "`" + c + "`").join(" or ")
                 };
             }
             else {
-                log(`Used ${filename} as entry point`);
-                return { kind: "success", filename };
+                return { kind: "success", filename: existingCandidates[0] };
             }
         }
     });
 }
+function entryFilesFromTsConfig(directory, log) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // If there is a tsconfig.json with a "files" property use this as the entry point
+        if (yield fsp.exists(path.join(directory, "tsconfig.json"))) {
+            const files = JSON.parse(yield readFile(directory, "tsconfig.json")).files;
+            if (files) {
+                const filenames = files.filter(file => file.endsWith(".d.ts"));
+                log(`Found ${filenames.length} '.d.ts' files listed in tsconfig.json (${filenames.join(", ")})`);
+                return filenames;
+            }
+        }
+        return undefined;
+    });
+}
 // See GH#68 for why we don't just include every file
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-function allReferencedFiles(directory, entryPointFilename, log) {
+function allReferencedFiles(directory, entryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const all = new Map();
         function recur(referencedFrom, filename) {
@@ -176,6 +202,8 @@ function allReferencedFiles(directory, entryPointFilename, log) {
                 if (all.has(filename)) {
                     return;
                 }
+                // Placeholder so no other thread will pick up this filename
+                all.set(filename, undefined);
                 log(`Parse ${filename}`);
                 let content;
                 try {
@@ -190,7 +218,7 @@ function allReferencedFiles(directory, entryPointFilename, log) {
                 yield Promise.all(refs.map(ref => recur(filename, ref)));
             });
         }
-        yield recur("", entryPointFilename);
+        yield Promise.all(entryFilenames.map(filename => recur("", filename)));
         return all;
     });
 }
@@ -254,7 +282,7 @@ function imports(src) {
         return match[1];
     }
 }
-function getModuleInfo(directory, entryPointFilename, log) {
+function getModuleInfo(directory, folderName, allEntryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
         let hasUmdDecl = false;
         let isProperModule = false;
@@ -267,7 +295,7 @@ function getModuleInfo(directory, entryPointFilename, log) {
         function recordSymbol(name, flags) {
             globalSymbols[name] = (globalSymbols[name] || DeclarationFlags.None) | flags;
         }
-        const all = yield allReferencedFiles(directory, entryPointFilename, log);
+        const all = yield allReferencedFiles(directory, allEntryFilenames, log);
         for (const src of all.values()) {
             for (const ref of imports(src)) {
                 if (!ref.startsWith(".")) {
@@ -359,6 +387,9 @@ function getModuleInfo(directory, entryPointFilename, log) {
                 }
             }
         }
+        // Some files may reference the main module, but don't include that as a real dependency.
+        referencedLibraries.delete(folderName);
+        moduleDependencies.delete(folderName);
         return {
             declFiles: arrayOf(all.keys()),
             referencedLibraries: arrayOf(referencedLibraries),

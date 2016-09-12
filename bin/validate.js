@@ -14,25 +14,48 @@ const yargs = require("yargs");
 const util_1 = require("./lib/util");
 const common_1 = require("./lib/common");
 const logging_1 = require("./lib/logging");
+const util_2 = require("./lib/util");
+const versions_1 = require("./lib/versions");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
     }
     else {
+        const all = !!yargs.argv.all;
         const packageNames = yargs.argv._;
-        main(packageNames);
-    }
-}
-function main(packageNames) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.loggerWithErrors();
-        if (!packageNames || !packageNames.length) {
-            log.info("Validating all packages");
-            packageNames = (yield common_1.readTypings()).map(t => t.typingsPackageName).sort();
+        if (all && packageNames) {
+            throw new Error("Can't combine --all with listed package names.");
+        }
+        if (all) {
+            console.log("Validating all packages");
+            util_2.done(doAll());
+        }
+        else if (packageNames.length) {
+            console.log("Validating: " + JSON.stringify(packageNames));
+            util_2.done(doValidate(packageNames));
         }
         else {
-            log.info("Validating: " + JSON.stringify(packageNames));
+            main();
         }
+    }
+}
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const changed = yield versions_1.changedPackages(yield common_1.readAllPackages());
+        yield doValidate(changed.map(c => c.typingsPackageName));
+    });
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = main;
+function doAll() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const packageNames = (yield common_1.readTypings()).map(t => t.typingsPackageName).sort();
+        yield doValidate(packageNames);
+    });
+}
+function doValidate(packageNames) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [log, logResult] = logging_1.loggerWithErrors();
         yield validatePackages(packageNames, common_1.settings.validateOutputPath, log);
         const { infos, errors } = logResult();
         yield Promise.all([
@@ -41,8 +64,6 @@ function main(packageNames) {
         ]);
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = main;
 function validatePackages(packageNames, outPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         log.info("");

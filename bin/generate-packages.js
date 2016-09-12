@@ -34,7 +34,7 @@ function main(all = false) {
         const [log, logResult] = logging_1.logger();
         log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
         const { typeData, allPackages, versions } = yield loadPrerequisites();
-        const packages = all ? allPackages : yield changedPackages(allPackages);
+        const packages = all ? allPackages : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, typeData, versions);
             log(` * ${pkg.libraryName}`);
@@ -62,18 +62,6 @@ function loadPrerequisites() {
         const typings = common_1.typingsFromData(typeData);
         const allPackages = typings.concat(notNeededPackages);
         return { typeData, allPackages, versions };
-    });
-}
-function changedPackages(allPackages) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield versions_1.readChanges();
-        return changes.map(changedPackageName => {
-            const pkg = allPackages.find(p => p.typingsPackageName === changedPackageName);
-            if (pkg === undefined) {
-                throw new Error(`Expected to find a package named ${changedPackageName}`);
-            }
-            return pkg;
-        });
     });
 }
 //# sourceMappingURL=generate-packages.js.map
