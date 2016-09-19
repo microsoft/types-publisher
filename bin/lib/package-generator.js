@@ -91,7 +91,7 @@ function createMetadataJSON(typing) {
 function filePath(typing, fileName) {
     return path.join(typing.root, fileName);
 }
-function createPackageJSON(typing, { lastVersion, lastContentHash }, availableTypes) {
+function createPackageJSON(typing, { version, contentHash }, availableTypes) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
         const pkgPath = filePath(typing, "package.json");
@@ -106,7 +106,7 @@ function createPackageJSON(typing, { lastVersion, lastContentHash }, availableTy
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
             name: common_1.fullPackageName(typing.typingsPackageName),
-            version: versionString(typing, lastVersion),
+            version: versionString(typing, version),
             description,
             // keywords,
             // homepage,
@@ -122,7 +122,7 @@ function createPackageJSON(typing, { lastVersion, lastContentHash }, availableTy
             scripts: {},
             dependencies,
             typings: typing.definitionFilename,
-            typesPublisherContentHash: lastContentHash
+            typesPublisherContentHash: contentHash
         };
         return JSON.stringify(out, undefined, 4);
     });

@@ -19,6 +19,7 @@ function createSearchRecord(info, skipDownloads) {
             d: yield getDownloads(),
             r: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
         };
+        // See https://github.com/npm/download-counts
         function getDownloads() {
             return __awaiter(this, void 0, void 0, function* () {
                 if (skipDownloads) {

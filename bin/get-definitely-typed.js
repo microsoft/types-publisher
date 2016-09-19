@@ -26,7 +26,13 @@ exports.default = main;
 function getRepo() {
     return __awaiter(this, void 0, void 0, function* () {
         if (fsp.exists(common_1.settings.definitelyTypedPath)) {
-            return yield nodegit_1.Repository.open(common_1.settings.definitelyTypedPath);
+            const repo = yield nodegit_1.Repository.open(common_1.settings.definitelyTypedPath);
+            const currentBranch = (yield repo.getCurrentBranch()).name();
+            const correctBranch = `refs/heads/${common_1.settings.sourceBranch}`;
+            if (currentBranch !== correctBranch) {
+                throw new Error(`Need to checkout ${correctBranch}, currently on ${currentBranch}`);
+            }
+            return repo;
         }
         else {
             const repo = yield nodegit_1.Clone(common_1.settings.sourceRepository, common_1.settings.definitelyTypedPath);

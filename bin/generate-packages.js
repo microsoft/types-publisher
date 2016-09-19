@@ -58,7 +58,7 @@ function single(singleName) {
 }
 function loadPrerequisites() {
     return __awaiter(this, void 0, void 0, function* () {
-        const [typeData, notNeededPackages, versions] = yield Promise.all([yield common_1.readTypesDataFile(), yield common_1.readNotNeededPackages(), yield versions_1.default.loadFromLocalFile()]);
+        const [typeData, notNeededPackages, versions] = yield Promise.all([common_1.readTypesDataFile(), common_1.readNotNeededPackages(), versions_1.default.load()]);
         const typings = common_1.typingsFromData(typeData);
         const allPackages = typings.concat(notNeededPackages);
         return { typeData, allPackages, versions };

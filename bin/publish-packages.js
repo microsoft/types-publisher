@@ -19,6 +19,9 @@ if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
     }
+    else if (!versions_1.default.existsSync()) {
+        console.log("Run calculate-versions first!");
+    }
     else if (!fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
         console.log("Run generate-packages first!");
     }

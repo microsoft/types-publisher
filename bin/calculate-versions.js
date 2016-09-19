@@ -11,6 +11,7 @@ const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const versions_1 = require("./lib/versions");
 const util_1 = require("./lib/util");
+const logging_1 = require("./lib/logging");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
@@ -22,17 +23,10 @@ if (!module.parent) {
 }
 function main(forceUpdate) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("\n## Calculating versions\n");
-        const versions = yield versions_1.default.loadFromBlob();
-        const changes = [];
-        for (const typing of yield common_1.readTypings()) {
-            if (versions.recordUpdate(typing, forceUpdate)) {
-                console.log(`Changed: ${typing.typingsPackageName}`);
-                changes.push(typing.typingsPackageName);
-            }
-        }
-        yield versions.saveLocally();
+        const typings = yield common_1.readTypings();
+        const { changes, versions } = yield versions_1.default.determineFromNpm(typings, logging_1.consoleLogger.info, forceUpdate);
         yield versions_1.writeChanges(changes);
+        yield versions.save();
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
