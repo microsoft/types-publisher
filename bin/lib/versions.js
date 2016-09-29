@@ -30,7 +30,7 @@ class Versions {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
             const data = {};
-            yield util_1.nAtATime(100, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
+            yield util_1.nAtATime(25, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
                 let { version, contentHash } = yield fetchVersionInfoFromNpm(packageName);
                 if (forceUpdate || pkg.contentHash !== contentHash) {

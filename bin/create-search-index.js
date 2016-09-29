@@ -25,7 +25,7 @@ function main(skipDownloads, full) {
     return __awaiter(this, void 0, void 0, function* () {
         let packages = yield common_1.readAllPackages();
         console.log(`Loaded ${packages.length} entries`);
-        const records = yield util_1.nAtATime(100, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads));
+        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads));
         // Most downloads first
         records.sort((a, b) => b.d - a.d);
         console.log(`Done generating search index`);

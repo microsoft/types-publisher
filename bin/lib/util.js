@@ -66,7 +66,7 @@ function readdirRecursive(dirPath, keepIf) {
     function relativePath(file) {
         const prefix = dirPath + path.sep;
         assert(file.startsWith(prefix));
-        return file.slice(prefix.length);
+        return normalizeSlashes(file.slice(prefix.length));
     }
     function ignoreRelative(file, stats) {
         return !keepIf(relativePath(file), stats);
@@ -165,4 +165,8 @@ function initArray(length, makeElement) {
     }
     return arr;
 }
+function normalizeSlashes(path) {
+    return path.replace(/\\/g, "/");
+}
+exports.normalizeSlashes = normalizeSlashes;
 //# sourceMappingURL=util.js.map

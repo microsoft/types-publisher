@@ -243,7 +243,7 @@ function referencedFiles(src, subDirectory) {
         const full = path.normalize(path.join(subDirectory, ref));
         // If the *normalized* path starts with "..", then it reaches outside of srcDirectory.
         if (!full.startsWith("..")) {
-            out.push(full);
+            out.push(util_1.normalizeSlashes(full));
         }
     }
 }
