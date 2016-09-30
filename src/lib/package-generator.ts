@@ -147,7 +147,7 @@ function addInferredDependencies(dependencies: Dependencies, peerDependencies: D
 	function addDependency(dependency: string): void {
 		const typesDependency = fullPackageName(dependency);
 
-		// An dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
+		// A dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
 		function handlesDependency(deps: Dependencies): boolean {
 			return hasOwnProperty(deps, dependency) || hasOwnProperty(deps, typesDependency);
 		}
