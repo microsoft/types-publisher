@@ -169,4 +169,8 @@ function normalizeSlashes(path) {
     return path.replace(/\\/g, "/");
 }
 exports.normalizeSlashes = normalizeSlashes;
+function hasOwnProperty(object, propertyName) {
+    return Object.prototype.hasOwnProperty.call(object, propertyName);
+}
+exports.hasOwnProperty = hasOwnProperty;
 //# sourceMappingURL=util.js.map

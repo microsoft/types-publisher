@@ -98,7 +98,7 @@ function computeHash(content) {
     // Normalize line endings
     content = content.replace(/\r\n?/g, "\n");
     const h = crypto.createHash("sha256");
-    h.update(content, "utf-8");
+    h.update(content, "utf8");
     return h.digest("hex");
 }
 exports.computeHash = computeHash;

@@ -96,13 +96,14 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes) {
         // typing may provide a partial `package.json` for us to complete
         const pkgPath = filePath(typing, "package.json");
         let pkg = typing.hasPackageJson ? yield util_1.readJson(pkgPath) : {};
-        const ignoredField = Object.keys(pkg).find(field => !["dependencies", "description"].includes(field));
+        const ignoredField = Object.keys(pkg).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
         // Kludge: ignore "scripts" (See https://github.com/DefinitelyTyped/definition-tester/issues/35)
         if (ignoredField && ignoredField !== "scripts") {
             throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
         }
         const dependencies = pkg.dependencies || {};
-        addInferredDependencies(dependencies, typing, availableTypes);
+        const peerDependencies = pkg.peerDependencies || {};
+        addInferredDependencies(dependencies, peerDependencies, typing, availableTypes);
         const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
@@ -122,19 +123,26 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes) {
             },
             scripts: {},
             dependencies,
+            peerDependencies,
             typings: typing.definitionFilename,
             typesPublisherContentHash: contentHash
         };
         return JSON.stringify(out, undefined, 4);
     });
 }
-function addInferredDependencies(dependencies, typing, availableTypes) {
-    function addDependency(depdendency) {
-        if (!Object.prototype.hasOwnProperty.call(dependencies, depdendency) && availableTypes.hasOwnProperty(depdendency)) {
-            // 1st case: Don't add a dependency if it was specified in the package.json or if it has already been added.
-            // 2nd case: If it's not a package we know of, just ignore it.
+/** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
+function addInferredDependencies(dependencies, peerDependencies, typing, availableTypes) {
+    function addDependency(dependency) {
+        const typesDependency = common_1.fullPackageName(dependency);
+        // A dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
+        function handlesDependency(deps) {
+            return util_1.hasOwnProperty(deps, dependency) || util_1.hasOwnProperty(deps, typesDependency);
+        }
+        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && util_1.hasOwnProperty(availableTypes, dependency)) {
+            // 1st/2nd case: Don't add a dependency if it was specified in the package.json or if it has already been added.
+            // 3rd case: If it's not a package we know of, just ignore it.
             // For example, we may have an import of "http", where the package is depending on "node" to provide that.
-            dependencies[common_1.fullPackageName(depdendency)] = "*";
+            dependencies[typesDependency] = "*";
         }
     }
     typing.moduleDependencies.forEach(addDependency);

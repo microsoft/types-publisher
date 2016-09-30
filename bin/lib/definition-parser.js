@@ -383,7 +383,7 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
                         // Already handled these in `imports`
                         break;
                     default:
-                        throw new Error(`Bad node in ${path.join(directory, src.fileName)}: ts.SyntaxKind[node.kind])`);
+                        throw new Error(`Bad node in ${path.join(directory, src.fileName)}: '${node.getText()}' is of kind ${ts.SyntaxKind[node.kind]}`);
                 }
             }
         }
