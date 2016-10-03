@@ -152,12 +152,14 @@ function checkSignature(key: string, data: string, headers: any, log: LoggerWith
 	log.error(`Data is: ${data}`);
 	log.error("");
 	return false;
+}
 
-	// Use a constant-time compare to prevent timing attacks
-	function stringEqualsConstantTime(s1: string, s2: string): boolean {
-		// `timingSafeEqual` throws if they don't have the same length.
-		return s1.length === s2.length && timingSafeEqual(new Buffer(s1), new Buffer(s2));
-	}
+// Use a constant-time compare to prevent timing attacks
+function stringEqualsConstantTime(actual: string, expected: string): boolean {
+	// `timingSafeEqual` throws if they don't have the same length.
+	const actualBuffer = new Buffer(expected.length);
+	actualBuffer.write(actual);
+	return timingSafeEqual(actualBuffer, new Buffer(expected));
 }
 
 export function expectedSignature(key: string, data: string): string {
