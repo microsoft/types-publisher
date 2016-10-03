@@ -34,6 +34,9 @@ interface PublishSettings {
 	// Name of the azure container.
 	azureContainer: string;
 
+	// URL of azure keyvault.
+	azureKeyvault: string;
+
 	// Issue in types-publisher that we will use to report webhook errors.
 	errorsIssue: string;
 }

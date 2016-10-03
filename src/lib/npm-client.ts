@@ -5,6 +5,7 @@ import * as path from "path";
 import { Pack } from "tar";
 import * as url from "url";
 import { settings } from "./common";
+import { getSecret, Secret } from "./secrets";
 import { gzip, readFile } from "./util";
 
 const registry = settings.npmRegistry;
@@ -17,10 +18,7 @@ function packageUrl(packageName: string): string {
 
 export default class NpmClient {
 	static async create(): Promise<NpmClient> {
-		const password = process.env.NPM_PASSWORD;
-		if (!password) {
-			throw new Error("Must provide NPM_PASSWORD");
-		}
+		const password = await getSecret(Secret.NPM_PASSWORD);
 		const client = new RegClient({});
 		return new this(client, await logIn(client, password));
 	}
@@ -77,6 +75,8 @@ export default class NpmClient {
 }
 
 async function logIn(client: RegClient, password: string): Promise<RegClient.Credentials> {
+	console.log(password);
+
 	// Based on https://github.com/npm/npm-registry-client/issues/135#issuecomment-207410721
 	const user = {
 		_id: "org.couchdb.user:" + username,
