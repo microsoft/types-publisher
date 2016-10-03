@@ -313,11 +313,8 @@ function imports(src: ts.SourceFile): string[] {
 				}
 
 				case ts.SyntaxKind.ModuleDeclaration: {
-					let decl = node as ts.ModuleDeclaration;
-					while (decl.body !== undefined && decl.body.kind === ts.SyntaxKind.ModuleDeclaration) {
-						decl = decl.body as ts.ModuleDeclaration;
-					}
-					if (decl.body !== undefined) {
+					const decl = node as ts.ModuleDeclaration;
+					if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
 						findImports((decl.body as ts.ModuleBlock).statements);
 					}
 					break;
