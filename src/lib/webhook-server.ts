@@ -1,5 +1,4 @@
-import bufferEqualsConstantTime = require("buffer-equals-constant");
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { createServer, IncomingMessage, Server, ServerResponse } from "http";
 import full from "../full";
 import RollingLogs from "./rolling-logs";
@@ -156,7 +155,8 @@ function checkSignature(key: string, data: string, headers: any, log: LoggerWith
 
 	// Use a constant-time compare to prevent timing attacks
 	function stringEqualsConstantTime(s1: string, s2: string): boolean {
-		return bufferEqualsConstantTime(new Buffer(s1), new Buffer(s2));
+		// `timingSafeEqual` throws if they don't have the same length.
+		return s1.length === s2.length && timingSafeEqual(new Buffer(s1), new Buffer(s2));
 	}
 }
 
