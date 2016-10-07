@@ -17,13 +17,19 @@ if (!module.parent) {
     }
     else {
         const skipDownloads = yargs.argv.skipDownloads;
-        const full = yargs.argv.full;
-        util_1.done(main(skipDownloads, full));
+        const single = yargs.argv.single;
+        if (single) {
+            util_1.done(doSingle(single, skipDownloads));
+        }
+        else {
+            const full = yargs.argv.full;
+            util_1.done(main(skipDownloads, full));
+        }
     }
 }
 function main(skipDownloads, full) {
     return __awaiter(this, void 0, void 0, function* () {
-        let packages = yield common_1.readAllPackages();
+        const packages = yield common_1.readAllPackages();
         console.log(`Loaded ${packages.length} entries`);
         const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads));
         // Most downloads first
@@ -38,6 +44,13 @@ function main(skipDownloads, full) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
+function doSingle(name, skipDownloads) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pkg = yield common_1.readPackage(name);
+        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads);
+        console.log(verboseRecord(record));
+    });
+}
 function verboseRecord(r) {
     return renameProperties(r, {
         t: "typePackageName",

@@ -11,51 +11,71 @@ const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
 const https = require("https");
 const common_1 = require("./common");
+const secrets_1 = require("./secrets");
 const util_1 = require("./util");
 const name = common_1.settings.azureContainer;
-const service = azure_storage_1.createBlobService(common_1.settings.azureStorageAccount, process.env["AZURE_STORAGE_ACCESS_KEY"]);
-function setCorsProperties() {
-    const properties = {
-        Cors: {
-            CorsRule: [
-                {
-                    AllowedOrigins: ["*"],
-                    AllowedMethods: ["GET"],
-                    AllowedHeaders: [],
-                    ExposedHeaders: [],
-                    MaxAgeInSeconds: 60 * 60 * 24 // 1 day
-                }
-            ]
-        }
-    };
-    return promisifyErrorOrResponse(cb => service.setServiceProperties(properties, cb));
+class BlobWriter {
+    constructor(service) {
+        this.service = service;
+    }
+    static create() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new BlobWriter(azure_storage_1.createBlobService(common_1.settings.azureStorageAccount, yield secrets_1.getSecret(secrets_1.Secret.AZURE_STORAGE_ACCESS_KEY)));
+        });
+    }
+    setCorsProperties() {
+        const properties = {
+            Cors: {
+                CorsRule: [
+                    {
+                        AllowedOrigins: ["*"],
+                        AllowedMethods: ["GET"],
+                        AllowedHeaders: [],
+                        ExposedHeaders: [],
+                        MaxAgeInSeconds: 60 * 60 * 24 // 1 day
+                    }
+                ]
+            }
+        };
+        return promisifyErrorOrResponse(cb => this.service.setServiceProperties(properties, cb));
+    }
+    ensureCreated(options) {
+        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(name, options, cb)).then(() => { });
+    }
+    createBlobFromFile(blobName, fileName) {
+        return this.createBlobFromStream(blobName, fs.createReadStream(fileName));
+    }
+    createBlobFromText(blobName, text) {
+        return this.createBlobFromStream(blobName, util_1.streamOfString(text));
+    }
+    listBlobs(prefix) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const once = (token) => promisifyErrorOrResult(cb => this.service.listBlobsSegmentedWithPrefix(name, prefix, token, cb));
+            const out = [];
+            let token = undefined;
+            do {
+                const { entries, continuationToken } = yield once(token);
+                out.push(...entries);
+                token = continuationToken;
+            } while (token);
+            return out;
+        });
+    }
+    deleteBlob(blobName) {
+        return promisifyErrorOrResponse(cb => this.service.deleteBlob(name, blobName, cb));
+    }
+    createBlobFromStream(blobName, stream) {
+        const options = {
+            contentSettings: {
+                contentEncoding: "GZIP",
+                contentType: "application/json; charset=utf-8"
+            }
+        };
+        return streamDone(util_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(name, blobName, options)));
+    }
 }
-exports.setCorsProperties = setCorsProperties;
-function ensureCreated(options) {
-    return promisifyErrorOrResult(cb => service.createContainerIfNotExists(name, options, cb)).then(() => { });
-}
-exports.ensureCreated = ensureCreated;
-function createBlobFromFile(blobName, fileName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return createBlobFromStream(blobName, fs.createReadStream(fileName));
-    });
-}
-exports.createBlobFromFile = createBlobFromFile;
-function createBlobFromText(blobName, text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return createBlobFromStream(blobName, util_1.streamOfString(text));
-    });
-}
-exports.createBlobFromText = createBlobFromText;
-function createBlobFromStream(blobName, stream) {
-    const options = {
-        contentSettings: {
-            contentEncoding: "GZIP",
-            contentType: "application/json; charset=utf-8"
-        }
-    };
-    return streamDone(util_1.gzip(stream).pipe(service.createWriteStreamToBlockBlob(name, blobName, options)));
-}
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = BlobWriter;
 function streamDone(stream) {
     return new Promise((resolve, reject) => {
         stream.on("error", reject).on("finish", resolve);
@@ -90,24 +110,6 @@ function readJsonBlob(blobName) {
     });
 }
 exports.readJsonBlob = readJsonBlob;
-function listBlobs(prefix) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const once = (token) => promisifyErrorOrResult(cb => service.listBlobsSegmentedWithPrefix(name, prefix, token, cb));
-        const out = [];
-        let token = undefined;
-        do {
-            const { entries, continuationToken } = yield once(token);
-            out.push(...entries);
-            token = continuationToken;
-        } while (token);
-        return out;
-    });
-}
-exports.listBlobs = listBlobs;
-function deleteBlob(blobName) {
-    return promisifyErrorOrResponse(cb => service.deleteBlob(name, blobName, cb));
-}
-exports.deleteBlob = deleteBlob;
 function urlOfBlob(blobName) {
     return `https://${name}.blob.core.windows.net/${name}/${blobName}`;
 }

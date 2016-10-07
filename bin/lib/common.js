@@ -56,6 +56,24 @@ function readTypesDataFile() {
     });
 }
 exports.readTypesDataFile = readTypesDataFile;
+/**
+ * Read all typings and extract a single one.
+ * Do *not* call this in a loop; use `readTypings` instead.
+ */
+function readPackage(packageName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return getPackage(yield readTypesDataFile(), packageName);
+    });
+}
+exports.readPackage = readPackage;
+function getPackage(typings, packageName) {
+    const pkg = typings[packageName];
+    if (pkg === undefined) {
+        throw new Error(`Can't find package ${packageName}`);
+    }
+    return pkg;
+}
+exports.getPackage = getPackage;
 function typingsFromData(typeData) {
     return Object.keys(typeData).map(packageName => typeData[packageName]);
 }

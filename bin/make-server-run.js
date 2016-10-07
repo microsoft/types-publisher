@@ -10,14 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fetch = require("node-fetch");
 const common_1 = require("./lib/common");
 const util_1 = require("./lib/util");
+const secrets_1 = require("./lib/secrets");
 const webhook_server_1 = require("./lib/webhook-server");
 const yargs = require("yargs");
 if (!module.parent) {
     const remote = yargs.argv.remote;
-    const key = process.env["GITHUB_SECRET"];
-    if (!key) {
-        throw new Error("Must provide GITHUB_SECRET");
-    }
     function getPort() {
         const port = parseInt(process.env["PORT"], 10);
         if (!port) {
@@ -26,10 +23,11 @@ if (!module.parent) {
         return port;
     }
     const url = remote ? "http://types-publisher.azurewebsites.net" : `http://localhost:${getPort()}`;
-    util_1.done(main(key, url));
+    util_1.done(main(url));
 }
-function main(key, url) {
+function main(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        const key = yield secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);
         const body = JSON.stringify({ ref: `refs/heads/${common_1.settings.sourceBranch}` });
         const headers = { "x-hub-signature": webhook_server_1.expectedSignature(key, body) };
         const resp = yield fetch(url, { method: "POST", body, headers });

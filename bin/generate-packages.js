@@ -47,11 +47,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(singleName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { typeData, allPackages, versions } = yield loadPrerequisites();
-        const pkg = allPackages.find(t => t.typingsPackageName === singleName);
-        if (!pkg) {
-            throw new Error(`No package ${singleName} to generate.`);
-        }
+        const { typeData, versions } = yield loadPrerequisites();
+        const pkg = common_1.getPackage(typeData, singleName);
         const logs = yield package_generator_1.default(pkg, typeData, versions);
         console.log(logs.join("\n"));
     });

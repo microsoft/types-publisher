@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const bufferEqualsConstantTime = require("buffer-equals-constant");
 const crypto_1 = require("crypto");
 const http_1 = require("http");
 const full_1 = require("../full");
@@ -17,7 +16,6 @@ const logging_1 = require("./logging");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
 const util_1 = require("./util");
-const rollingLogs = new rolling_logs_1.default("webhook-logs.md", 1000);
 function server(key, githubAccessToken, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
@@ -33,7 +31,7 @@ function server(key, githubAccessToken, dry) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = server;
-function writeLog(logs) {
+function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
 function webResult(dry, timeStamp) {
@@ -57,6 +55,7 @@ function webResult(dry, timeStamp) {
 }
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
 function listenToGithub(key, githubAccessToken, dry, onUpdate) {
+    const rollingLogs = rolling_logs_1.default.create("webhook-logs.md", 1000);
     const webText = webResult(dry, util_1.currentTimeStamp());
     const server = http_1.createServer((req, resp) => {
         switch (req.method) {
@@ -75,10 +74,10 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
         const [log, logResult] = logging_1.loggerWithErrors();
         const timeStamp = util_1.currentTimeStamp();
         try {
-            work().then(() => writeLog(logResult())).catch(onError);
+            work().then(() => rollingLogs.then(logs => writeLog(logs, logResult()))).catch(onError);
         }
         catch (error) {
-            writeLog(logResult()).then(() => onError(error)).catch(onError);
+            rollingLogs.then(logs => writeLog(logs, logResult())).then(() => onError(error)).catch(onError);
         }
         function onError(error) {
             server.close();
@@ -155,10 +154,13 @@ function checkSignature(key, data, headers, log) {
     log.error(`Data is: ${data}`);
     log.error("");
     return false;
-    // Use a constant-time compare to prevent timing attacks
-    function stringEqualsConstantTime(s1, s2) {
-        return bufferEqualsConstantTime(new Buffer(s1), new Buffer(s2));
-    }
+}
+// Use a constant-time compare to prevent timing attacks
+function stringEqualsConstantTime(actual, expected) {
+    // `timingSafeEqual` throws if they don't have the same length.
+    const actualBuffer = new Buffer(expected.length);
+    actualBuffer.write(actual);
+    return crypto_1.timingSafeEqual(actualBuffer, new Buffer(expected));
 }
 function expectedSignature(key, data) {
     const hmac = crypto_1.createHmac("sha1", key);

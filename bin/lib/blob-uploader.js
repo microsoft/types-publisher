@@ -10,16 +10,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const assert = require("assert");
 const fsp = require("fs-promise");
 const path = require("path");
-const container = require("./azure-container");
+const azure_container_1 = require("./azure-container");
 const logging_1 = require("./logging");
 const util_1 = require("./util");
 const maxNumberOfOldLogsDirectories = 5;
 function uploadBlobsAndUpdateIssue(timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
+        const container = yield azure_container_1.default.create();
         yield container.ensureCreated({ publicAccessLevel: "blob" });
         yield container.setCorsProperties();
-        const [dataUrls, logUrls] = yield uploadBlobs(timeStamp);
-        yield uploadIndex(timeStamp, dataUrls, logUrls);
+        const [dataUrls, logUrls] = yield uploadBlobs(container, timeStamp);
+        yield uploadIndex(container, timeStamp, dataUrls, logUrls);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -27,17 +28,17 @@ exports.default = uploadBlobsAndUpdateIssue;
 ;
 // View uploaded files at:
 // https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
-function uploadBlobs(timeStamp) {
+function uploadBlobs(container, timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         const [dataUrls, logUrls] = yield Promise.all([
-            yield uploadDirectory("data", "data", log),
-            yield uploadLogs(timeStamp, log)
+            yield uploadDirectory(container, "data", "data", log),
+            yield uploadLogs(container, timeStamp, log)
         ]);
         // Finally, output blob logs and upload them.
         const blobLogs = "upload-blobs.md";
         yield logging_1.writeLog(blobLogs, logResult());
-        logUrls.push(yield uploadFile(logsUploadedLocation(timeStamp) + "/" + blobLogs, logging_1.logPath(blobLogs)));
+        logUrls.push(yield uploadFile(container, logsUploadedLocation(timeStamp) + "/" + blobLogs, logging_1.logPath(blobLogs)));
         return [dataUrls, logUrls];
     });
 }
@@ -47,13 +48,13 @@ const logsPrefix = logsDirectoryName + "/";
 function logsUploadedLocation(timeStamp) {
     return logsPrefix + timeStamp;
 }
-function uploadLogs(timeStamp, log) {
+function uploadLogs(container, timeStamp, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield removeOldDirectories(logsPrefix, maxNumberOfOldLogsDirectories - 1, log);
-        return yield uploadDirectory(logsUploadedLocation(timeStamp), logsDirectoryName, log, f => f !== "upload-blobs.md");
+        yield removeOldDirectories(container, logsPrefix, maxNumberOfOldLogsDirectories - 1, log);
+        return yield uploadDirectory(container, logsUploadedLocation(timeStamp), logsDirectoryName, log, f => f !== "upload-blobs.md");
     });
 }
-function uploadDirectory(uploadedDirPath, dirPath, log, filter) {
+function uploadDirectory(container, uploadedDirPath, dirPath, log, filter) {
     return __awaiter(this, void 0, void 0, function* () {
         let files = yield fsp.readdir(dirPath);
         if (filter) {
@@ -62,26 +63,26 @@ function uploadDirectory(uploadedDirPath, dirPath, log, filter) {
         return yield Promise.all(files.map(fileName => {
             const fullPath = path.join(dirPath, fileName);
             const blobName = `${uploadedDirPath}/${fileName}`;
-            return logAndUploadFile(blobName, fullPath, log);
+            return logAndUploadFile(container, blobName, fullPath, log);
         }));
     });
 }
-function logAndUploadFile(blobName, filePath, log) {
+function logAndUploadFile(container, blobName, filePath, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        const url = container.urlOfBlob(blobName);
+        const url = azure_container_1.urlOfBlob(blobName);
         log(`Uploading ${filePath} to ${url}`);
         yield container.createBlobFromFile(blobName, filePath);
         return url;
     });
 }
-function uploadFile(blobName, filePath) {
+function uploadFile(container, blobName, filePath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const url = container.urlOfBlob(blobName);
+        const url = azure_container_1.urlOfBlob(blobName);
         yield container.createBlobFromFile(blobName, filePath);
         return url;
     });
 }
-function deleteDirectory(uploadedDirPath, log) {
+function deleteDirectory(container, uploadedDirPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const blobs = yield container.listBlobs(uploadedDirPath);
         const blobNames = blobs.map(b => b.name);
@@ -89,7 +90,7 @@ function deleteDirectory(uploadedDirPath, log) {
         yield Promise.all(blobNames.map(b => container.deleteBlob(b)));
     });
 }
-function removeOldDirectories(prefix, maxDirectories, log) {
+function removeOldDirectories(container, prefix, maxDirectories, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const list = yield container.listBlobs(prefix);
         const dirNames = util_1.unique(list.map(({ name }) => {
@@ -104,12 +105,12 @@ function removeOldDirectories(prefix, maxDirectories, log) {
         const sortedNames = dirNames.sort();
         const toDelete = sortedNames.slice(0, sortedNames.length - maxDirectories);
         log(`Too many old logs, so removing the following directories: [${toDelete}]`);
-        yield Promise.all(toDelete.map(d => deleteDirectory(prefix + d, log)));
+        yield Promise.all(toDelete.map(d => deleteDirectory(container, prefix + d, log)));
     });
 }
 // Provides links to the latest blobs.
 // These are at: https://typespublisher.blob.core.windows.net/typespublisher/index.html
-function uploadIndex(timeStamp, dataUrls, logUrls) {
+function uploadIndex(container, timeStamp, dataUrls, logUrls) {
     return container.createBlobFromText("index.html", createIndex());
     function createIndex() {
         const lines = [];

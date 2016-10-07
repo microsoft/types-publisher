@@ -253,27 +253,37 @@ function referencedFiles(src, subDirectory) {
  */
 function imports(src) {
     const out = [];
-    for (const node of src.statements) {
-        switch (node.kind) {
-            case ts.SyntaxKind.ImportDeclaration:
-            case ts.SyntaxKind.ExportDeclaration: {
-                const decl = node;
-                if (decl.moduleSpecifier && decl.moduleSpecifier.kind === ts.SyntaxKind.StringLiteral) {
-                    out.push(util_1.stripQuotes(decl.moduleSpecifier.getText()));
+    findImports(src.statements);
+    return out;
+    function findImports(statements) {
+        for (const node of statements) {
+            switch (node.kind) {
+                case ts.SyntaxKind.ImportDeclaration:
+                case ts.SyntaxKind.ExportDeclaration: {
+                    const decl = node;
+                    if (decl.moduleSpecifier && decl.moduleSpecifier.kind === ts.SyntaxKind.StringLiteral) {
+                        out.push(util_1.stripQuotes(decl.moduleSpecifier.getText()));
+                    }
+                    break;
                 }
-                break;
-            }
-            case ts.SyntaxKind.ImportEqualsDeclaration: {
-                const decl = node;
-                if (decl.moduleReference.kind === ts.SyntaxKind.ExternalModuleReference) {
-                    out.push(parseRequire(decl.moduleReference.getText()));
+                case ts.SyntaxKind.ImportEqualsDeclaration: {
+                    const decl = node;
+                    if (decl.moduleReference.kind === ts.SyntaxKind.ExternalModuleReference) {
+                        out.push(parseRequire(decl.moduleReference.getText()));
+                    }
+                    break;
                 }
-                break;
+                case ts.SyntaxKind.ModuleDeclaration: {
+                    const decl = node;
+                    if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
+                        findImports(decl.body.statements);
+                    }
+                    break;
+                }
+                default:
             }
-            default:
         }
     }
-    return out;
     function parseRequire(text) {
         const match = /require\(["'](.*)["']\)/.exec(text);
         if (match === null) {

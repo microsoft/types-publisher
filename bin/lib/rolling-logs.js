@@ -9,9 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const azure_container_1 = require("./azure-container");
 class RollingLogs {
-    constructor(name, maxLines) {
+    constructor(name, maxLines, container) {
         this.name = name;
         this.maxLines = maxLines;
+        this.container = container;
+    }
+    static create(name, maxLines) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new RollingLogs(name, maxLines, yield azure_container_1.default.create());
+        });
     }
     write(lines) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -19,7 +25,7 @@ class RollingLogs {
             const totalLines = logs.length + lines.length;
             logs.splice(0, totalLines - this.maxLines);
             logs.push(...lines);
-            yield azure_container_1.createBlobFromText(this.name, logs.join("\n"));
+            yield this.container.createBlobFromText(this.name, logs.join("\n"));
         });
     }
     readAllLogs() {

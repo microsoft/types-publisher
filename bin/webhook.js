@@ -10,13 +10,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const yargs = require("yargs");
 const webhook_server_1 = require("./lib/webhook-server");
 const issue_updater_1 = require("./lib/issue-updater");
+const secrets_1 = require("./lib/secrets");
 if (!module.parent) {
     main().catch(console.error);
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const key = process.env["GITHUB_SECRET"];
-        const githubAccessToken = process.env["GITHUB_ACCESS_TOKEN"];
+        const key = yield secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);
+        const githubAccessToken = yield secrets_1.getSecret(secrets_1.Secret.GITHUB_ACCESS_TOKEN);
         const dry = !!(yargs.argv.dry || process.env["WEBHOOK_FORCE_DRY"]);
         const port = process.env["PORT"];
         if (!(key && githubAccessToken && port)) {

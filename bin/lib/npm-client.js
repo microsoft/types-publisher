@@ -14,10 +14,10 @@ const path = require("path");
 const tar_1 = require("tar");
 const url = require("url");
 const common_1 = require("./common");
+const secrets_1 = require("./secrets");
 const util_1 = require("./util");
 const registry = common_1.settings.npmRegistry;
 assert(registry.endsWith("/"));
-const username = common_1.settings.npmUsername;
 function packageUrl(packageName) {
     return url.resolve(registry, packageName);
 }
@@ -28,12 +28,8 @@ class NpmClient {
     }
     static create() {
         return __awaiter(this, void 0, void 0, function* () {
-            const password = process.env.NPM_PASSWORD;
-            if (!password) {
-                throw new Error("Must provide NPM_PASSWORD");
-            }
-            const client = new RegClient({});
-            return new this(client, yield logIn(client, password));
+            const token = yield secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN);
+            return new this(new RegClient({}), { token });
         });
     }
     publish(publishedDirectory, packageJson, dry) {
@@ -83,36 +79,6 @@ class NpmClient {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = NpmClient;
-function logIn(client, password) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Based on https://github.com/npm/npm-registry-client/issues/135#issuecomment-207410721
-        const user = {
-            _id: "org.couchdb.user:" + username,
-            name: username,
-            password,
-            type: "user",
-            roles: [],
-            date: new Date().toISOString()
-        };
-        const uri = url.resolve(registry, "-/user/org.couchdb.user:" + encodeURIComponent(username));
-        const params = {
-            method: "PUT",
-            body: user
-        };
-        const token = yield new Promise((resolve, reject) => {
-            client.request(uri, params, (error, data) => {
-                if (error) {
-                    reject(error);
-                }
-                if (!data.token) {
-                    throw new Error("No token returned");
-                }
-                resolve(data.token);
-            });
-        });
-        return { token };
-    });
-}
 // To output this for testing: Export it and:
 // `require("./bin/lib/npm-client").createTgz("./output/foo", err => { throw err }).pipe(fs.createWriteStream("foo.tgz"))`
 function createTgz(dir, onError) {
