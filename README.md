@@ -2,7 +2,7 @@
 
 This is the source code for the types-publisher service, which publishes the contents of [DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) to npm.
 
-# Disclaimer  
+# Disclaimer
 
 If there's functionality from the project you'd like to use, please file an issue detailing that. The script isn't intended for public consumption (i.e. we will break the API whenever convenient for us).
 
@@ -341,10 +341,10 @@ The script `npm run make-server-run` will trigger the local webhook just like Gi
 # Using the webhook
 
 ```sh
-npm run webhook
+npm run webhook-dry
 ```
 
-This requires the `GITHUB_SECRET` and `GITHUB_ACCESS_TOKEN` environment variables to be set; see the "Environment variables" section.
+This requires environment variables to be set; see the "Environment variables" section.
 
 # Settings
 
@@ -401,37 +401,19 @@ GitHub issue to use to report errors from the webhook.
 
 ## Environment variables
 
-#### NPM_PASSWORD
+#### `TYPES_PUBLISHER_CLIENT_ID` and `TYPES_PUBLISHER_CLIENT_SECRET`
 
-Password for settings.npmUsername
+These are needed to access all other secrets. See `src/lib/secrets.ts`.
 
-#### AZURE_STORAGE_ACCESS_KEY
-
-To find (or refresh) this value, go to https://ms.portal.azure.com -> All resources -> typespublisher -> General -> Access keys
-
-#### GITHUB_SECRET
-
-This is used to ensure that only GitHub cand send messages to our server.
-This should match the secret value set on [GitHub](https://github.com/DefinitelyTyped/DefinitelyTyped/settings/hooks).
-The Payload URL should be the URL of the Azure service.
-
-The webhook ignores the `sourceRepository` setting and can be triggered by *anything* with the secret, so make sure only DefinitelyTyped has the secret.
-
-#### GITHUB_ACCESS_TOKEN
-
-This also requires `GITHUB_ACCESS_TOKEN` to be set.
-This is a *different* value used to allow the server to update an [issue](https://github.com/Microsoft/types-publisher/issues/40) on GitHub in case of an error.
-Create a token [here](https://github.com/settings/tokens).
-
-#### WEBHOOK_FORCE_DRY
+#### `WEBHOOK_FORCE_DRY`
 
 This lets you run the webhook in dry mode in Azure, without needing command line flags.
 
-#### PORT
+#### `PORT`
 
 This is the port the webhook uses for GET requests.
 
-### LONGJOHN
+### `LONGJOHN`
 
 Setting this variable turns on [longjohn](https://github.com/mattinsler/longjohn) stacktraces.
 
