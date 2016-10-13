@@ -47,9 +47,9 @@ function readJson(path) {
 exports.readJson = readJson;
 function fetchJson(url, init) {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield fetch(url, init);
-        const text = yield response.text();
-        return util_1.parseJson(text);
+        // Cast needed: https://github.com/Microsoft/TypeScript/issues/10065
+        const response = yield (init && init.retries ? fetchWithRetries(url, init) : fetch(url, init));
+        return util_1.parseJson(yield response.text());
     });
 }
 exports.fetchJson = fetchJson;
@@ -85,4 +85,19 @@ function streamDone(stream) {
     });
 }
 exports.streamDone = streamDone;
+function fetchWithRetries(url, init) {
+    return __awaiter(this, void 0, void 0, function* () {
+        for (let retries = init.retries === true ? 5 : init.retries; retries > 1; retries--) {
+            try {
+                return yield fetch(url, init);
+            }
+            catch (err) {
+                if (!/ETIMEDOUT|ECONNRESET/.test(err.message)) {
+                    throw err;
+                }
+            }
+        }
+        return yield fetch(url);
+    });
+}
 //# sourceMappingURL=io.js.map

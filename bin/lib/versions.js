@@ -76,7 +76,7 @@ function fetchVersionInfoFromNpm(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
         const escapedPackageName = common_1.fullPackageName(packageName).replace(/\//g, "%2f");
         const uri = common_1.settings.npmRegistry + escapedPackageName;
-        const info = yield io_1.fetchJson(uri);
+        const info = yield io_1.fetchJson(uri, { retries: true });
         if (info.error) {
             if (info.error === "Not found") {
                 return { version: 0, contentHash: "", deprecated: false };
