@@ -3,10 +3,13 @@ import path = require("path");
 import { existsSync, readFileSync } from "fs";
 import * as fsp from "fs-promise";
 import crypto = require("crypto");
-import { install } from "source-map-support";
-import { parseJson, readJson, writeFile } from "./util";
-install();
-if (process.env["LONGJOHN"]) {
+import * as sourceMapSupport from "source-map-support";
+
+import { readJson, writeFile } from "../util/io";
+import { parseJson } from "../util/util";
+
+sourceMapSupport.install();
+if (process.env.LONGJOHN) {
 	console.log("=== USING LONGJOHN ===");
 	const longjohn = require("longjohn");
 	longjohn.async_trace_limit = -1; // unlimited
@@ -154,7 +157,7 @@ export async function readNotNeededPackages(): Promise<NotNeededPackage[]> {
 			}
 		}
 		assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
-		assert(typeof pkg.asOfVersion === "string" || typeof pkg.asOfVersion === "undefined");
+		assert(typeof pkg.asOfVersion === "string" || pkg.asOfVersion === undefined);
 		assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
 
 		pkg.projectName = pkg.sourceRepoURL;
@@ -165,9 +168,19 @@ export async function readNotNeededPackages(): Promise<NotNeededPackage[]> {
 	return raw;
 }
 
-export async function readAllPackages(): Promise<AnyPackage[]> {
-	const [typings, notNeeded] = await Promise.all<AnyPackage[]>([ readTypings(), readNotNeededPackages() ]);
-	return typings.concat(notNeeded);
+export interface AllPackages {
+	typings: TypingsData[];
+	notNeeded: NotNeededPackage[];
+}
+
+export async function readAllPackages(): Promise<AllPackages> {
+	const [typings, notNeeded] = await Promise.all([readTypings(), readNotNeededPackages()]);
+	return { typings, notNeeded };
+}
+
+export async function readAllPackagesArray(): Promise<AnyPackage[]> {
+	const {typings, notNeeded} = await readAllPackages();
+	return (typings as AnyPackage[]).concat(notNeeded);
 }
 
 export function computeHash(content: string) {

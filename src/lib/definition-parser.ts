@@ -2,9 +2,11 @@ import * as ts from "typescript";
 import * as fsp from "fs-promise";
 import * as path from "path";
 
+import { readdirRecursive, readFile as readFileText } from "../util/io";
+import { Logger, LoggerWithErrors, LogWithErrors, quietLoggerWithErrors } from "../util/logging";
+import { mapAsyncOrdered, normalizeSlashes, stripQuotes } from "../util/util";
+
 import { RejectionReason, TypingsData, computeHash, definitelyTypedPath, settings } from "./common";
-import { Logger, LoggerWithErrors, LogWithErrors, quietLoggerWithErrors } from "./logging";
-import { mapAsyncOrdered, normalizeSlashes, readdirRecursive, readFile as readFileText, stripQuotes } from "./util";
 
 export interface TypingParseFailResult {
 	kind: "fail";
@@ -104,7 +106,9 @@ function parseMetadata(mainFileContent: string): Metadata {
 	return { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName };
 }
 
-async function moduleInfoAndFileKind(directory: string, folderName: string, allEntryFilenames: string[], log: LoggerWithErrors): Promise<ModuleInfo & { fileKind: DefinitionFileKind }> {
+async function moduleInfoAndFileKind(directory: string, folderName: string, allEntryFilenames: string[], log: LoggerWithErrors
+	): Promise<ModuleInfo & { fileKind: DefinitionFileKind }> {
+
 	const mi = await getModuleInfo(directory, folderName, allEntryFilenames, log.info);
 	const fileKind = getFileKind(mi, log.info);
 
@@ -142,7 +146,8 @@ export async function getTypingInfo(folderName: string): Promise<TypingParseFail
 	const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName } = parseMetadata(mainFileContent);
 
 	const allEntryFilenames = await entryFilesFromTsConfig(directory, log.info) || [mainFilename];
-	const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles, fileKind } = await moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log);
+	const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles, fileKind } =
+		await moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log);
 
 	const hasPackageJson = await fsp.exists(path.join(directory, "package.json"));
 	const allFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
@@ -487,7 +492,8 @@ interface ModuleInfo {
 
 function isNewGlobal(name: string): boolean {
 	// This is not a new global if it simply augments an existing one.
-	const augmentedGlobals = ["Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"];
+	const augmentedGlobals = [
+		"Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"];
 	return !augmentedGlobals.includes(name);
 }
 

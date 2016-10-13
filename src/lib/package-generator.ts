@@ -1,9 +1,12 @@
-import { AnyPackage, TypesDataFile, TypingsData, NotNeededPackage, fullPackageName, notNeededReadme, settings, getOutputPath } from "./common";
-import { Log, Logger, quietLogger } from "./logging";
-import { hasOwnProperty, readFile, readJson, writeFile } from "./util";
-import Versions, { VersionInfo } from "./versions";
 import * as fsp from "fs-promise";
 import * as path from "path";
+
+import { readFile, readJson, writeFile } from "../util/io";
+import { Log, Logger, quietLogger } from "../util/logging";
+import { hasOwnProperty } from "../util/util";
+
+import { AnyPackage, TypesDataFile, TypingsData, NotNeededPackage, fullPackageName, notNeededReadme, settings, getOutputPath } from "./common";
+import Versions, { VersionInfo } from "./versions";
 
 /** Generates the package to disk */
 export default function generateAnyPackage(pkg: AnyPackage, availableTypes: TypesDataFile, versions: Versions): Promise<Log> {
@@ -143,7 +146,9 @@ async function createPackageJSON(typing: TypingsData, { version, contentHash }: 
 }
 
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
-function addInferredDependencies(dependencies: Dependencies, peerDependencies: Dependencies, typing: TypingsData, availableTypes: TypesDataFile): void {
+function addInferredDependencies(
+	dependencies: Dependencies, peerDependencies: Dependencies, typing: TypingsData, availableTypes: TypesDataFile): void {
+
 	function addDependency(dependency: string): void {
 		const typesDependency = fullPackageName(dependency);
 

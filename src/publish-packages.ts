@@ -1,11 +1,12 @@
 import * as fs from "fs";
 import * as yargs from "yargs";
-import { existsTypesDataFileSync, readAllPackages } from "./lib/common";
-import { LogWithErrors, logger, writeLog } from "./lib/logging";
+
+import { existsTypesDataFileSync, readAllPackagesArray } from "./lib/common";
 import NpmClient from "./lib/npm-client";
 import * as publisher from "./lib/package-publisher";
-import { done } from "./lib/util";
 import Versions, { changedPackages } from "./lib/versions";
+import { LogWithErrors, logger, writeLog } from "./util/logging";
+import { done } from "./util/util";
 
 if (!module.parent) {
 	if (!existsTypesDataFileSync()) {
@@ -52,7 +53,7 @@ export default async function main(client: NpmClient, dry: boolean): Promise<voi
 		log("=== DRY RUN ===");
 	}
 
-	const packagesShouldPublish = await changedPackages(await readAllPackages());
+	const packagesShouldPublish = await changedPackages(await readAllPackagesArray());
 
 	for (const pkg of packagesShouldPublish) {
 		console.log(`Publishing ${pkg.libraryName}...`);
@@ -74,7 +75,7 @@ export default async function main(client: NpmClient, dry: boolean): Promise<voi
 }
 
 async function single(client: NpmClient, name: string, dry: boolean): Promise<void> {
-	const pkg = (await readAllPackages()).find(p => p.typingsPackageName === name);
+	const pkg = (await readAllPackagesArray()).find(p => p.typingsPackageName === name);
 	if (pkg === undefined) {
 		throw new Error(`Can't find a package named ${name}`);
 	}
@@ -85,7 +86,7 @@ async function single(client: NpmClient, name: string, dry: boolean): Promise<vo
 }
 
 async function unpublish(dry: boolean): Promise<void> {
-	for (const pkg of await readAllPackages()) {
+	for (const pkg of await readAllPackagesArray()) {
 		await publisher.unpublishPackage(pkg, dry);
 	}
 }

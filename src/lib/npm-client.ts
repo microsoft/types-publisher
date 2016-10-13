@@ -1,12 +1,13 @@
 import assert = require("assert");
-import { Reader } from "fstream";
 import RegClient = require("npm-registry-client");
 import * as path from "path";
-import { Pack } from "tar";
 import * as url from "url";
+
+import { readFile } from "../util/io";
+import { createTgz } from "../util/tgz";
+
 import { settings } from "./common";
 import { getSecret, Secret } from "./secrets";
-import { gzip, readFile } from "./util";
 
 const registry = settings.npmRegistry;
 assert(registry.endsWith("/"));
@@ -63,28 +64,14 @@ export default class NpmClient {
 	}
 
 	deprecate(packageName: string, version: string, message: string): Promise<void> {
+		const url = packageUrl(packageName.replace("/", "%2f"));
 		const params = {
 			message,
 			version,
 			auth: this.auth,
 		};
-		return promisifyVoid(cb => this.client.deprecate(packageUrl(packageName), params, cb));
+		return promisifyVoid(cb => this.client.deprecate(url, params, cb));
 	}
-}
-
-// To output this for testing: Export it and:
-// `require("./bin/lib/npm-client").createTgz("./output/foo", err => { throw err }).pipe(fs.createWriteStream("foo.tgz"))`
-function createTgz(dir: string, onError: (error: Error) => void): NodeJS.ReadableStream {
-	return gzip(createTar(dir, onError));
-}
-
-function createTar(dir: string, onError: (error: Error) => void): NodeJS.ReadableStream {
-	const packer = Pack(<any> { noProprietary: true })
-		.on("error", onError);
-
-	return Reader({ path: dir, type: "Directory" })
-		.on("error", onError)
-		.pipe(<any> packer);
 }
 
 function promisifyVoid(callsBack: (cb: (error: Error | undefined) => void) => void): Promise<void> {

@@ -1,15 +1,16 @@
 import fetch = require("node-fetch");
+import * as yargs from "yargs";
+
 import { settings } from "./lib/common";
-import { done } from "./lib/util";
 import { getSecret, Secret } from "./lib/secrets";
 import { expectedSignature } from "./lib/webhook-server";
-import * as yargs from "yargs";
+import { done } from "./util/util";
 
 if (!module.parent) {
 	const remote = yargs.argv.remote;
 
 	function getPort() {
-		const port = parseInt(process.env["PORT"], 10);
+		const port = parseInt(process.env.PORT, 10);
 		if (!port) {
 			throw new Error("Must provide PORT");
 		}

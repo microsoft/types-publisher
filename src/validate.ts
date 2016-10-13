@@ -2,10 +2,11 @@ import * as fsp from "fs-promise";
 import * as path from "path";
 import * as child_process from "child_process";
 import * as yargs from "yargs";
-import { nAtATime, writeFile, writeJson } from "./lib/util";
-import { existsTypesDataFileSync, settings, readAllPackages, readTypings } from "./lib/common";
-import { LoggerWithErrors, quietLoggerWithErrors, loggerWithErrors, moveLogsWithErrors, writeLog } from "./lib/logging";
-import { done } from "./lib/util";
+
+import { existsTypesDataFileSync, settings, readAllPackagesArray, readTypings } from "./lib/common";
+import { writeFile, writeJson } from "./util/io";
+import { LoggerWithErrors, quietLoggerWithErrors, loggerWithErrors, moveLogsWithErrors, writeLog } from "./util/logging";
+import { done, nAtATime } from "./util/util";
 import { changedPackages } from "./lib/versions";
 
 if (!module.parent) {
@@ -33,7 +34,7 @@ if (!module.parent) {
 }
 
 export default async function main(): Promise<void> {
-	const changed = await changedPackages(await readAllPackages());
+	const changed = await changedPackages(await readAllPackagesArray());
 	await doValidate(changed.map(c => c.typingsPackageName));
 }
 
