@@ -17,7 +17,8 @@ const common_1 = require("./common");
      * This is used to ensure that only GitHub can send messages to our server.
      * This should match the secret value set on GitHub: https://github.com/DefinitelyTyped/DefinitelyTyped/settings/hooks
      * The Payload URL should be the URL of the Azure service.
-     * The webhook ignores the `sourceRepository` setting and can be triggered by *anything* with the secret, so make sure only DefinitelyTyped has the secret.
+     * The webhook ignores the `sourceRepository` setting and can be triggered by *anything* with the secret,
+     * so make sure only DefinitelyTyped has the secret.
      */
     Secret[Secret["GITHUB_SECRET"] = 2] = "GITHUB_SECRET";
     /**
@@ -58,8 +59,8 @@ function getSecret(secret) {
 }
 exports.getSecret = getSecret;
 function getClient() {
-    const clientId = process.env["TYPES_PUBLISHER_CLIENT_ID"];
-    const clientSecret = process.env["TYPES_PUBLISHER_CLIENT_SECRET"];
+    const clientId = process.env.TYPES_PUBLISHER_CLIENT_ID;
+    const clientSecret = process.env.TYPES_PUBLISHER_CLIENT_SECRET;
     if (!(clientId && clientSecret)) {
         throw new Error("Must set the TYPES_PUBLISHER_CLIENT_ID and TYPES_PUBLISHER_CLIENT_SECRET environment variables.");
     }

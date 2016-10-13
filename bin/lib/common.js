@@ -12,10 +12,11 @@ const path = require("path");
 const fs_1 = require("fs");
 const fsp = require("fs-promise");
 const crypto = require("crypto");
-const source_map_support_1 = require("source-map-support");
-const util_1 = require("./util");
-source_map_support_1.install();
-if (process.env["LONGJOHN"]) {
+const sourceMapSupport = require("source-map-support");
+const io_1 = require("../util/io");
+const util_1 = require("../util/util");
+sourceMapSupport.install();
+if (process.env.LONGJOHN) {
     console.log("=== USING LONGJOHN ===");
     const longjohn = require("longjohn");
     longjohn.async_trace_limit = -1; // unlimited
@@ -38,7 +39,7 @@ function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
         const dataDir = path.join(exports.home, "data");
         yield fsp.ensureDir(dataDir);
-        yield util_1.writeFile(path.join(dataDir, filename), JSON.stringify(content, undefined, formatted ? 4 : undefined));
+        yield io_1.writeFile(path.join(dataDir, filename), JSON.stringify(content, undefined, formatted ? 4 : undefined));
     });
 }
 exports.writeDataFile = writeDataFile;
@@ -52,7 +53,7 @@ function existsTypesDataFileSync() {
 exports.existsTypesDataFileSync = existsTypesDataFileSync;
 function readTypesDataFile() {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield util_1.readJson(dataFilePath(exports.typesDataFilename)));
+        return (yield io_1.readJson(dataFilePath(exports.typesDataFilename)));
     });
 }
 exports.readTypesDataFile = readTypesDataFile;
@@ -86,7 +87,7 @@ function readTypings() {
 exports.readTypings = readTypings;
 function readNotNeededPackages() {
     return __awaiter(this, void 0, void 0, function* () {
-        const raw = (yield util_1.readJson(exports.notNeededPackagesPath)).packages;
+        const raw = (yield io_1.readJson(exports.notNeededPackagesPath)).packages;
         for (const pkg of raw) {
             for (const key in pkg) {
                 if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
@@ -94,7 +95,7 @@ function readNotNeededPackages() {
                 }
             }
             assert(pkg.libraryName && pkg.typingsPackageName && pkg.sourceRepoURL);
-            assert(typeof pkg.asOfVersion === "string" || typeof pkg.asOfVersion === "undefined");
+            assert(typeof pkg.asOfVersion === "string" || pkg.asOfVersion === undefined);
             assert(!pkg.projectName && !pkg.packageKind && !pkg.globals && !pkg.declaredModules);
             pkg.projectName = pkg.sourceRepoURL;
             pkg.packageKind = "not-needed";
@@ -108,10 +109,17 @@ exports.readNotNeededPackages = readNotNeededPackages;
 function readAllPackages() {
     return __awaiter(this, void 0, void 0, function* () {
         const [typings, notNeeded] = yield Promise.all([readTypings(), readNotNeededPackages()]);
-        return typings.concat(notNeeded);
+        return { typings, notNeeded };
     });
 }
 exports.readAllPackages = readAllPackages;
+function readAllPackagesArray() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { typings, notNeeded } = yield readAllPackages();
+        return typings.concat(notNeeded);
+    });
+}
+exports.readAllPackagesArray = readAllPackagesArray;
 function computeHash(content) {
     // Normalize line endings
     content = content.replace(/\r\n?/g, "\n");

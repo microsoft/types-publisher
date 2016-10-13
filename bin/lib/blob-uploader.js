@@ -10,9 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const assert = require("assert");
 const fsp = require("fs-promise");
 const path = require("path");
+const logging_1 = require("../util/logging");
+const util_1 = require("../util/util");
 const azure_container_1 = require("./azure-container");
-const logging_1 = require("./logging");
-const util_1 = require("./util");
 const maxNumberOfOldLogsDirectories = 5;
 function uploadBlobsAndUpdateIssue(timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -26,8 +26,7 @@ function uploadBlobsAndUpdateIssue(timeStamp) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = uploadBlobsAndUpdateIssue;
 ;
-// View uploaded files at:
-// https://ms.portal.azure.com/?flight=1#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/types-publisher/providers/Microsoft.Storage/storageAccounts/typespublisher
+// View uploaded files at: https://ms.portal.azure.com under "typespublisher"
 function uploadBlobs(container, timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();

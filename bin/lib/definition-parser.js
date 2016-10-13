@@ -10,9 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const ts = require("typescript");
 const fsp = require("fs-promise");
 const path = require("path");
+const io_1 = require("../util/io");
+const logging_1 = require("../util/logging");
+const util_1 = require("../util/util");
 const common_1 = require("./common");
-const logging_1 = require("./logging");
-const util_1 = require("./util");
 var DefinitionFileKind;
 (function (DefinitionFileKind) {
     // Dunno
@@ -151,7 +152,7 @@ exports.getTypingInfo = getTypingInfo;
 function mainFile(directory, folderName, log) {
     return __awaiter(this, void 0, void 0, function* () {
         // otherwise, load all files from the directory
-        const declFiles = yield util_1.readdirRecursive(directory, (file, stats) => 
+        const declFiles = yield io_1.readdirRecursive(directory, (file, stats) => 
         // Only include type declaration files.
         stats.isDirectory() || file.endsWith(".d.ts"));
         declFiles.sort();
@@ -413,7 +414,8 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
 }
 function isNewGlobal(name) {
     // This is not a new global if it simply augments an existing one.
-    const augmentedGlobals = ["Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"];
+    const augmentedGlobals = [
+        "Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"];
     return !augmentedGlobals.includes(name);
 }
 function getFileKind(mi, log) {
@@ -479,7 +481,7 @@ function hash(directory, files) {
 }
 function readFile(directory, fileName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield util_1.readFile(path.join(directory, fileName));
+        const result = yield io_1.readFile(path.join(directory, fileName));
         // Skip BOM
         return (result.charCodeAt(0) === 0xFEFF) ? result.substr(1) : result;
     });

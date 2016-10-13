@@ -11,10 +11,10 @@ const fsp = require("fs-promise");
 const path = require("path");
 const child_process = require("child_process");
 const yargs = require("yargs");
-const util_1 = require("./lib/util");
 const common_1 = require("./lib/common");
-const logging_1 = require("./lib/logging");
-const util_2 = require("./lib/util");
+const io_1 = require("./util/io");
+const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 const versions_1 = require("./lib/versions");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
@@ -28,11 +28,11 @@ if (!module.parent) {
         }
         if (all) {
             console.log("Validating all packages");
-            util_2.done(doAll());
+            util_1.done(doAll());
         }
         else if (packageNames.length) {
             console.log("Validating: " + JSON.stringify(packageNames));
-            util_2.done(doValidate(packageNames));
+            util_1.done(doValidate(packageNames));
         }
         else {
             main();
@@ -41,7 +41,7 @@ if (!module.parent) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const changed = yield versions_1.changedPackages(yield common_1.readAllPackages());
+        const changed = yield versions_1.changedPackages(yield common_1.readAllPackagesArray());
         yield doValidate(changed.map(c => c.typingsPackageName));
     });
 }
@@ -129,7 +129,7 @@ function validatePackage(packageName, outputDirecory, mainLog) {
 function writePackage(packageDirectory, packageName) {
     return __awaiter(this, void 0, void 0, function* () {
         // Write package.json
-        yield util_1.writeJson(path.join(packageDirectory, "package.json"), {
+        yield io_1.writeJson(path.join(packageDirectory, "package.json"), {
             name: `${packageName}_test`,
             version: "1.0.0",
             description: "test",
@@ -139,7 +139,7 @@ function writePackage(packageDirectory, packageName) {
             dependencies: { [`@types/${packageName}`]: common_1.settings.tag }
         });
         // Write tsconfig.json
-        yield util_1.writeJson(path.join(packageDirectory, "tsconfig.json"), {
+        yield io_1.writeJson(path.join(packageDirectory, "tsconfig.json"), {
             compilerOptions: {
                 module: "commonjs",
                 target: "es5",
@@ -150,7 +150,7 @@ function writePackage(packageDirectory, packageName) {
             }
         });
         // Write index.ts
-        yield util_1.writeFile(path.join(packageDirectory, "index.ts"), `/// <reference types="${packageName}" />\r\n`);
+        yield io_1.writeFile(path.join(packageDirectory, "index.ts"), `/// <reference types="${packageName}" />\r\n`);
     });
 }
 // Returns whether the command succeeded.

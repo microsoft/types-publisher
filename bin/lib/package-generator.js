@@ -7,11 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const common_1 = require("./common");
-const logging_1 = require("./logging");
-const util_1 = require("./util");
 const fsp = require("fs-promise");
 const path = require("path");
+const io_1 = require("../util/io");
+const logging_1 = require("../util/logging");
+const util_1 = require("../util/util");
+const common_1 = require("./common");
 /** Generates the package to disk */
 function generateAnyPackage(pkg, availableTypes, versions) {
     return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg) : generatePackage(pkg, availableTypes, versions);
@@ -35,7 +36,7 @@ function generatePackage(typing, availableTypes, versions) {
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy and patch ${file}`);
-            let content = yield util_1.readFile(filePath(typing, file));
+            let content = yield io_1.readFile(filePath(typing, file));
             content = patchDefinitionFile(content);
             return writeOutputFile(file, content);
         })));
@@ -48,7 +49,7 @@ function generatePackage(typing, availableTypes, versions) {
                 if (dir !== outputPath) {
                     yield fsp.mkdirp(dir);
                 }
-                return yield util_1.writeFile(full, content);
+                return yield io_1.writeFile(full, content);
             });
         }
     });
@@ -67,7 +68,7 @@ function generateNotNeededPackage(pkg) {
         // Not-needed packages never change version
         return logResult();
         function writeOutputFile(filename, content) {
-            return util_1.writeFile(path.join(outputPath, filename), content);
+            return io_1.writeFile(path.join(outputPath, filename), content);
         }
     });
 }
@@ -95,7 +96,7 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
         const pkgPath = filePath(typing, "package.json");
-        let pkg = typing.hasPackageJson ? yield util_1.readJson(pkgPath) : {};
+        let pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
         const ignoredField = Object.keys(pkg).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
         // Kludge: ignore "scripts" (See https://github.com/DefinitelyTyped/definition-tester/issues/35)
         if (ignoredField && ignoredField !== "scripts") {

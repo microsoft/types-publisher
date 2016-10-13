@@ -7,11 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const parser = require("./lib/definition-parser");
 const yargs = require("yargs");
+const parser = require("./lib/definition-parser");
 const common_1 = require("./lib/common");
-const logging_1 = require("./lib/logging");
-const util_1 = require("./lib/util");
+const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 const fsp = require("fs-promise");
 if (!module.parent) {
     const singleName = yargs.argv.single;

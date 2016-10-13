@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const util_1 = require("./util");
+const io_1 = require("../util/io");
 function createSearchRecord(info, skipDownloads) {
     return __awaiter(this, void 0, void 0, function* () {
         return {
@@ -27,7 +27,7 @@ function createSearchRecord(info, skipDownloads) {
                 }
                 else {
                     const url = `https://api.npmjs.org/downloads/point/last-month/${info.typingsPackageName}`;
-                    const json = (yield util_1.fetchJson(url));
+                    const json = (yield io_1.fetchJson(url));
                     // Json may contain "error" instead of "downloads", because some packages aren't available on NPM.
                     return json.downloads || 0;
                 }

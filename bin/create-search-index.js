@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const util_1 = require("./lib/util");
+const util_1 = require("./util/util");
 const search_index_generator_1 = require("./lib/search-index-generator");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
@@ -29,7 +29,7 @@ if (!module.parent) {
 }
 function main(skipDownloads, full) {
     return __awaiter(this, void 0, void 0, function* () {
-        const packages = yield common_1.readAllPackages();
+        const packages = yield common_1.readAllPackagesArray();
         console.log(`Loaded ${packages.length} entries`);
         const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads));
         // Most downloads first

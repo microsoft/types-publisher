@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fsp = require("fs-promise");
 const nodegit_1 = require("nodegit");
 const common_1 = require("./lib/common");
-const util_1 = require("./lib/util");
+const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main());
 }

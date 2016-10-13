@@ -10,12 +10,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const crypto_1 = require("crypto");
 const http_1 = require("http");
 const full_1 = require("../full");
+const logging_1 = require("../util/logging");
+const io_1 = require("../util/io");
+const util_1 = require("../util/util");
 const rolling_logs_1 = require("./rolling-logs");
 const common_1 = require("./common");
-const logging_1 = require("./logging");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
-const util_1 = require("./util");
 function server(key, githubAccessToken, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
@@ -35,6 +36,7 @@ function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
 function webResult(dry, timeStamp) {
+    // tslint:disable:max-line-length
     return `
 <html>
 <head></head>
@@ -52,6 +54,7 @@ function webResult(dry, timeStamp) {
 </body>
 </html>
 `;
+    // tslint:enable:max-line-length
 }
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
 function listenToGithub(key, githubAccessToken, dry, onUpdate) {
@@ -90,7 +93,7 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
         }
         function work() {
             return __awaiter(this, void 0, void 0, function* () {
-                const data = yield util_1.stringOfStream(req);
+                const data = yield io_1.stringOfStream(req);
                 if (!checkSignature(key, data, req.headers, log)) {
                     return;
                 }

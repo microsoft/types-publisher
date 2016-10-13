@@ -10,11 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fs = require("fs");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const logging_1 = require("./lib/logging");
 const npm_client_1 = require("./lib/npm-client");
 const publisher = require("./lib/package-publisher");
-const util_1 = require("./lib/util");
 const versions_1 = require("./lib/versions");
+const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
@@ -58,7 +58,7 @@ function main(client, dry) {
         if (dry) {
             log("=== DRY RUN ===");
         }
-        const packagesShouldPublish = yield versions_1.changedPackages(yield common_1.readAllPackages());
+        const packagesShouldPublish = yield versions_1.changedPackages(yield common_1.readAllPackagesArray());
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.libraryName}...`);
             const publishLog = yield publisher.publishPackage(client, pkg, dry);
@@ -80,7 +80,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(client, name, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const pkg = (yield common_1.readAllPackages()).find(p => p.typingsPackageName === name);
+        const pkg = (yield common_1.readAllPackagesArray()).find(p => p.typingsPackageName === name);
         if (pkg === undefined) {
             throw new Error(`Can't find a package named ${name}`);
         }
@@ -90,7 +90,7 @@ function single(client, name, dry) {
 }
 function unpublish(dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        for (const pkg of yield common_1.readAllPackages()) {
+        for (const pkg of yield common_1.readAllPackagesArray()) {
             yield publisher.unpublishPackage(pkg, dry);
         }
     });

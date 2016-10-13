@@ -7,8 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
+const io_1 = require("../util/io");
+const util_1 = require("../util/util");
 const common_1 = require("./common");
-const util_1 = require("./util");
 function setIssueOk(githubAccessToken) {
     return __awaiter(this, void 0, void 0, function* () {
         yield doUpdate(githubAccessToken, `Server has been up as of **${util_1.currentTimeStamp()}**`);
@@ -38,7 +39,7 @@ function doUpdate(accessToken, body) {
     return __awaiter(this, void 0, void 0, function* () {
         const url = `https://api.github.com/repos/${common_1.settings.errorsIssue}?access_token=${accessToken}`;
         const message = { body, state: "open" };
-        const responseBody = yield util_1.fetchJson(url, { method: "PATCH", body: JSON.stringify(message) });
+        const responseBody = yield io_1.fetchJson(url, { method: "PATCH", body: JSON.stringify(message) });
         if (responseBody.body !== body) {
             throw new Error(JSON.stringify(responseBody, undefined, 4));
         }

@@ -10,9 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
 const https = require("https");
+const io_1 = require("../util/io");
+const tgz_1 = require("../util/tgz");
+const util_1 = require("../util/util");
 const common_1 = require("./common");
 const secrets_1 = require("./secrets");
-const util_1 = require("./util");
 const name = common_1.settings.azureContainer;
 class BlobWriter {
     constructor(service) {
@@ -40,13 +42,13 @@ class BlobWriter {
         return promisifyErrorOrResponse(cb => this.service.setServiceProperties(properties, cb));
     }
     ensureCreated(options) {
-        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(name, options, cb)).then(() => { });
+        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(name, options, cb));
     }
     createBlobFromFile(blobName, fileName) {
         return this.createBlobFromStream(blobName, fs.createReadStream(fileName));
     }
     createBlobFromText(blobName, text) {
-        return this.createBlobFromStream(blobName, util_1.streamOfString(text));
+        return this.createBlobFromStream(blobName, io_1.streamOfString(text));
     }
     listBlobs(prefix) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -71,16 +73,11 @@ class BlobWriter {
                 contentType: "application/json; charset=utf-8"
             }
         };
-        return streamDone(util_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(name, blobName, options)));
+        return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(name, blobName, options)));
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = BlobWriter;
-function streamDone(stream) {
-    return new Promise((resolve, reject) => {
-        stream.on("error", reject).on("finish", resolve);
-    });
-}
 function readBlob(blobName) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
@@ -92,7 +89,7 @@ function readBlob(blobName) {
                             reject(new Error(`${url} is not gzipped`));
                         }
                         else {
-                            resolve(util_1.stringOfStream(util_1.unGzip(res)));
+                            resolve(io_1.stringOfStream(tgz_1.unGzip(res)));
                         }
                         break;
                     default:

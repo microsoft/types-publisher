@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const secrets_1 = require("./lib/secrets");
-const util_1 = require("./lib/util");
+const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main());
 }

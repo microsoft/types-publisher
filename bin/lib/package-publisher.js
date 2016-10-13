@@ -8,18 +8,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const common_1 = require("./common");
-const logging_1 = require("./logging");
-const util_1 = require("./util");
-const path = require("path");
 const child_process = require("child_process");
+const path = require("path");
+const io_1 = require("../util/io");
+const logging_1 = require("../util/logging");
+const common_1 = require("./common");
 function publishPackage(client, pkg, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
         const name = pkg.typingsPackageName;
         log(`Publishing ${name}`);
         const packageDir = path.join("output", name);
-        const packageJson = yield util_1.readJson(path.join(packageDir, "package.json"));
+        const packageJson = yield io_1.readJson(path.join(packageDir, "package.json"));
         const version = packageJson.version;
         assert(typeof version === "string");
         yield client.publish(packageDir, packageJson, dry);

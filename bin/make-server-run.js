@@ -8,15 +8,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fetch = require("node-fetch");
+const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const util_1 = require("./lib/util");
 const secrets_1 = require("./lib/secrets");
 const webhook_server_1 = require("./lib/webhook-server");
-const yargs = require("yargs");
+const util_1 = require("./util/util");
 if (!module.parent) {
     const remote = yargs.argv.remote;
     function getPort() {
-        const port = parseInt(process.env["PORT"], 10);
+        const port = parseInt(process.env.PORT, 10);
         if (!port) {
             throw new Error("Must provide PORT");
         }

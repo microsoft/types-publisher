@@ -10,8 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const versions_1 = require("./lib/versions");
-const util_1 = require("./lib/util");
-const logging_1 = require("./lib/logging");
+const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
         console.log("Run parse-definitions first!");
@@ -23,8 +23,7 @@ if (!module.parent) {
 }
 function main(forceUpdate) {
     return __awaiter(this, void 0, void 0, function* () {
-        const typings = yield common_1.readTypings();
-        const { changes, versions } = yield versions_1.default.determineFromNpm(typings, logging_1.consoleLogger.info, forceUpdate);
+        const { changes, versions } = yield versions_1.default.determineFromNpm(yield common_1.readAllPackages(), logging_1.consoleLogger.info, forceUpdate);
         yield versions_1.writeChanges(changes);
         yield versions.save();
     });

@@ -19,7 +19,7 @@ const publish_packages_1 = require("./publish-packages");
 const upload_blobs_1 = require("./upload-blobs");
 const validate_1 = require("./validate");
 const npm_client_1 = require("./lib/npm-client");
-const util_1 = require("./lib/util");
+const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     util_1.done(npm_client_1.default.create()

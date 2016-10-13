@@ -9,9 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const logging_1 = require("./lib/logging");
-const util_1 = require("./lib/util");
 const package_generator_1 = require("./lib/package-generator");
+const logging_1 = require("./util/logging");
+const tgz_1 = require("./util/tgz");
+const util_1 = require("./util/util");
 const versions_1 = require("./lib/versions");
 if (!module.parent) {
     if (!versions_1.default.existsSync()) {
@@ -23,13 +24,14 @@ if (!module.parent) {
     else {
         const all = yargs.argv.all;
         const singleName = yargs.argv.single;
+        const tgz = !!yargs.argv.tgz;
         if (all && singleName) {
             throw new Error("Select only one of -single=foo or --all.");
         }
-        util_1.done((singleName ? single(singleName) : main(all)));
+        util_1.done((singleName ? single(singleName) : main(all, tgz)));
     }
 }
-function main(all = false) {
+function main(all = false, tgz = false) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
@@ -37,6 +39,9 @@ function main(all = false) {
         const packages = all ? allPackages : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, typeData, versions);
+            if (tgz) {
+                yield tgz_1.writeTgz(common_1.getOutputPath(pkg), common_1.getOutputPath(pkg) + ".tgz");
+            }
             log(` * ${pkg.libraryName}`);
             logging_1.moveLogs(log, logs, line => `   * ${line}`);
         }));
