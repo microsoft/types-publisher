@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const fetch = require("node-fetch");
+const node_fetch_1 = require("node-fetch");
 const path = require("path");
 const recursiveReaddir = require("recursive-readdir");
 const fsp = require("fs-promise");
@@ -48,7 +48,7 @@ exports.readJson = readJson;
 function fetchJson(url, init) {
     return __awaiter(this, void 0, void 0, function* () {
         // Cast needed: https://github.com/Microsoft/TypeScript/issues/10065
-        const response = yield (init && init.retries ? fetchWithRetries(url, init) : fetch(url, init));
+        const response = yield (init && init.retries ? fetchWithRetries(url, init) : node_fetch_1.default(url, init));
         return util_1.parseJson(yield response.text());
     });
 }
@@ -89,7 +89,7 @@ function fetchWithRetries(url, init) {
     return __awaiter(this, void 0, void 0, function* () {
         for (let retries = init.retries === true ? 5 : init.retries; retries > 1; retries--) {
             try {
-                return yield fetch(url, init);
+                return yield node_fetch_1.default(url, init);
             }
             catch (err) {
                 if (!/ETIMEDOUT|ECONNRESET/.test(err.message)) {
@@ -97,7 +97,7 @@ function fetchWithRetries(url, init) {
                 }
             }
         }
-        return yield fetch(url);
+        return yield node_fetch_1.default(url);
     });
 }
 //# sourceMappingURL=io.js.map

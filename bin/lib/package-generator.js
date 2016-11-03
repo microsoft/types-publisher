@@ -13,9 +13,10 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
+const versions_1 = require("./versions");
 /** Generates the package to disk */
 function generateAnyPackage(pkg, availableTypes, versions) {
-    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg) : generatePackage(pkg, availableTypes, versions);
+    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, availableTypes, versions);
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = generateAnyPackage;
@@ -54,13 +55,13 @@ function generatePackage(typing, availableTypes, versions) {
         }
     });
 }
-function generateNotNeededPackage(pkg) {
+function generateNotNeededPackage(pkg, versions) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
         const outputPath = common_1.getOutputPath(pkg);
         yield clearOutputPath(outputPath, log);
         log("Generate package.json and README.md");
-        const packageJson = createNotNeededPackageJSON(pkg);
+        const packageJson = createNotNeededPackageJSON(pkg, versions.versionInfo(pkg).version);
         const readme = common_1.notNeededReadme(pkg);
         log("Write metadata files to disk");
         yield writeOutputFile("package.json", packageJson);
@@ -80,6 +81,7 @@ function clearOutputPath(outputPath, log) {
         yield fsp.emptyDir(outputPath);
     });
 }
+exports.clearOutputPath = clearOutputPath;
 function patchDefinitionFile(input) {
     const pathToLibrary = /\/\/\/ <reference path="..\/(\w.+)\/.+"/gm;
     let output = input.replace(pathToLibrary, '/// <reference types="$1"');
@@ -109,7 +111,7 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes) {
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
             name: common_1.fullPackageName(typing.typingsPackageName),
-            version: versionString(typing, version),
+            version: versions_1.versionString(version),
             description,
             // keywords,
             // homepage,
@@ -149,17 +151,10 @@ function addInferredDependencies(dependencies, peerDependencies, typing, availab
     typing.moduleDependencies.forEach(addDependency);
     typing.libraryDependencies.forEach(addDependency);
 }
-function versionString(typing, version) {
-    let versionString = `${typing.libraryMajorVersion}.${typing.libraryMinorVersion}.${version}`;
-    if (common_1.settings.prereleaseTag) {
-        versionString = `${version}-${common_1.settings.prereleaseTag}`;
-    }
-    return versionString;
-}
-function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL, asOfVersion }) {
+function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL }, version) {
     return JSON.stringify({
         name: common_1.fullPackageName(typingsPackageName),
-        version: asOfVersion || "0.0.0",
+        version: versions_1.versionString(version),
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",

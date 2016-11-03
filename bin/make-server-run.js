@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const fetch = require("node-fetch");
+const node_fetch_1 = require("node-fetch");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const secrets_1 = require("./lib/secrets");
@@ -30,7 +30,7 @@ function main(url) {
         const key = yield secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);
         const body = JSON.stringify({ ref: `refs/heads/${common_1.settings.sourceBranch}` });
         const headers = { "x-hub-signature": webhook_server_1.expectedSignature(key, body) };
-        const resp = yield fetch(url, { method: "POST", body, headers });
+        const resp = yield node_fetch_1.default(url, { method: "POST", body, headers });
         console.log(yield resp.text());
     });
 }

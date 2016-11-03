@@ -16,6 +16,7 @@ const calculate_versions_1 = require("./calculate-versions");
 const generate_packages_1 = require("./generate-packages");
 const create_search_index_1 = require("./create-search-index");
 const publish_packages_1 = require("./publish-packages");
+const publish_registry_1 = require("./publish-registry");
 const upload_blobs_1 = require("./upload-blobs");
 const validate_1 = require("./validate");
 const npm_client_1 = require("./lib/npm-client");
@@ -35,6 +36,7 @@ function full(client, dry, timeStamp) {
         yield generate_packages_1.default();
         yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false);
         yield publish_packages_1.default(client, dry);
+        yield publish_registry_1.default();
         yield validate_1.default();
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);

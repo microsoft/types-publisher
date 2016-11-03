@@ -14,6 +14,7 @@ const util_1 = require("../util/util");
 const common_1 = require("./common");
 const versionsFilename = "data/versions.json";
 const changesFilename = "data/version-changes.txt";
+const additionsFilename = "data/version-additions.txt";
 class Versions {
     constructor(data) {
         this.data = data;
@@ -26,43 +27,54 @@ class Versions {
     static existsSync() {
         return fs.existsSync(versionsFilename);
     }
-    /** Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry. */
+    /**
+     * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
+     * `additions` is a subset of `changes`.
+     */
     static determineFromNpm({ typings, notNeeded }, log, forceUpdate) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
+            const additions = [];
             const data = {};
+            const defaultVersionInfo = { version: { major: -1, minor: -1, patch: -1 }, contentHash: "", deprecated: false };
             yield util_1.nAtATime(25, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
-                let { version, contentHash, deprecated } = yield fetchVersionInfoFromNpm(packageName);
+                const versionInfo = yield fetchTypesPackageVersionInfo(packageName);
+                if (!versionInfo) {
+                    log(`Added: ${packageName}`);
+                    additions.push(packageName);
+                }
+                let { version, contentHash, deprecated } = versionInfo || defaultVersionInfo;
                 assert(!deprecated, `Package ${packageName} has been deprecated, so we shouldn't have parsed it. Was it re-added?`);
-                if (forceUpdate || pkg.contentHash !== contentHash) {
+                if (forceUpdate || !versionInfo || pkg.contentHash !== contentHash) {
                     log(`Changed: ${packageName}`);
                     changes.push(packageName);
-                    version++;
+                    version = updateVersion(version, pkg.libraryMajorVersion, pkg.libraryMinorVersion);
                     contentHash = pkg.contentHash;
                 }
                 data[packageName] = { version, contentHash, deprecated };
             }));
             yield util_1.nAtATime(25, notNeeded, (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
-                let { version, contentHash, deprecated } = yield fetchVersionInfoFromNpm(packageName);
+                let { version, contentHash, deprecated } = (yield fetchTypesPackageVersionInfo(packageName)) || defaultVersionInfo;
                 if (!deprecated) {
                     log(`Now deprecated: ${packageName}`);
                     changes.push(packageName);
-                    version++;
+                    version = pkg.asOfVersion ? parseSemver(pkg.asOfVersion) : { major: 0, minor: 0, patch: 0 };
                 }
                 data[packageName] = { version, contentHash, deprecated };
             }));
-            return { changes, versions: new Versions(data) };
+            // Sort keys so that versions.json is easy to read
+            return { changes, additions, versions: new Versions(util_1.sortObjectKeys(data)) };
         });
     }
     save() {
         return io_1.writeFile(versionsFilename, this.render());
     }
-    versionInfo(typing) {
-        const info = this.data[typing.typingsPackageName];
+    versionInfo({ typingsPackageName }) {
+        const info = this.data[typingsPackageName];
         if (!info) {
-            throw new Error(`No version info for ${typing.typingsPackageName}`);
+            throw new Error(`No version info for ${typingsPackageName}`);
         }
         return info;
     }
@@ -72,18 +84,38 @@ class Versions {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Versions;
-function fetchVersionInfoFromNpm(packageName) {
+function updateVersion(prev, newMajor, newMinor) {
+    if (prev.major === newMajor && prev.minor === newMinor) {
+        return { major: prev.major, minor: prev.minor, patch: prev.patch + 1 };
+    }
+    else {
+        return { major: newMajor, minor: newMinor, patch: 0 };
+    }
+}
+function versionString(version) {
+    return `${version.major}.${version.minor}.${version.patch}`;
+}
+exports.versionString = versionString;
+/** Returns undefined if the package does not exist. */
+function fetchTypesPackageVersionInfo(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const escapedPackageName = common_1.fullPackageName(packageName).replace(/\//g, "%2f");
+        return fetchVersionInfoFromNpm(common_1.fullPackageName(packageName).replace(/\//g, "%2f"));
+    });
+}
+function fetchVersionInfoFromNpm(escapedPackageName) {
+    return __awaiter(this, void 0, void 0, function* () {
         const uri = common_1.settings.npmRegistry + escapedPackageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         if (info.error) {
             if (info.error === "Not found") {
-                return { version: 0, contentHash: "", deprecated: false };
+                return undefined;
             }
             else {
-                throw new Error(`Error getting version of ${packageName}: ${info.error}`);
+                throw new Error(`Error getting version at ${uri}: ${info.error}`);
             }
+        }
+        else if (!info["dist-tags"]) {
+            return undefined;
         }
         else {
             const versionSemver = info["dist-tags"].latest;
@@ -92,25 +124,40 @@ function fetchVersionInfoFromNpm(packageName) {
             assert(!!latestVersionInfo);
             const contentHash = latestVersionInfo.typesPublisherContentHash || "";
             const deprecated = !!latestVersionInfo.deprecated;
-            return { version: versionNumberFromSemver(versionSemver), contentHash, deprecated };
+            return { version: parseSemver(versionSemver), contentHash, deprecated };
         }
     });
 }
-function versionNumberFromSemver(semver) {
-    const rgx = /^\d+\.\d+\.(\d+)$/;
+exports.fetchVersionInfoFromNpm = fetchVersionInfoFromNpm;
+function parseSemver(semver) {
+    // Per the semver spec <http://semver.org/#spec-item-2>:
+    // "A normal version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers, and MUST NOT contain leading zeroes."
+    const rgx = /^(\d+)\.(\d+)\.(\d+)$/;
     const match = rgx.exec(semver);
     if (!match) {
         throw new Error(`Unexpected semver: ${semver}`);
     }
-    return Number.parseInt(match[1], 10);
+    return { major: util_1.intOfString(match[1]), minor: util_1.intOfString(match[2]), patch: util_1.intOfString(match[3]) };
 }
+/** Read all changed packages. */
 function readChanges() {
     return __awaiter(this, void 0, void 0, function* () {
         return (yield io_1.readFile(changesFilename)).split("\n");
     });
 }
-function writeChanges(changes) {
-    return io_1.writeFile(changesFilename, changes.join("\n"));
+exports.readChanges = readChanges;
+/** Read only packages which are newly added. */
+function readAdditions() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return (yield io_1.readFile(additionsFilename)).split("\n");
+    });
+}
+exports.readAdditions = readAdditions;
+function writeChanges(changes, additions) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield io_1.writeFile(changesFilename, changes.join("\n"));
+        yield io_1.writeFile(additionsFilename, additions.join("\n"));
+    });
 }
 exports.writeChanges = writeChanges;
 function changedPackages(allPackages) {

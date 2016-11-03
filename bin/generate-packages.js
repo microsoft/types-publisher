@@ -60,9 +60,11 @@ function single(singleName) {
 }
 function loadPrerequisites() {
     return __awaiter(this, void 0, void 0, function* () {
-        const [typeData, notNeededPackages, versions] = yield Promise.all([common_1.readTypesDataFile(), common_1.readNotNeededPackages(), versions_1.default.load()]);
+        const typeData = yield common_1.readTypesDataFile();
+        const notNeededPackages = yield common_1.readNotNeededPackages();
+        const versions = yield versions_1.default.load();
         const typings = common_1.typingsFromData(typeData);
-        const allPackages = typings.concat(notNeededPackages);
+        const allPackages = [...typings, ...notNeededPackages];
         return { typeData, allPackages, versions };
     });
 }

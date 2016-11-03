@@ -91,4 +91,20 @@ function hasOwnProperty(object, propertyName) {
     return Object.prototype.hasOwnProperty.call(object, propertyName);
 }
 exports.hasOwnProperty = hasOwnProperty;
+function intOfString(str) {
+    const n = Number.parseInt(str, 10);
+    if (Number.isNaN(n)) {
+        throw new Error(`Error in parseInt(${JSON.stringify(str)})`);
+    }
+    return n;
+}
+exports.intOfString = intOfString;
+function sortObjectKeys(data) {
+    const out = {};
+    for (const key of Object.keys(data).sort()) {
+        out[key] = data[key];
+    }
+    return out;
+}
+exports.sortObjectKeys = sortObjectKeys;
 //# sourceMappingURL=util.js.map

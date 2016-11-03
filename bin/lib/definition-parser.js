@@ -79,8 +79,8 @@ function parseMetadata(mainFileContent) {
         return match ? match[1] : defaultValue;
     }
     const authors = regexMatch(/^\/\/ Definitions by: (.+)$/m, "Unknown");
-    const libraryMajorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0");
-    const libraryMinorVersion = regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0");
+    const libraryMajorVersion = util_1.intOfString(regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0"));
+    const libraryMinorVersion = util_1.intOfString(regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0"));
     const libraryName = regexMatch(/^\/\/ Type definitions for (.+)$/m, "Unknown").trim();
     const projectName = regexMatch(/^\/\/ Project: (.+)$/m, "");
     return { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName };

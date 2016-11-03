@@ -108,8 +108,7 @@ function readNotNeededPackages() {
 exports.readNotNeededPackages = readNotNeededPackages;
 function readAllPackages() {
     return __awaiter(this, void 0, void 0, function* () {
-        const [typings, notNeeded] = yield Promise.all([readTypings(), readNotNeededPackages()]);
-        return { typings, notNeeded };
+        return { typings: yield readTypings(), notNeeded: yield readNotNeededPackages() };
     });
 }
 exports.readAllPackages = readAllPackages;
