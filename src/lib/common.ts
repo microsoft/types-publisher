@@ -78,9 +78,9 @@ export interface TypingsData extends PackageCommonProperties {
 	authors: string;
 
 	// The major version of the library (e.g. "1" for 1.0, "2" for 2.0)
-	libraryMajorVersion: string;
+	libraryMajorVersion: number;
 	// The minor version of the library
-	libraryMinorVersion: string;
+	libraryMinorVersion: number;
 
 	// The full path to the containing folder of all files, e.g. "C:/github/DefinitelyTyped/some-package"
 	root: string;
@@ -174,8 +174,7 @@ export interface AllPackages {
 }
 
 export async function readAllPackages(): Promise<AllPackages> {
-	const [typings, notNeeded] = await Promise.all([readTypings(), readNotNeededPackages()]);
-	return { typings, notNeeded };
+	return { typings: await readTypings(), notNeeded: await readNotNeededPackages() };
 }
 
 export async function readAllPackagesArray(): Promise<AnyPackage[]> {
