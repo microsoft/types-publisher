@@ -25,7 +25,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function getRepo() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (fsp.exists(common_1.settings.definitelyTypedPath)) {
+        if (yield fsp.exists(common_1.settings.definitelyTypedPath)) {
             const repo = yield nodegit_1.Repository.open(common_1.settings.definitelyTypedPath);
             const currentBranch = (yield repo.getCurrentBranch()).name();
             const correctBranch = `refs/heads/${common_1.settings.sourceBranch}`;
