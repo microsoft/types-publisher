@@ -23,6 +23,7 @@ if (!module.parent) {
 }
 function main(forceUpdate) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log("=== Calculating versions ===");
         const { changes, additions, versions } = yield versions_1.default.determineFromNpm(yield common_1.readAllPackages(), logging_1.consoleLogger.info, forceUpdate);
         yield versions_1.writeChanges(changes, additions);
         yield versions.save();

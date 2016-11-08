@@ -13,6 +13,7 @@ const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const versions_1 = require("./lib/versions");
+const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 const packageName = "types-registry";
@@ -66,9 +67,7 @@ function generate(typings, packageJson, log) {
         yield writeOutputFile("index.json", generateRegistry(typings));
         yield writeOutputFile("README.md", readme);
         function writeOutputFile(filename, content) {
-            return __awaiter(this, void 0, void 0, function* () {
-                return yield common_1.writeDataFile(path.join(outputPath, filename), content);
-            });
+            return io_1.writeJson(path.join(outputPath, filename), content);
         }
     });
 }

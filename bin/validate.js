@@ -96,7 +96,9 @@ function validatePackages(packageNames, outPath, log) {
         log.info(`Passed ${passed.length}`);
         log.info(`Failed ${failed.length}`);
         log.info("");
-        log.info(`These packages failed: ${failed}`);
+        if (failed.length) {
+            log.info(`These packages failed: ${failed}`);
+        }
     });
 }
 function validatePackage(packageName, outputDirecory, mainLog) {

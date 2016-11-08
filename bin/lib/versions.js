@@ -13,8 +13,8 @@ const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
 const versionsFilename = "data/versions.json";
-const changesFilename = "data/version-changes.txt";
-const additionsFilename = "data/version-additions.txt";
+const changesFilename = "data/version-changes.json";
+const additionsFilename = "data/version-additions.json";
 class Versions {
     constructor(data) {
         this.data = data;
@@ -69,7 +69,7 @@ class Versions {
         });
     }
     save() {
-        return io_1.writeFile(versionsFilename, this.render());
+        return io_1.writeJson(versionsFilename, this.data);
     }
     versionInfo({ typingsPackageName }) {
         const info = this.data[typingsPackageName];
@@ -77,9 +77,6 @@ class Versions {
             throw new Error(`No version info for ${typingsPackageName}`);
         }
         return info;
-    }
-    render() {
-        return JSON.stringify(this.data, undefined, 4);
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -141,22 +138,18 @@ function parseSemver(semver) {
 }
 /** Read all changed packages. */
 function readChanges() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return (yield io_1.readFile(changesFilename)).split("\n");
-    });
+    return io_1.readJson(changesFilename);
 }
 exports.readChanges = readChanges;
 /** Read only packages which are newly added. */
 function readAdditions() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return (yield io_1.readFile(additionsFilename)).split("\n");
-    });
+    return io_1.readJson(additionsFilename);
 }
 exports.readAdditions = readAdditions;
 function writeChanges(changes, additions) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield io_1.writeFile(changesFilename, changes.join("\n"));
-        yield io_1.writeFile(additionsFilename, additions.join("\n"));
+        yield io_1.writeJson(changesFilename, changes);
+        yield io_1.writeJson(additionsFilename, additions);
     });
 }
 exports.writeChanges = writeChanges;

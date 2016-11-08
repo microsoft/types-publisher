@@ -17,7 +17,7 @@ if (!module.parent) {
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const repo = yield getRepo();
-        yield pull(repo);
+        yield pull(repo, console.log);
         yield checkStatus(repo);
     });
 }
@@ -41,8 +41,9 @@ function getRepo() {
         }
     });
 }
-function pull(repo) {
+function pull(repo, log) {
     return __awaiter(this, void 0, void 0, function* () {
+        log(`Pulling new changes from ${common_1.settings.sourceBranch}`);
         yield repo.fetchAll();
         yield repo.mergeBranches(common_1.settings.sourceBranch, `origin/${common_1.settings.sourceBranch}`);
     });
