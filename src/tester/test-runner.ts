@@ -38,7 +38,7 @@ export default async function main(options: Options, regexp?: RegExp) {
 
 	console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
 
-	const allErrors: { pkg: TypingsData, err: TesterError }[] = [];
+	const allErrors: Array<{ pkg: TypingsData, err: TesterError }> = [];
 
 	await nAtATime(numberOfOsProcesses, typings, async pkg => {
 		const [log, logResult] = quietLoggerWithErrors();
@@ -51,6 +51,8 @@ export default async function main(options: Options, regexp?: RegExp) {
 	});
 
 	if (allErrors.length) {
+		allErrors.sort(({ pkg: pkgA }, { pkg: pkgB}) => pkgA.typingsPackageName.localeCompare(pkgB.typingsPackageName));
+
 		console.log("\n\n=== ERRORS ===\n");
 		for (const { err, pkg } of allErrors) {
 			console.error(`Error in ${pkg.typingsPackageName}`);
@@ -84,14 +86,10 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 	function tsc(): Promise<TesterError | undefined> {
 		return runCommand(log, cwd, tscPath);
 	}
-	function tslint(): Promise<TesterError | undefined> {
-		const defs = path.join(__dirname, "../../tslint-definitions.json");
-		const config = path.relative(cwd, defs);
-		const flags = `--config ${config} --format stylish`;
-		if (!true) { // TODO LATER: DefinitelyTyped needs to be cleaned up before this should run.
-			return runCommand(log, cwd, path.relative(cwd, tslintPath), flags, ...pkg.files);
-		}
-		return Promise.resolve(undefined);
+	async function tslint(): Promise<TesterError | undefined> {
+		return (await fsp.exists(path.join(cwd, "tslint.json")))
+			? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
+			: undefined;
 	}
 }
 
