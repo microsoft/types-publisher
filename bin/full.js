@@ -19,25 +19,26 @@ const publish_packages_1 = require("./publish-packages");
 const publish_registry_1 = require("./publish-registry");
 const upload_blobs_1 = require("./upload-blobs");
 const validate_1 = require("./validate");
+const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     util_1.done(npm_client_1.default.create()
-        .then(client => full(client, dry, util_1.currentTimeStamp())));
+        .then(client => full(client, dry, util_1.currentTimeStamp(), common_1.Options.defaults)));
 }
-function full(client, dry, timeStamp) {
+function full(client, dry, timeStamp, options) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
-        yield get_definitely_typed_1.default();
-        yield parse_definitions_1.default();
+        yield get_definitely_typed_1.default(options);
+        yield parse_definitions_1.default(options);
         yield check_parse_results_1.default();
-        yield calculate_versions_1.default(/*forceUpdate*/ false);
-        yield generate_packages_1.default();
-        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false);
-        yield publish_packages_1.default(client, dry);
+        yield calculate_versions_1.default(/*forceUpdate*/ false, options);
+        yield generate_packages_1.default(options);
+        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, options);
+        yield publish_packages_1.default(client, dry, options);
         yield publish_registry_1.default();
-        yield validate_1.default();
+        yield validate_1.default(options);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);
         }

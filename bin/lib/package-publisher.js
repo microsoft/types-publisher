@@ -8,10 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const child_process = require("child_process");
 const path = require("path");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
+const util_1 = require("../util/util");
 const common_1 = require("./common");
 function publishPackage(client, pkg, dry) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -48,31 +48,26 @@ function unpublishPackage(pkg, dry) {
 }
 exports.unpublishPackage = unpublishPackage;
 function runCommand(commandDescription, log, dry, args) {
-    const cmd = args.join(" ");
-    log.info(`Run ${cmd}`);
-    if (!dry) {
-        return new Promise((resolve, reject) => {
-            child_process.exec(cmd, { encoding: "utf8" }, (err, stdoutBuffer, stderrBuffer) => {
-                // These are wrongly typed as Buffer.
-                const stdout = stdoutBuffer;
-                const stderr = stderrBuffer;
-                if (err) {
-                    log.error(`${commandDescription} failed: ${JSON.stringify(err)}`);
-                    log.info(`${commandDescription} failed, refer to error log`);
-                    log.error(stderr);
-                    reject(new Error(stderr));
-                }
-                else {
-                    log.info("Ran successfully");
-                    log.info(stdout);
-                }
-                resolve();
-            });
-        });
-    }
-    else {
-        log.info("(dry run)");
-        return Promise.resolve();
-    }
+    return __awaiter(this, void 0, void 0, function* () {
+        const cmd = args.join(" ");
+        log.info(`Run ${cmd}`);
+        if (!dry) {
+            const { error, stdout, stderr } = yield util_1.exec(cmd);
+            if (error) {
+                log.error(`${commandDescription} failed: ${JSON.stringify(error)}`);
+                log.info(`${commandDescription} failed, refer to error log`);
+                log.error(stderr);
+                throw new Error(stderr);
+            }
+            else {
+                log.info("Ran successfully");
+                log.info(stdout);
+            }
+        }
+        else {
+            log.info("(dry run)");
+            return Promise.resolve();
+        }
+    });
 }
 //# sourceMappingURL=package-publisher.js.map

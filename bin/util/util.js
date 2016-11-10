@@ -7,7 +7,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
+const child_process = require("child_process");
 const moment = require("moment");
+const os = require("os");
+const object_entries_1 = require("object.entries");
+object_entries_1.shim();
+const object_values_1 = require("object.values");
+object_values_1.shim();
 function parseJson(text) {
     try {
         return JSON.parse(text);
@@ -21,6 +27,7 @@ function currentTimeStamp() {
     return moment().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 }
 exports.currentTimeStamp = currentTimeStamp;
+exports.numberOfOsProcesses = os.cpus().length;
 function nAtATime(n, inputs, use) {
     return __awaiter(this, void 0, void 0, function* () {
         const results = new Array(inputs.length);
@@ -73,7 +80,10 @@ function unique(arr) {
 }
 exports.unique = unique;
 function done(promise) {
-    promise.catch(console.error);
+    promise.catch(error => {
+        console.error(error);
+        process.exit(1);
+    });
 }
 exports.done = done;
 function initArray(length, makeElement) {
@@ -107,4 +117,26 @@ function sortObjectKeys(data) {
     return out;
 }
 exports.sortObjectKeys = sortObjectKeys;
+/** Run a command and return the error, stdout, and stderr. (Never throws.) */
+function exec(cmd, cwd) {
+    return new Promise((resolve) => {
+        child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
+            stdout = stdout.trim();
+            stderr = stderr.trim();
+            resolve({ error, stdout, stderr });
+        });
+    });
+}
+exports.exec = exec;
+/** Run a command and return the stdout, or if there was an error, throw. */
+function execAndThrowErrors(cmd, cwd) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { error, stdout, stderr } = yield exec(cmd, cwd);
+        if (error) {
+            throw new Error(stderr);
+        }
+        return stdout;
+    });
+}
+exports.execAndThrowErrors = execAndThrowErrors;
 //# sourceMappingURL=util.js.map

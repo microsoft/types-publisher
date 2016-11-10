@@ -17,7 +17,7 @@ const rolling_logs_1 = require("./rolling-logs");
 const common_1 = require("./common");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
-function server(key, githubAccessToken, dry) {
+function server(key, githubAccessToken, dry, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
         return listenToGithub(key, githubAccessToken, dry, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
@@ -26,7 +26,7 @@ function server(key, githubAccessToken, dry) {
             log.info(`# ${timeStamp}`);
             log.info("");
             log.info("Starting full...");
-            yield full_1.default(client, dry, timeStamp);
+            yield full_1.default(client, dry, timeStamp, options);
         })));
     });
 }

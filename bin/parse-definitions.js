@@ -15,13 +15,13 @@ const util_1 = require("./util/util");
 const fsp = require("fs-promise");
 if (!module.parent) {
     const singleName = yargs.argv.single;
-    util_1.done((singleName ? single(singleName) : main()));
+    util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults)));
 }
-function processDir(name) {
+function processDir(name, options) {
     return __awaiter(this, void 0, void 0, function* () {
         let data;
         let outcome;
-        const info = yield parser.getTypingInfo(name);
+        const info = yield parser.getTypingInfo(name, options);
         const logs = info.logs;
         if (info.kind === "success") {
             data = info.data;
@@ -34,30 +34,30 @@ function processDir(name) {
         return { data, logs, outcome };
     });
 }
-function filterPaths(paths) {
+function filterPaths(paths, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fullPaths = paths
-            .filter(s => s[0] !== "_" && s[0] !== "." && s !== "node_modules" && s !== "scripts")
+            .filter(s => s[0] !== "." && s !== "node_modules" && s !== "scripts")
             .sort();
         // Remove non-folders
-        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(common_1.definitelyTypedPath(s))).isDirectory(); }));
+        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(common_1.definitelyTypedPath(s, options))).isDirectory(); }));
     });
 }
-function main() {
+function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [summaryLog, summaryLogResult] = logging_1.logger();
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
         // TypesData
-        const paths = yield fsp.readdir(common_1.settings.definitelyTypedPath);
-        const folders = yield filterPaths(paths);
-        summaryLog(`Found ${folders.length} typings folders in ${common_1.settings.definitelyTypedPath}`);
+        const paths = yield fsp.readdir(options.definitelyTypedPath);
+        const folders = yield filterPaths(paths, options);
+        summaryLog(`Found ${folders.length} typings folders in ${options.definitelyTypedPath}`);
         const outcomes = {};
         const [warningLog, warningLogResult] = logging_1.logger();
         const typings = {};
         for (const s of folders) {
-            const result = yield processDir(s);
+            const result = yield processDir(s, options);
             // Record outcome
             outcomes[result.outcome] = (outcomes[result.outcome] || 0) + 1;
             detailedLog(`# ${s}`);
@@ -93,9 +93,9 @@ function main() {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function single(singleName) {
+function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield processDir(singleName);
+        const result = yield processDir(singleName, options);
         const typings = { [singleName]: result.data };
         yield common_1.writeDataFile(common_1.typesDataFilename, typings);
         console.log(result);

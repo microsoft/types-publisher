@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const fsp = require("fs-promise");
 const path = require("path");
-const child_process = require("child_process");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const io_1 = require("./util/io");
@@ -35,13 +34,13 @@ if (!module.parent) {
             util_1.done(doValidate(packageNames));
         }
         else {
-            main();
+            main(common_1.Options.defaults);
         }
     }
 }
-function main() {
+function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changed = yield versions_1.changedPackages(yield common_1.readAllPackagesArray());
+        const changed = yield versions_1.changedPackages(yield common_1.readAllPackagesArray(options));
         yield doValidate(changed.map(c => c.typingsPackageName));
     });
 }
@@ -157,25 +156,21 @@ function writePackage(packageDirectory, packageName) {
 }
 // Returns whether the command succeeded.
 function runCommand(commandDescription, log, directory, cmd, ...args) {
-    const nodeCmd = `node ${cmd} ${args.join(" ")}`;
-    log.info(`Run ${nodeCmd}`);
-    return new Promise(resolve => {
-        child_process.exec(nodeCmd, { encoding: "utf8", cwd: directory }, (err, stdoutBuffer, stderrBuffer) => {
-            // These are wrongly typed as Buffer.
-            const stdout = stdoutBuffer;
-            const stderr = stderrBuffer;
-            if (err) {
-                log.error(stderr);
-                log.info(stdout);
-                log.error(`${commandDescription} failed: ${JSON.stringify(err)}`);
-                log.info(`${commandDescription} failed, refer to error log`);
-                resolve(false);
-            }
-            else {
-                log.info(stdout);
-                resolve(true);
-            }
-        });
+    return __awaiter(this, void 0, void 0, function* () {
+        const nodeCmd = `node ${cmd} ${args.join(" ")}`;
+        log.info(`Run ${nodeCmd}`);
+        const { error, stdout, stderr } = yield util_1.exec(nodeCmd, directory);
+        if (error) {
+            log.error(stderr);
+            log.info(stdout);
+            log.error(`${commandDescription} failed: ${JSON.stringify(error)}`);
+            log.info(`${commandDescription} failed, refer to error log`);
+            return false;
+        }
+        else {
+            log.info(stdout);
+            return true;
+        }
     });
 }
 //# sourceMappingURL=validate.js.map

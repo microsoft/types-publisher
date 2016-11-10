@@ -45,7 +45,7 @@ function main(dry = false) {
         else {
             log("No new packages published, so no need to publish new registry.");
         }
-        yield logging_1.writeLog("publishing.md", logResult());
+        yield logging_1.writeLog("publish-registry.md", logResult());
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });

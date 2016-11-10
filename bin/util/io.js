@@ -57,8 +57,8 @@ function writeFile(path, content) {
     return fsp.writeFile(path, content, { encoding: "utf8" });
 }
 exports.writeFile = writeFile;
-function writeJson(path, content) {
-    return writeFile(path, JSON.stringify(content, undefined, 4));
+function writeJson(path, content, formatted = true) {
+    return writeFile(path, JSON.stringify(content, undefined, formatted ? 4 : undefined));
 }
 exports.writeJson = writeJson;
 function streamOfString(text) {

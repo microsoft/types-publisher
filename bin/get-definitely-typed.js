@@ -12,21 +12,21 @@ const nodegit_1 = require("nodegit");
 const common_1 = require("./lib/common");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main());
+    util_1.done(main(common_1.Options.defaults));
 }
-function main() {
+function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const repo = yield getRepo();
+        const repo = yield getRepo(options);
         yield pull(repo, console.log);
         yield checkStatus(repo);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function getRepo() {
+function getRepo(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (yield fsp.exists(common_1.settings.definitelyTypedPath)) {
-            const repo = yield nodegit_1.Repository.open(common_1.settings.definitelyTypedPath);
+        if (yield fsp.exists(options.definitelyTypedPath)) {
+            const repo = yield nodegit_1.Repository.open(options.definitelyTypedPath);
             const currentBranch = (yield repo.getCurrentBranch()).name();
             const correctBranch = `refs/heads/${common_1.settings.sourceBranch}`;
             if (currentBranch !== correctBranch) {
@@ -35,7 +35,7 @@ function getRepo() {
             return repo;
         }
         else {
-            const repo = yield nodegit_1.Clone(common_1.settings.sourceRepository, common_1.settings.definitelyTypedPath);
+            const repo = yield nodegit_1.Clone(common_1.settings.sourceRepository, options.definitelyTypedPath);
             yield repo.checkoutBranch(common_1.settings.sourceBranch);
             return repo;
         }

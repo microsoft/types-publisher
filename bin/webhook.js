@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const yargs = require("yargs");
+const common_1 = require("./lib/common");
 const webhook_server_1 = require("./lib/webhook-server");
 const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
@@ -25,7 +26,7 @@ function main() {
         }
         else {
             console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-            const s = yield webhook_server_1.default(key, githubAccessToken, dry);
+            const s = yield webhook_server_1.default(key, githubAccessToken, dry, common_1.Options.defaults);
             yield issue_updater_1.setIssueOk(githubAccessToken);
             console.log(`Listening on port ${port}`);
             s.listen(port);

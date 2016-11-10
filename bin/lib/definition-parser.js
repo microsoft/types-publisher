@@ -98,10 +98,10 @@ function moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log) {
         return Object.assign({ fileKind }, mi);
     });
 }
-function getTypingInfo(folderName) {
+function getTypingInfo(folderName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLoggerWithErrors();
-        const directory = common_1.definitelyTypedPath(folderName);
+        const directory = common_1.definitelyTypedPath(folderName, options);
         if (folderName !== folderName.toLowerCase()) {
             throw new Error(`Package name \`${folderName}\` should be strictly lowercase`);
         }

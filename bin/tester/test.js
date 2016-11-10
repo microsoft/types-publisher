@@ -8,27 +8,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const yargs = require("yargs");
-const common_1 = require("./lib/common");
-const versions_1 = require("./lib/versions");
-const logging_1 = require("./util/logging");
-const util_1 = require("./util/util");
+const clean_1 = require("../clean");
+const parse_definitions_1 = require("../parse-definitions");
+const check_parse_results_1 = require("../check-parse-results");
+const util_1 = require("../util/util");
+const test_runner_1 = require("./test-runner");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
-    }
-    else {
-        const forceUpdate = yargs.argv.forceUpdate;
-        util_1.done(main(forceUpdate, common_1.Options.defaults));
-    }
+    const options = test_runner_1.testerOptions(!!yargs.argv.runFromDefinitelyTyped);
+    util_1.done(main(options));
 }
-function main(forceUpdate, options) {
+function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("=== Calculating versions ===");
-        const { changes, additions, versions } = yield versions_1.default.determineFromNpm(yield common_1.readAllPackages(options), logging_1.consoleLogger.info, forceUpdate);
-        yield versions_1.writeChanges(changes, additions);
-        yield versions.save();
+        yield clean_1.default();
+        yield parse_definitions_1.default(options);
+        yield check_parse_results_1.default();
+        yield test_runner_1.default(options);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-//# sourceMappingURL=calculate-versions.js.map
+//# sourceMappingURL=test.js.map

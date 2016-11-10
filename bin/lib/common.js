@@ -24,7 +24,15 @@ if (process.env.LONGJOHN) {
 exports.home = path.join(__dirname, "..", "..");
 exports.settings = util_1.parseJson(fs_1.readFileSync(path.join(exports.home, "settings.json"), "utf-8"));
 exports.typesDataFilename = "definitions.json";
-exports.notNeededPackagesPath = path.join(exports.settings.definitelyTypedPath, "notNeededPackages.json");
+function notNeededPackagesPath(options) {
+    return path.join(options.definitelyTypedPath, "notNeededPackages.json");
+}
+var Options;
+(function (Options) {
+    Options.defaults = {
+        definitelyTypedPath: "../DefinitelyTyped",
+    };
+})(Options = exports.Options || (exports.Options = {}));
 (function (RejectionReason) {
     RejectionReason[RejectionReason["TooManyFiles"] = 0] = "TooManyFiles";
     RejectionReason[RejectionReason["BadFileFormat"] = 1] = "BadFileFormat";
@@ -35,11 +43,18 @@ function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }
 exports.isNotNeededPackage = isNotNeededPackage;
+function existsDataFileSync(filename) {
+    return fs_1.existsSync(dataFilePath(filename));
+}
+exports.existsDataFileSync = existsDataFileSync;
+function readDataFile(filename) {
+    return io_1.readJson(dataFilePath(filename));
+}
+exports.readDataFile = readDataFile;
 function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        const dataDir = path.join(exports.home, "data");
         yield fsp.ensureDir(dataDir);
-        yield io_1.writeFile(path.join(dataDir, filename), JSON.stringify(content, undefined, formatted ? 4 : undefined));
+        yield io_1.writeJson(dataFilePath(filename), content, formatted);
     });
 }
 exports.writeDataFile = writeDataFile;
@@ -76,7 +91,7 @@ function getPackage(typings, packageName) {
 }
 exports.getPackage = getPackage;
 function typingsFromData(typeData) {
-    return Object.keys(typeData).map(packageName => typeData[packageName]);
+    return Object.values(typeData);
 }
 exports.typingsFromData = typingsFromData;
 function readTypings() {
@@ -85,9 +100,9 @@ function readTypings() {
     });
 }
 exports.readTypings = readTypings;
-function readNotNeededPackages() {
+function readNotNeededPackages(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const raw = (yield io_1.readJson(exports.notNeededPackagesPath)).packages;
+        const raw = (yield io_1.readJson(notNeededPackagesPath(options))).packages;
         for (const pkg of raw) {
             for (const key in pkg) {
                 if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
@@ -106,15 +121,15 @@ function readNotNeededPackages() {
     });
 }
 exports.readNotNeededPackages = readNotNeededPackages;
-function readAllPackages() {
+function readAllPackages(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        return { typings: yield readTypings(), notNeeded: yield readNotNeededPackages() };
+        return { typings: yield readTypings(), notNeeded: yield readNotNeededPackages(options) };
     });
 }
 exports.readAllPackages = readAllPackages;
-function readAllPackagesArray() {
+function readAllPackagesArray(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { typings, notNeeded } = yield readAllPackages();
+        const { typings, notNeeded } = yield readAllPackages(options);
         return typings.concat(notNeeded);
     });
 }
@@ -127,12 +142,13 @@ function computeHash(content) {
     return h.digest("hex");
 }
 exports.computeHash = computeHash;
-function definitelyTypedPath(dirName) {
-    return path.join(exports.settings.definitelyTypedPath, dirName);
+function definitelyTypedPath(dirName, options) {
+    return path.join(options.definitelyTypedPath, dirName);
 }
 exports.definitelyTypedPath = definitelyTypedPath;
+const outputDir = path.join(exports.home, exports.settings.outputPath);
 function getOutputPath({ typingsPackageName }) {
-    return path.join(exports.settings.outputPath, typingsPackageName);
+    return path.join(outputDir, typingsPackageName);
 }
 exports.getOutputPath = getOutputPath;
 function fullPackageName(typingsPackageName) {

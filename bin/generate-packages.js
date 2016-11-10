@@ -28,14 +28,14 @@ if (!module.parent) {
         if (all && singleName) {
             throw new Error("Select only one of -single=foo or --all.");
         }
-        util_1.done((singleName ? single(singleName) : main(all, tgz)));
+        util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults, all, tgz)));
     }
 }
-function main(all = false, tgz = false) {
+function main(options, all = false, tgz = false) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
-        const { typeData, allPackages, versions } = yield loadPrerequisites();
+        const { typeData, allPackages, versions } = yield loadPrerequisites(options);
         const packages = all ? allPackages : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, typeData, versions);
@@ -50,18 +50,18 @@ function main(all = false, tgz = false) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function single(singleName) {
+function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { typeData, versions } = yield loadPrerequisites();
+        const { typeData, versions } = yield loadPrerequisites(options);
         const pkg = common_1.getPackage(typeData, singleName);
         const logs = yield package_generator_1.default(pkg, typeData, versions);
         console.log(logs.join("\n"));
     });
 }
-function loadPrerequisites() {
+function loadPrerequisites(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const typeData = yield common_1.readTypesDataFile();
-        const notNeededPackages = yield common_1.readNotNeededPackages();
+        const notNeededPackages = yield common_1.readNotNeededPackages(options);
         const versions = yield versions_1.default.load();
         const typings = common_1.typingsFromData(typeData);
         const allPackages = [...typings, ...notNeededPackages];

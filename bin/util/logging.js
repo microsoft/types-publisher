@@ -68,9 +68,9 @@ function moveLogs(dest, src, mapper) {
 }
 exports.moveLogs = moveLogs;
 /** Perform `moveLogs` for both parts of a LogWithErrors. */
-function moveLogsWithErrors(dest, { infos, errors }) {
-    moveLogs(dest.info, infos);
-    moveLogs(dest.error, errors);
+function moveLogsWithErrors(dest, { infos, errors }, mapper) {
+    moveLogs(dest.info, infos, mapper);
+    moveLogs(dest.error, errors, mapper);
 }
 exports.moveLogsWithErrors = moveLogsWithErrors;
 const logDir = path.join(common_1.home, "logs");

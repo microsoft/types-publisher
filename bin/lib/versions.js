@@ -8,24 +8,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const fs = require("fs");
+const common_1 = require("../lib/common");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-const common_1 = require("./common");
-const versionsFilename = "data/versions.json";
-const changesFilename = "data/version-changes.json";
-const additionsFilename = "data/version-additions.json";
+const common_2 = require("./common");
+const versionsFilename = "versions.json";
+const changesFilename = "version-changes.json";
+const additionsFilename = "version-additions.json";
 class Versions {
     constructor(data) {
         this.data = data;
     }
     static load() {
         return __awaiter(this, void 0, void 0, function* () {
-            return new Versions(yield io_1.readJson(versionsFilename));
+            return new Versions(yield common_1.readDataFile(versionsFilename));
         });
     }
     static existsSync() {
-        return fs.existsSync(versionsFilename);
+        return common_1.existsDataFileSync(versionsFilename);
     }
     /**
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
@@ -69,7 +69,7 @@ class Versions {
         });
     }
     save() {
-        return io_1.writeJson(versionsFilename, this.data);
+        return common_1.writeDataFile(versionsFilename, this.data);
     }
     versionInfo({ typingsPackageName }) {
         const info = this.data[typingsPackageName];
@@ -96,12 +96,12 @@ exports.versionString = versionString;
 /** Returns undefined if the package does not exist. */
 function fetchTypesPackageVersionInfo(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(common_1.fullPackageName(packageName).replace(/\//g, "%2f"));
+        return fetchVersionInfoFromNpm(common_2.fullPackageName(packageName).replace(/\//g, "%2f"));
     });
 }
 function fetchVersionInfoFromNpm(escapedPackageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = common_1.settings.npmRegistry + escapedPackageName;
+        const uri = common_2.settings.npmRegistry + escapedPackageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         if (info.error) {
             if (info.error === "Not found") {
@@ -138,18 +138,18 @@ function parseSemver(semver) {
 }
 /** Read all changed packages. */
 function readChanges() {
-    return io_1.readJson(changesFilename);
+    return common_1.readDataFile(changesFilename);
 }
 exports.readChanges = readChanges;
 /** Read only packages which are newly added. */
 function readAdditions() {
-    return io_1.readJson(additionsFilename);
+    return common_1.readDataFile(additionsFilename);
 }
 exports.readAdditions = readAdditions;
 function writeChanges(changes, additions) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield io_1.writeJson(changesFilename, changes);
-        yield io_1.writeJson(additionsFilename, additions);
+        yield common_1.writeDataFile(changesFilename, changes);
+        yield common_1.writeDataFile(additionsFilename, additions);
     });
 }
 exports.writeChanges = writeChanges;
