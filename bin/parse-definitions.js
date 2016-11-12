@@ -37,7 +37,7 @@ function processDir(name, options) {
 function filterPaths(paths, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fullPaths = paths
-            .filter(s => s[0] !== "." && s !== "node_modules" && s !== "scripts")
+            .filter(s => s[0] !== "." && s !== "_" && s !== "node_modules" && s !== "scripts")
             .sort();
         // Remove non-folders
         return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(common_1.definitelyTypedPath(s, options))).isDirectory(); }));
