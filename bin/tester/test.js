@@ -15,16 +15,14 @@ const util_1 = require("../util/util");
 const test_runner_1 = require("./test-runner");
 if (!module.parent) {
     const options = test_runner_1.testerOptions(!!yargs.argv.runFromDefinitelyTyped);
-    util_1.done(main(options));
+    util_1.done(main(options, test_runner_1.parseNProcesses()));
 }
-function main(options) {
+function main(options, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
         yield parse_definitions_1.default(options);
         yield check_parse_results_1.default();
-        yield test_runner_1.default(options);
+        yield test_runner_1.default(options, nProcesses);
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = main;
 //# sourceMappingURL=test.js.map

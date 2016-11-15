@@ -24,9 +24,21 @@ if (!module.parent) {
     }
     else {
         const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
-        util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), regexp));
+        util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
     }
 }
+function parseNProcesses() {
+    const str = yargs.argv.nProcesses;
+    if (!str) {
+        return undefined;
+    }
+    const nProcesses = Number.parseInt(yargs.argv.nProcesses, 10);
+    if (Number.isNaN(nProcesses)) {
+        throw new Error("Expected nProcesses to be a number.");
+    }
+    return nProcesses;
+}
+exports.parseNProcesses = parseNProcesses;
 function testerOptions(runFromDefinitelyTyped) {
     if (runFromDefinitelyTyped) {
         return { definitelyTypedPath: process.cwd() };
@@ -36,14 +48,16 @@ function testerOptions(runFromDefinitelyTyped) {
     }
 }
 exports.testerOptions = testerOptions;
-function main(options, regexp) {
+function main(options, nProcesses, regexp) {
     return __awaiter(this, void 0, void 0, function* () {
         const typings = regexp
             ? (yield common_1.readTypings()).filter(t => regexp.test(t.typingsPackageName))
             : yield get_affected_packages_1.default(console.log, options);
+        nProcesses = nProcesses || util_1.numberOfOsProcesses;
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
+        console.log(`Runing with ${nProcesses} processes.`);
         const allErrors = [];
-        yield util_1.nAtATime(util_1.numberOfOsProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
             const err = yield single(pkg, log, options);
             console.log(`Testing ${pkg.typingsPackageName}`);
