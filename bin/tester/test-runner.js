@@ -55,7 +55,7 @@ function main(options, nProcesses, regexp) {
             : yield get_affected_packages_1.default(console.log, options);
         nProcesses = nProcesses || util_1.numberOfOsProcesses;
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
-        console.log(`Runing with ${nProcesses} processes.`);
+        console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
@@ -67,6 +67,7 @@ function main(options, nProcesses, regexp) {
             }
         }));
         if (allErrors.length) {
+            allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => pkgA.typingsPackageName.localeCompare(pkgB.typingsPackageName));
             console.log("\n\n=== ERRORS ===\n");
             for (const { err, pkg } of allErrors) {
                 console.error(`Error in ${pkg.typingsPackageName}`);
@@ -106,13 +107,11 @@ function single(pkg, log, options) {
             return runCommand(log, cwd, tscPath);
         }
         function tslint() {
-            const defs = path.join(__dirname, "../../tslint-definitions.json");
-            const config = path.relative(cwd, defs);
-            const flags = `--config ${config} --format stylish`;
-            if (!true) {
-                return runCommand(log, cwd, path.relative(cwd, tslintPath), flags, ...pkg.files);
-            }
-            return Promise.resolve(undefined);
+            return __awaiter(this, void 0, void 0, function* () {
+                return (yield fsp.exists(path.join(cwd, "tslint.json")))
+                    ? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
+                    : undefined;
+            });
         }
     });
 }
