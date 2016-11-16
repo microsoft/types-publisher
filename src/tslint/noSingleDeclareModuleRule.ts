@@ -10,10 +10,14 @@ export class Rule extends Lint.Rules.AbstractRule {
 		type: "style"
 	};
 
-	static FAILURE_STRING = "File has only 1 module declaration — write it as an external module.\n" +
-		"If augmenting a single module, use `// tslint:disable-next-line:no-single-declare-module`.";
+	static FAILURE_STRING = "File has only 1 module declaration — write it as an external module.";
 
 	apply(sourceFile: ts.SourceFile): Lint.RuleFailure[] {
+		// If it's an external module, any module declarations inside are augmentations.
+		if ((sourceFile as any).externalModuleIndicator) {
+			return [];
+		}
+
 		if (hasSoleModuleDeclaration(sourceFile)) {
 			return this.applyWithWalker(new Walker(sourceFile, this.getOptions()));
 		} else {
