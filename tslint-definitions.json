@@ -15,8 +15,8 @@
 		"no-shadowed-variable": false,
 		"no-string-literal": false,
 		"no-unused-variable": false,
-		"no-var-keyword": false, // TODO
-		"quotemark": false, // TODO
+		"no-var-keyword": false,
+		"quotemark": false,
 		"variable-name": false,
 		"whitespace": [
 			"check-branch",

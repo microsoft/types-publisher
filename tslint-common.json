@@ -9,6 +9,7 @@
 		"functional-interfaces": true,
 		"interface-over-type-literal": true,
 		"no-empty-interface": true,
+		"no-parent-references": true,
 		"no-public": true,
 		"no-single-declare-module": true,
 		"unified-signatures": true,
