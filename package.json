@@ -20,7 +20,7 @@
     "recursive-readdir": "^2.0.0",
     "source-map-support": "^0.4.0",
     "tar": "^2.2.1",
-    "tslint": "4.0.0-dev.1",
+    "tslint": "next",
     "typescript": "next",
     "yargs": "^6.2.0"
   },

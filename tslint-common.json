@@ -15,7 +15,9 @@
 		"unified-signatures": true,
 
 		"array-type": [true, "array-simple"],
+		"arrow-parens": false,
 		"interface-name": false,
+		"max-classes-per-file": false,
 		"member-access": false,
 		"member-ordering": false,
 		"no-bitwise": false,
@@ -23,6 +25,7 @@
 		"no-namespace": false,
 		"object-literal-sort-keys": false,
 		"ordered-imports": false,
+		"prefer-for-of": false, // Enable when https://github.com/palantir/tslint/pull/1758 is in
 		"trailing-comma": false
     }
 }
