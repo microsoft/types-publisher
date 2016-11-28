@@ -2,6 +2,7 @@
 const azure_keyvault_1 = require("azure-keyvault");
 const adal_node_1 = require("adal-node");
 const common_1 = require("./common");
+var Secret;
 (function (Secret) {
     /**
      * Used to upload blobs.
@@ -31,8 +32,7 @@ const common_1 = require("./common");
      * We only need one token in existence, so delete old tokens at: https://www.npmjs.com/settings/tokens
      */
     Secret[Secret["NPM_TOKEN"] = 3] = "NPM_TOKEN";
-})(exports.Secret || (exports.Secret = {}));
-var Secret = exports.Secret;
+})(Secret = exports.Secret || (exports.Secret = {}));
 exports.allSecrets = Object.keys(Secret)
     .map(key => Secret[key])
     .filter(x => typeof x === "number");

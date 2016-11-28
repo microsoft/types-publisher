@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
     static failureString(name, { parameters, returnType }) {
@@ -13,8 +13,10 @@ Rule.metadata = {
     ruleName: "functional-interface",
     description: "An interface with just a call signature can be written as a function type.",
     rationale: "For simplicity",
-    options: {},
-    type: "style"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "style",
+    typescriptOnly: true,
 };
 exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {

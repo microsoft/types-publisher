@@ -2,7 +2,7 @@
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator.throw(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
@@ -14,6 +14,7 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
+const header_1 = require("./header");
 var DefinitionFileKind;
 (function (DefinitionFileKind) {
     // Dunno
@@ -73,18 +74,6 @@ function getNamespaceFlags(ns) {
     });
     return result;
 }
-function parseMetadata(mainFileContent) {
-    function regexMatch(rx, defaultValue) {
-        const match = rx.exec(mainFileContent);
-        return match ? match[1] : defaultValue;
-    }
-    const authors = regexMatch(/^\/\/ Definitions by: (.+)$/m, "Unknown");
-    const libraryMajorVersion = util_1.intOfString(regexMatch(/^\/\/ Type definitions for [^\n]+ v?(\d+)/m, "0"));
-    const libraryMinorVersion = util_1.intOfString(regexMatch(/^\/\/ Type definitions for [^\n]+ v?\d+\.(\d+)/m, "0"));
-    const libraryName = regexMatch(/^\/\/ Type definitions for (.+)$/m, "Unknown").trim();
-    const projectName = regexMatch(/^\/\/ Project: (.+)$/m, "");
-    return { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName };
-}
 function moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
         const mi = yield getModuleInfo(directory, folderName, allEntryFilenames, log.info);
@@ -116,7 +105,7 @@ function getTypingInfo(folderName, options) {
         }
         const mainFilename = mainFileResult.filename;
         const mainFileContent = yield readFile(directory, mainFilename);
-        const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projectName } = parseMetadata(mainFileContent);
+        const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projects } = header_1.parseHeaderOrFail(mainFileContent, folderName);
         const allEntryFilenames = (yield entryFilesFromTsConfig(directory, log.info)) || [mainFilename];
         const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles, fileKind } = yield moduleInfoAndFileKind(directory, folderName, allEntryFilenames, log);
         const hasPackageJson = yield fsp.exists(path.join(directory, "package.json"));
@@ -126,7 +115,7 @@ function getTypingInfo(folderName, options) {
             kind: "success",
             logs: logResult(),
             data: {
-                authors,
+                authors: authors.map(a => `${a.name} <${a.url}>`).join(", "),
                 definitionFilename: mainFilename,
                 libraryDependencies: referencedLibraries,
                 moduleDependencies,
@@ -134,7 +123,7 @@ function getTypingInfo(folderName, options) {
                 libraryMinorVersion,
                 libraryName,
                 typingsPackageName: folderName,
-                projectName,
+                projectName: projects[0],
                 sourceRepoURL,
                 sourceBranch: common_1.settings.sourceBranch,
                 kind: DefinitionFileKind[fileKind],
@@ -328,7 +317,7 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
                         hasUmdDecl = true;
                         break;
                     case ts.SyntaxKind.ModuleDeclaration:
-                        if (node.flags & ts.NodeFlags.Export) {
+                        if (isExport(node)) {
                             log(`Found exported namespace \`${node.name.getText()}\``);
                             isProperModule = true;
                         }
@@ -349,7 +338,7 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
                         }
                         break;
                     case ts.SyntaxKind.VariableStatement:
-                        if (node.flags & ts.NodeFlags.Export) {
+                        if (isExport(node)) {
                             log("Found exported variables");
                             isProperModule = true;
                         }
@@ -368,7 +357,7 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
                     case ts.SyntaxKind.ClassDeclaration:
                     case ts.SyntaxKind.FunctionDeclaration:
                         // If these nodes have an 'export' modifier, the file is an external module
-                        if (node.flags & ts.NodeFlags.Export) {
+                        if (isExport(node)) {
                             const declName = node.name;
                             if (declName) {
                                 log(`Found exported declaration "${declName.getText()}"`);
@@ -415,7 +404,8 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
 function isNewGlobal(name) {
     // This is not a new global if it simply augments an existing one.
     const augmentedGlobals = [
-        "Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"];
+        "Array", "Function", "String", "Number", "Window", "Date", "StringConstructor", "NumberConstructor", "Math", "HTMLElement"
+    ];
     return !augmentedGlobals.includes(name);
 }
 function getFileKind(mi, log) {
@@ -481,9 +471,10 @@ function hash(directory, files) {
 }
 function readFile(directory, fileName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield io_1.readFile(path.join(directory, fileName));
-        // Skip BOM
-        return (result.charCodeAt(0) === 0xFEFF) ? result.substr(1) : result;
+        return util_1.skipBOM(yield io_1.readFile(path.join(directory, fileName)));
     });
+}
+function isExport(node) {
+    return ts.hasModifier(node, ts.ModifierFlags.Export);
 }
 //# sourceMappingURL=definition-parser.js.map

@@ -2,7 +2,7 @@
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator.throw(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
@@ -33,12 +33,12 @@ var Options;
         definitelyTypedPath: "../DefinitelyTyped",
     };
 })(Options = exports.Options || (exports.Options = {}));
+var RejectionReason;
 (function (RejectionReason) {
     RejectionReason[RejectionReason["TooManyFiles"] = 0] = "TooManyFiles";
     RejectionReason[RejectionReason["BadFileFormat"] = 1] = "BadFileFormat";
     RejectionReason[RejectionReason["ReferencePaths"] = 2] = "ReferencePaths";
-})(exports.RejectionReason || (exports.RejectionReason = {}));
-var RejectionReason = exports.RejectionReason;
+})(RejectionReason = exports.RejectionReason || (exports.RejectionReason = {}));
 function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }

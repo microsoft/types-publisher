@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 class Rule extends Lint.Rules.AbstractRule {
     apply(sourceFile) {
         return this.applyWithWalker(new Walker(sourceFile, this.getOptions()));
@@ -9,8 +9,10 @@ Rule.metadata = {
     ruleName: "no-empty-interface",
     description: "Forbids empty interfaces",
     rationale: "Empty interfaces as not useful.",
-    options: {},
-    type: "style"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "style",
+    typescriptOnly: true,
 };
 Rule.FAILURE_STRING = "An empty interface is equivalent to `{}`.";
 Rule.FAILURE_STRING_FOR_EXTENDS = "An interface declaring no members is equivalent to its supertype.";

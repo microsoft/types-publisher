@@ -2,7 +2,7 @@
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator.throw(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
@@ -26,7 +26,7 @@ exports.quietLogger = quietLogger;
 function alsoConsoleLogger(consoleLog) {
     const [log, logResult] = quietLogger();
     return [
-            (message) => {
+        (message) => {
             consoleLog(message);
             log(message);
         },
@@ -44,7 +44,7 @@ function loggerWithErrorsHelper(logger) {
     const [error, errorResult] = logger();
     return [
         { info, error },
-            () => ({ infos: infoResult(), errors: errorResult() })
+        () => ({ infos: infoResult(), errors: errorResult() })
     ];
 }
 /** Records `info` and `error` messages without writing to console. */

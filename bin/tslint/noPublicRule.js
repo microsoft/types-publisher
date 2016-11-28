@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
     apply(sourceFile) {
@@ -10,8 +10,10 @@ Rule.metadata = {
     ruleName: "no-public",
     description: "Forbids the 'public' keyword.",
     rationale: "For simplicity",
-    options: {},
-    type: "style"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "style",
+    typescriptOnly: true,
 };
 Rule.FAILURE_STRING = "No need to write `public`; this is implicit.";
 exports.Rule = Rule;

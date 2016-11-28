@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
     apply(sourceFile) {
@@ -10,8 +10,10 @@ Rule.metadata = {
     ruleName: "interface-over-type-literal",
     description: "Prefer an interface declaration over `type T = { ... }`",
     rationale: "For consistency",
-    options: {},
-    type: "style"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "style",
+    typescriptOnly: true,
 };
 Rule.FAILURE_STRING = "Use an interface instead.";
 exports.Rule = Rule;

@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
     static FAILURE_STRING_SINGLE_PARAMETER_DIFFERENCE(type1, type2) {
@@ -13,8 +13,10 @@ Rule.metadata = {
     ruleName: "array-type-style",
     description: "Array types should be written with the `Foo[]` syntax",
     rationale: "For consistency",
-    options: {},
-    type: "style"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "style",
+    typescriptOnly: true,
 };
 Rule.FAILURE_STRING_OMITTING_SINGLE_PARAMETER = `These overloads can be combined into one signature with an optional parameter.`;
 exports.Rule = Rule;

@@ -1,5 +1,5 @@
 "use strict";
-const Lint = require("tslint/lib/lint");
+const Lint = require("tslint");
 class Rule extends Lint.Rules.AbstractRule {
     static upperCaseFailureString(name) {
         return `Avoid using the ${name} type. You probably meant ${name.toLowerCase()}`;
@@ -12,8 +12,10 @@ Rule.metadata = {
     ruleName: "forbidden-types",
     description: "Forbid the Function, Object, Boolean, Number, and String types.",
     rationale: "Certain types are never a good idea.",
-    options: {},
-    type: "functionality"
+    optionsDescription: "Not configurable.",
+    options: null,
+    type: "functionality",
+    typescriptOnly: true,
 };
 Rule.FUNCTION_FAILURE_STRING = "Avoid using the Function type. Prefer a specific function type, like `() => void`.";
 Rule.OBJECT_FAILURE_STRING = "Avoid using the Object type. Did you mean `any` or `{}`?";
