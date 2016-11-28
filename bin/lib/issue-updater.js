@@ -29,7 +29,7 @@ function reopenIssue(githubAccessToken, timeStamp, error) {
             const url = `https://${common_1.settings.azureContainer}.blob.core.windows.net/${common_1.settings.azureContainer}/index.html`;
             l(`Logs are available [here](${url}).`);
             l("");
-            l(util_1.indent(error.stack));
+            l(util_1.indent(util_1.errorDetails(error)));
             return lines.join("\n");
         }
     });

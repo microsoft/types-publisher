@@ -143,4 +143,8 @@ function skipBOM(str) {
     return str.charCodeAt(0) === 0xFEFF ? str.slice(1) : str;
 }
 exports.skipBOM = skipBOM;
+function errorDetails(error) {
+    return error.stack || error.message;
+}
+exports.errorDetails = errorDetails;
 //# sourceMappingURL=util.js.map

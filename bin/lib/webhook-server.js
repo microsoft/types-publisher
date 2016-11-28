@@ -85,9 +85,9 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
         function onError(error) {
             server.close();
             issue_updater_1.reopenIssue(githubAccessToken, timeStamp, error).catch(issueError => {
-                console.error(issueError.stack);
+                console.error(util_1.errorDetails(issueError));
             }).then(() => {
-                console.error(error.stack);
+                console.error(util_1.errorDetails(error));
                 process.exit(1);
             });
         }
