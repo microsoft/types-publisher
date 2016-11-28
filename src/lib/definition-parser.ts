@@ -2,24 +2,12 @@ import * as ts from "typescript";
 import * as fsp from "fs-promise";
 import * as path from "path";
 
-import { readdirRecursive, readFile as readFileText } from "../util/io";
+import { readFile as readFileText } from "../util/io";
 import { Logger, LoggerWithErrors, LogWithErrors, quietLoggerWithErrors } from "../util/logging";
-import { mapAsyncOrdered, normalizeSlashes, skipBOM, stripQuotes } from "../util/util";
+import { mapAsyncOrdered, stripQuotes } from "../util/util";
 
-import { Options, RejectionReason, TypingsData, computeHash, definitelyTypedPath, settings } from "./common";
+import { Options, TypingsData, computeHash, definitelyTypedPath, settings } from "./common";
 import { parseHeaderOrFail } from "./header";
-
-export interface TypingParseFailResult {
-	kind: "fail";
-	rejectionReason: RejectionReason;
-	logs: LogWithErrors;
-}
-
-export interface TypingParseSucceedResult {
-	kind: "success";
-	data: TypingsData;
-	logs: LogWithErrors;
-}
 
 enum DefinitionFileKind {
 	// Dunno
@@ -101,7 +89,7 @@ async function moduleInfoAndFileKind(directory: string, folderName: string, allE
 	return Object.assign({fileKind}, mi);
 }
 
-export async function getTypingInfo(folderName: string, options: Options): Promise<TypingParseFailResult | TypingParseSucceedResult> {
+export async function getTypingInfo(folderName: string, options: Options): Promise<{ data: TypingsData, logs: LogWithErrors }> {
 	const [log, logResult] = quietLoggerWithErrors();
 	const directory = definitelyTypedPath(folderName, options);
 	if (folderName !== folderName.toLowerCase()) {
@@ -112,13 +100,7 @@ export async function getTypingInfo(folderName: string, options: Options): Promi
 
 	// There is a *single* main file, containing metadata comments.
 	// But there may be many entryFilenames, which are the starting points of inferring all files to be included.
-	const mainFileResult = await mainFile(directory, folderName, log.info);
-	if (mainFileResult.kind === "failure") {
-		log.info(mainFileResult.message);
-		log.error(mainFileResult.message);
-		return { kind: "fail", logs: logResult(), rejectionReason: RejectionReason.TooManyFiles };
-	}
-	const mainFilename = mainFileResult.filename;
+	const mainFilename = "index.d.ts";
 	const mainFileContent = await readFile(directory, mainFilename);
 
 	const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projects } = parseHeaderOrFail(mainFileContent, folderName);
@@ -132,11 +114,9 @@ export async function getTypingInfo(folderName: string, options: Options): Promi
 
 	const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
 	return {
-		kind: "success",
 		logs: logResult(),
 		data: {
 			authors: authors.map(a => `${a.name} <${a.url}>`).join(", "), // TODO: Store as JSON?
-			definitionFilename: mainFilename,
 			libraryDependencies: referencedLibraries,
 			moduleDependencies,
 			libraryMajorVersion,
@@ -155,42 +135,6 @@ export async function getTypingInfo(folderName: string, options: Options): Promi
 			contentHash: await hash(directory, allFiles)
 		}
 	};
-}
-
-interface MainFileSuccess {
-	kind: "success";
-	filename: string;
-}
-interface MainFileFailure {
-	kind: "failure";
-	message: string;
-}
-async function mainFile(directory: string, folderName: string, log: Logger): Promise<MainFileSuccess | MainFileFailure> {
-	// otherwise, load all files from the directory
-	const declFiles = await readdirRecursive(directory, (file, stats) =>
-			// Only include type declaration files.
-		stats.isDirectory() || file.endsWith(".d.ts"));
-	declFiles.sort();
-
-	log(`Found ${declFiles.length} '.d.ts' files in directory (${declFiles.join(", ")})`);
-
-	if (declFiles.length === 1) {
-		return { kind: "success", filename: declFiles[0] };
-	} else {
-		// You can have [foldername].d.ts, or index.d.ts to rescue yourself from this situation
-		const candidates = [folderName + ".d.ts", "index.d.ts"];
-		const existingCandidates = candidates.filter(c => declFiles.includes(c));
-		if (existingCandidates.length > 1) {
-			throw new Error(`Conflicting main files: ${existingCandidates}`);
-		} else if (!existingCandidates.length) {
-			return {
-				kind: "failure",
-				message: "Exiting, found either zero or more than one .d.ts file and none of " + candidates.map(c => "`" + c + "`").join(" or ")
-			};
-		} else {
-			return { kind: "success", filename: existingCandidates[0] };
-		}
-	}
 }
 
 async function entryFilesFromTsConfig(directory: string, log: Logger): Promise<string[] | undefined> {
@@ -228,7 +172,7 @@ async function allReferencedFiles(directory: string, entryFilenames: string[], l
 		const src = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
 		all.set(filename, src);
 
-		const refs = referencedFiles(src, path.dirname(filename));
+		const refs = referencedFiles(src, path.dirname(filename), directory);
 		await Promise.all(refs.map(ref => recur(filename, ref)));
 	}
 
@@ -240,29 +184,29 @@ async function allReferencedFiles(directory: string, entryFilenames: string[], l
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function referencedFiles(src: ts.SourceFile, subDirectory: string): string[] {
+function referencedFiles(src: ts.SourceFile, subDirectory: string, directory: string): string[] {
 	const out: string[] = [];
 
 	for (const ref of src.referencedFiles) {
 		// Any <reference path="foo"> is assumed to be local
-		maybeAdd(ref.fileName);
+		addReference(ref.fileName);
 	}
 
 	for (const ref of imports(src)) {
 		if (ref.startsWith(".")) {
-			maybeAdd(`${ref}.d.ts`);
+			addReference(`${ref}.d.ts`);
 		}
 	}
 
 	return out;
 
-	// GH#69: We should just forbid all non-global references to the outside.
-	function maybeAdd(ref: string): void {
+	function addReference(ref: string): void {
 		const full = path.normalize(path.join(subDirectory, ref));
 		// If the *normalized* path starts with "..", then it reaches outside of srcDirectory.
-		if (!full.startsWith("..")) {
-			out.push(normalizeSlashes(full));
+		if (full.startsWith("..")) {
+			throw new Error(`In ${directory} ${src.fileName}: Definitions must use global references rather than reaching outside of their directory.`);
 		}
+		out.push(full);
 	}
 }
 
@@ -528,7 +472,17 @@ async function hash(directory: string, files: string[]): Promise<string> {
 }
 
 async function readFile(directory: string, fileName: string): Promise<string> {
-	return skipBOM(await readFileText(path.join(directory, fileName)));
+	const full = path.join(directory, fileName);
+	const text = await readFileText(full);
+	if (text.charCodeAt(0) === 0xFEFF) {
+		const commands = [
+			"npm install -g strip-bom-cli",
+			`strip-bom ${fileName} > fix`,
+			`mv fix ${fileName}`
+		];
+		throw new Error(`File '${full}' has a BOM. Try using:\n${commands.join("\n")}`);
+	}
+	return text;
 }
 
 function isExport(node: ts.Node): boolean {
