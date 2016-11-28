@@ -1,4 +1,4 @@
-import * as Lint from "tslint/lib/lint";
+import * as Lint from "tslint";
 import * as ts from "typescript";
 
 export class Rule extends Lint.Rules.AbstractRule {
@@ -6,11 +6,13 @@ export class Rule extends Lint.Rules.AbstractRule {
 		ruleName: "no-parent-references",
 		description: 'Forbid <reference path="../etc"/>',
 		rationale: "Parent references are not inferred as dependencies by types-publisher.",
-		options: {},
-		type: "functionality"
+		optionsDescription: "Not configurable.",
+		options: null,
+		type: "functionality",
+		typescriptOnly: true,
 	};
 
-	static FAILURE_STRING = "Don't use <reference path> to reference another package. Use an import or <reference types> instead."
+	static FAILURE_STRING = "Don't use <reference path> to reference another package. Use an import or <reference types> instead.";
 
 	apply(sourceFile: ts.SourceFile): Lint.RuleFailure[] {
 		return this.applyWithWalker(new Walker(sourceFile, this.getOptions()));

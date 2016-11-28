@@ -1,4 +1,4 @@
-import * as Lint from "tslint/lib/lint";
+import * as Lint from "tslint";
 import * as ts from "typescript";
 
 export class Rule extends Lint.Rules.AbstractRule {
@@ -6,8 +6,10 @@ export class Rule extends Lint.Rules.AbstractRule {
 		ruleName: "no-single-declare-module",
 		description: "Don't use an ambient module declaration if you can use an external module file.",
 		rationale: "Cuts down on nesting",
-		options: {},
-		type: "style"
+		optionsDescription: "Not configurable.",
+		options: null,
+		type: "style",
+		typescriptOnly: true,
 	};
 
 	static FAILURE_STRING = "File has only 1 module declaration — write it as an external module.";
@@ -29,7 +31,9 @@ export class Rule extends Lint.Rules.AbstractRule {
 // A walker is needed for `tslint:disable` to work.
 class Walker extends Lint.RuleWalker {
 	visitModuleDeclaration(node: ts.ModuleDeclaration) {
-		this.fail(node, Rule.FAILURE_STRING);
+		if (isModuleDeclaration(node)) {
+			this.fail(node, Rule.FAILURE_STRING);
+		}
 	}
 
 	private fail(node: ts.Node, message: string) {
@@ -42,7 +46,7 @@ function hasSoleModuleDeclaration({ statements }: ts.SourceFile): boolean {
 	for (const statement of statements) {
 		if (statement.kind === ts.SyntaxKind.ModuleDeclaration) {
 			const decl = statement as ts.ModuleDeclaration;
-			if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
+			if (isModuleDeclaration(decl)) {
 				if (moduleDecl === undefined) {
 					moduleDecl = decl;
 				}
@@ -54,4 +58,8 @@ function hasSoleModuleDeclaration({ statements }: ts.SourceFile): boolean {
 		}
 	}
 	return !!moduleDecl;
+}
+
+function isModuleDeclaration(decl: ts.ModuleDeclaration): boolean {
+	return decl.name.kind === ts.SyntaxKind.StringLiteral;
 }
