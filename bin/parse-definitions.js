@@ -17,23 +17,6 @@ if (!module.parent) {
     const singleName = yargs.argv.single;
     util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults)));
 }
-function processDir(name, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let data;
-        let outcome;
-        const info = yield parser.getTypingInfo(name, options);
-        const logs = info.logs;
-        if (info.kind === "success") {
-            data = info.data;
-            outcome = `Succeeded (${info.data.kind})`;
-        }
-        else {
-            data = undefined;
-            outcome = `Failed (${common_1.RejectionReason[info.rejectionReason]})`;
-        }
-        return { data, logs, outcome };
-    });
-}
 function filterPaths(paths, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fullPaths = paths
@@ -53,13 +36,10 @@ function main(options) {
         const paths = yield fsp.readdir(options.definitelyTypedPath);
         const folders = yield filterPaths(paths, options);
         summaryLog(`Found ${folders.length} typings folders in ${options.definitelyTypedPath}`);
-        const outcomes = {};
         const [warningLog, warningLogResult] = logging_1.logger();
         const typings = {};
         for (const s of folders) {
-            const result = yield processDir(s, options);
-            // Record outcome
-            outcomes[result.outcome] = (outcomes[result.outcome] || 0) + 1;
+            const result = yield parser.getTypingInfo(s, options);
             detailedLog(`# ${s}`);
             // Push warnings
             if (result.logs.errors.length > 0) {
@@ -76,12 +56,6 @@ function main(options) {
             result.logs.infos.forEach(e => detailedLog(e));
         }
         summaryLog("\r\n### Overall Results\r\n");
-        summaryLog(" * Pass / fail");
-        const outcomeKeys = Object.keys(outcomes);
-        outcomeKeys.sort();
-        outcomeKeys.forEach(k => {
-            summaryLog(`   * ${k}: ${outcomes[k]}`);
-        });
         summaryLog("\r\n### Warnings\r\n");
         logging_1.moveLogs(summaryLog, warningLogResult());
         yield Promise.all([
@@ -95,7 +69,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield processDir(singleName, options);
+        const result = yield parser.getTypingInfo(singleName, options);
         const typings = { [singleName]: result.data };
         yield common_1.writeDataFile(common_1.typesDataFilename, typings);
         console.log(result);

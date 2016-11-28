@@ -97,13 +97,7 @@ function getTypingInfo(folderName, options) {
         log.info(`Reading contents of ${directory}`);
         // There is a *single* main file, containing metadata comments.
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
-        const mainFileResult = yield mainFile(directory, folderName, log.info);
-        if (mainFileResult.kind === "failure") {
-            log.info(mainFileResult.message);
-            log.error(mainFileResult.message);
-            return { kind: "fail", logs: logResult(), rejectionReason: common_1.RejectionReason.TooManyFiles };
-        }
-        const mainFilename = mainFileResult.filename;
+        const mainFilename = "index.d.ts";
         const mainFileContent = yield readFile(directory, mainFilename);
         const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projects } = header_1.parseHeaderOrFail(mainFileContent, folderName);
         const allEntryFilenames = (yield entryFilesFromTsConfig(directory, log.info)) || [mainFilename];
@@ -112,11 +106,9 @@ function getTypingInfo(folderName, options) {
         const allFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
         return {
-            kind: "success",
             logs: logResult(),
             data: {
                 authors: authors.map(a => `${a.name} <${a.url}>`).join(", "),
-                definitionFilename: mainFilename,
                 libraryDependencies: referencedLibraries,
                 moduleDependencies,
                 libraryMajorVersion,
@@ -138,36 +130,6 @@ function getTypingInfo(folderName, options) {
     });
 }
 exports.getTypingInfo = getTypingInfo;
-function mainFile(directory, folderName, log) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // otherwise, load all files from the directory
-        const declFiles = yield io_1.readdirRecursive(directory, (file, stats) => 
-        // Only include type declaration files.
-        stats.isDirectory() || file.endsWith(".d.ts"));
-        declFiles.sort();
-        log(`Found ${declFiles.length} '.d.ts' files in directory (${declFiles.join(", ")})`);
-        if (declFiles.length === 1) {
-            return { kind: "success", filename: declFiles[0] };
-        }
-        else {
-            // You can have [foldername].d.ts, or index.d.ts to rescue yourself from this situation
-            const candidates = [folderName + ".d.ts", "index.d.ts"];
-            const existingCandidates = candidates.filter(c => declFiles.includes(c));
-            if (existingCandidates.length > 1) {
-                throw new Error(`Conflicting main files: ${existingCandidates}`);
-            }
-            else if (!existingCandidates.length) {
-                return {
-                    kind: "failure",
-                    message: "Exiting, found either zero or more than one .d.ts file and none of " + candidates.map(c => "`" + c + "`").join(" or ")
-                };
-            }
-            else {
-                return { kind: "success", filename: existingCandidates[0] };
-            }
-        }
-    });
-}
 function entryFilesFromTsConfig(directory, log) {
     return __awaiter(this, void 0, void 0, function* () {
         // If there is a tsconfig.json with a "files" property use this as the entry point
@@ -204,7 +166,7 @@ function allReferencedFiles(directory, entryFilenames, log) {
                 }
                 const src = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
                 all.set(filename, src);
-                const refs = referencedFiles(src, path.dirname(filename));
+                const refs = referencedFiles(src, path.dirname(filename), directory);
                 yield Promise.all(refs.map(ref => recur(filename, ref)));
             });
         }
@@ -216,25 +178,25 @@ function allReferencedFiles(directory, entryFilenames, log) {
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function referencedFiles(src, subDirectory) {
+function referencedFiles(src, subDirectory, directory) {
     const out = [];
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
-        maybeAdd(ref.fileName);
+        addReference(ref.fileName);
     }
     for (const ref of imports(src)) {
         if (ref.startsWith(".")) {
-            maybeAdd(`${ref}.d.ts`);
+            addReference(`${ref}.d.ts`);
         }
     }
     return out;
-    // GH#69: We should just forbid all non-global references to the outside.
-    function maybeAdd(ref) {
+    function addReference(ref) {
         const full = path.normalize(path.join(subDirectory, ref));
         // If the *normalized* path starts with "..", then it reaches outside of srcDirectory.
-        if (!full.startsWith("..")) {
-            out.push(util_1.normalizeSlashes(full));
+        if (full.startsWith("..")) {
+            throw new Error(`In ${directory} ${src.fileName}: Definitions must use global references rather than reaching outside of their directory.`);
         }
+        out.push(full);
     }
 }
 /**
@@ -471,7 +433,17 @@ function hash(directory, files) {
 }
 function readFile(directory, fileName) {
     return __awaiter(this, void 0, void 0, function* () {
-        return util_1.skipBOM(yield io_1.readFile(path.join(directory, fileName)));
+        const full = path.join(directory, fileName);
+        const text = yield io_1.readFile(full);
+        if (text.charCodeAt(0) === 0xFEFF) {
+            const commands = [
+                "npm install -g strip-bom-cli",
+                `strip-bom ${fileName} > fix`,
+                `mv fix ${fileName}`
+            ];
+            throw new Error(`File '${full}' has a BOM. Try using:\n${commands.join("\n")}`);
+        }
+        return text;
     });
 }
 function isExport(node) {

@@ -127,7 +127,6 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes) {
             scripts: {},
             dependencies,
             peerDependencies,
-            typings: typing.definitionFilename,
             typesPublisherContentHash: contentHash
         };
         return JSON.stringify(out, undefined, 4);

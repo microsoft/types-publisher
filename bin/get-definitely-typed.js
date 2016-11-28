@@ -43,8 +43,9 @@ function getRepo(options) {
 }
 function pull(repo, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        log(`Pulling new changes from ${common_1.settings.sourceBranch}`);
+        log(`Fetching changes from ${common_1.settings.sourceBranch}`);
         yield repo.fetchAll();
+        log(`Merging changes`);
         yield repo.mergeBranches(common_1.settings.sourceBranch, `origin/${common_1.settings.sourceBranch}`);
     });
 }

@@ -7,34 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const assert = require("assert");
 const node_fetch_1 = require("node-fetch");
-const path = require("path");
-const recursiveReaddir = require("recursive-readdir");
 const fsp = require("fs-promise");
 const stream = require("stream");
 const util_1 = require("./util");
-function readdirRecursive(dirPath, keepIf) {
-    function relativePath(file) {
-        const prefix = dirPath + path.sep;
-        assert(file.startsWith(prefix));
-        return util_1.normalizeSlashes(file.slice(prefix.length));
-    }
-    function ignoreRelative(file, stats) {
-        return !keepIf(relativePath(file), stats);
-    }
-    return new Promise((resolve, reject) => {
-        recursiveReaddir(dirPath, [ignoreRelative], (err, files) => {
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve(files.map(relativePath));
-            }
-        });
-    });
-}
-exports.readdirRecursive = readdirRecursive;
 function readFile(path) {
     return fsp.readFile(path, { encoding: "utf8" });
 }

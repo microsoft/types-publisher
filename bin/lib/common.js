@@ -33,12 +33,6 @@ var Options;
         definitelyTypedPath: "../DefinitelyTyped",
     };
 })(Options = exports.Options || (exports.Options = {}));
-var RejectionReason;
-(function (RejectionReason) {
-    RejectionReason[RejectionReason["TooManyFiles"] = 0] = "TooManyFiles";
-    RejectionReason[RejectionReason["BadFileFormat"] = 1] = "BadFileFormat";
-    RejectionReason[RejectionReason["ReferencePaths"] = 2] = "ReferencePaths";
-})(RejectionReason = exports.RejectionReason || (exports.RejectionReason = {}));
 function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }

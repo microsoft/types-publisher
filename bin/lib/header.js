@@ -26,7 +26,6 @@ function isParseError(x) {
 }
 /** @param strict If true, we allow fewer things to be parsed. Turned on by linting. */
 function parseHeader(text, strict) {
-    text = util_1.skipBOM(text);
     const res = headerParser(strict).parse(text);
     if (res.status) {
         const { label: { name, major, minor }, projects, authors } = res.value;

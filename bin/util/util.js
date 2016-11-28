@@ -14,6 +14,7 @@ const object_entries_1 = require("object.entries");
 object_entries_1.shim();
 const object_values_1 = require("object.values");
 object_values_1.shim();
+const util_1 = require("util");
 function parseJson(text) {
     try {
         return JSON.parse(text);
@@ -139,12 +140,8 @@ function execAndThrowErrors(cmd, cwd) {
     });
 }
 exports.execAndThrowErrors = execAndThrowErrors;
-function skipBOM(str) {
-    return str.charCodeAt(0) === 0xFEFF ? str.slice(1) : str;
-}
-exports.skipBOM = skipBOM;
 function errorDetails(error) {
-    return error.stack || error.message;
+    return error.stack || error.message || `Non-Error error: ${util_1.inspect(error)}`;
 }
 exports.errorDetails = errorDetails;
 //# sourceMappingURL=util.js.map
