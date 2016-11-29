@@ -136,7 +136,7 @@ function execAndThrowErrors(cmd, cwd) {
         if (error) {
             throw new Error(stderr);
         }
-        return stdout;
+        return stdout + stderr;
     });
 }
 exports.execAndThrowErrors = execAndThrowErrors;

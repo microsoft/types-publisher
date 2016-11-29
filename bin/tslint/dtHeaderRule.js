@@ -1,6 +1,5 @@
 "use strict";
 const Lint = require("tslint");
-const path = require("path");
 const header_1 = require("../lib/header");
 class Rule extends Lint.Rules.AbstractRule {
     apply(sourceFile) {
@@ -33,9 +32,8 @@ class Walker extends Lint.RuleWalker {
         // Don't recurse, we're done.
     }
 }
-/** Whether it's `foo/index.d.ts` */
 function isMainFile(fileName) {
-    const parts = fileName.split(path.sep);
-    return parts.length === 2 && parts[1] === "index.d.ts";
+    // Linter must be run with cwd of the package. We want `index.d.ts` but not `submodule/index.d.ts` to match.
+    return fileName === "index.d.ts";
 }
 //# sourceMappingURL=dtHeaderRule.js.map

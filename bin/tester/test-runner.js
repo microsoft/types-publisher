@@ -15,7 +15,6 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
-const npmPath = path.join(require.resolve("npm"), "../../bin/npm-cli.js");
 const tscPath = path.join(require.resolve("typescript"), "../tsc.js");
 const tslintPath = path.join(require.resolve("tslint"), "../tslint-cli.js");
 if (!module.parent) {
@@ -57,6 +56,18 @@ function main(options, nProcesses, regexp) {
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
+        console.log("Installing dependencies...");
+        yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
+            const cwd = common_1.packagePath(pkg, options);
+            if (yield fsp.exists(path.join(cwd, "package.json"))) {
+                let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
+                stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
+                if (stdout) {
+                    console.log(stdout);
+                }
+            }
+        }));
+        console.log("Testing...");
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
             const err = yield single(pkg, log, options);
@@ -81,8 +92,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const cwd = path.join(options.definitelyTypedPath, pkg.typingsPackageName);
-        return (yield tsConfig()) || (yield npmInstall()) || (yield tsc()) || (yield tslint());
+        const cwd = common_1.packagePath(pkg, options);
+        return (yield tsConfig()) || (yield tsc()) || (yield tslint());
         function tsConfig() {
             return __awaiter(this, void 0, void 0, function* () {
                 const tsconfigPath = path.join(cwd, "tsconfig.json");
@@ -94,13 +105,6 @@ function single(pkg, log, options) {
                     return { message: error.message };
                 }
                 return undefined;
-            });
-        }
-        function npmInstall() {
-            return __awaiter(this, void 0, void 0, function* () {
-                return (yield fsp.exists(path.join(cwd, "package.json")))
-                    ? runCommand(log, cwd, npmPath, "install")
-                    : undefined;
             });
         }
         function tsc() {

@@ -136,6 +136,10 @@ function computeHash(content) {
     return h.digest("hex");
 }
 exports.computeHash = computeHash;
+function packagePath(pkg, options) {
+    return definitelyTypedPath(pkg.typingsPackageName, options);
+}
+exports.packagePath = packagePath;
 function definitelyTypedPath(dirName, options) {
     return path.join(options.definitelyTypedPath, dirName);
 }
