@@ -5,6 +5,7 @@ import * as path from "path";
 
 import { readFile as readFileText } from "../util/io";
 import { Logger, Log, quietLogger } from "../util/logging";
+import { isExternalModule } from "../util/ts";
 import { mapAsyncOrdered, stripQuotes } from "../util/util";
 
 import { Options, TypingsData, computeHash, definitelyTypedPath, settings } from "./common";
@@ -410,8 +411,4 @@ async function readFile(directory: string, fileName: string): Promise<string> {
 		throw new Error(`File '${full}' has a BOM. Try using:\n${commands.join("\n")}`);
 	}
 	return text;
-}
-
-function isExternalModule(src: ts.SourceFile): boolean {
-	return !!(src as any).externalModuleIndicator;
 }
