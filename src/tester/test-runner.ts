@@ -60,7 +60,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 		const cwd = packagePath(pkg, options);
 		if (await fsp.exists(path.join(cwd, "package.json"))) {
 			let stdout = await execAndThrowErrors(`npm install`, cwd);
-			stdout = stdout.replace(/npm WARN \S+ No (description|repository field.|license field.)\n?/g, "");
+			stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
 			if (stdout) {
 				console.log(stdout);
 			}
