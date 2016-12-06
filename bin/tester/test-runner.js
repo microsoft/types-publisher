@@ -93,18 +93,16 @@ exports.default = main;
 function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = common_1.packagePath(pkg, options);
-        return (yield tsConfig()) || (yield tsc()) || (yield tslint());
+        return (yield tsConfig()) || (yield packageJson()) || (yield tsc()) || (yield tslint());
         function tsConfig() {
             return __awaiter(this, void 0, void 0, function* () {
                 const tsconfigPath = path.join(cwd, "tsconfig.json");
-                try {
-                    checkTsconfig(yield io_1.readJson(tsconfigPath));
-                }
-                catch (error) {
-                    log.error(error.message);
-                    return { message: error.message };
-                }
-                return undefined;
+                return catchErrors(log, () => __awaiter(this, void 0, void 0, function* () { return checkTsconfig(yield io_1.readJson(tsconfigPath)); }));
+            });
+        }
+        function packageJson() {
+            return __awaiter(this, void 0, void 0, function* () {
+                return catchErrors(log, () => checkPackageJson(pkg, options));
             });
         }
         function tsc() {
@@ -117,6 +115,18 @@ function single(pkg, log, options) {
                     : undefined;
             });
         }
+    });
+}
+function catchErrors(log, action) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield action();
+        }
+        catch (error) {
+            log.error(error.message);
+            return { message: error.message };
+        }
+        return undefined;
     });
 }
 function runCommand(log, cwd, cmd, ...args) {
@@ -150,5 +160,18 @@ function checkTsconfig(tsconfig) {
         throw new Error(`Expected compilerOptions["noImplicitAny"] and compilerOptions["strictNullChecks"] to exist`);
     }
     // baseUrl / typeRoots / types may be missing.
+}
+function checkPackageJson(typing, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!typing.hasPackageJson) {
+            return;
+        }
+        const pkgPath = common_1.filePath(typing, "package.json", options);
+        const pkg = yield io_1.readJson(pkgPath);
+        const ignoredField = Object.keys(pkg).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
+        if (ignoredField) {
+            throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
+        }
+    });
 }
 //# sourceMappingURL=test-runner.js.map

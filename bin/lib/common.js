@@ -140,6 +140,10 @@ function packagePath(pkg, options) {
     return definitelyTypedPath(pkg.typingsPackageName, options);
 }
 exports.packagePath = packagePath;
+function filePath(pkg, fileName, options) {
+    return path.join(packagePath(pkg, options), fileName);
+}
+exports.filePath = filePath;
 function definitelyTypedPath(dirName, options) {
     return path.join(options.definitelyTypedPath, dirName);
 }

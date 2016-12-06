@@ -15,18 +15,18 @@ const util_1 = require("../util/util");
 const common_1 = require("./common");
 const versions_1 = require("./versions");
 /** Generates the package to disk */
-function generateAnyPackage(pkg, availableTypes, versions) {
-    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, availableTypes, versions);
+function generateAnyPackage(pkg, availableTypes, versions, options) {
+    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, availableTypes, versions, options);
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = generateAnyPackage;
-function generatePackage(typing, availableTypes, versions) {
+function generatePackage(typing, availableTypes, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
         const outputPath = common_1.getOutputPath(typing);
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
-        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), availableTypes);
+        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), availableTypes, options);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
@@ -37,7 +37,7 @@ function generatePackage(typing, availableTypes, versions) {
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy and patch ${file}`);
-            let content = yield io_1.readFile(filePath(typing, file));
+            let content = yield io_1.readFile(common_1.filePath(typing, file, options));
             content = patchDefinitionFile(content);
             return writeOutputFile(file, content);
         })));
@@ -91,19 +91,11 @@ function createMetadataJSON(typing) {
     const replacer = (key, value) => key === "root" ? undefined : value;
     return JSON.stringify(typing, replacer, 4);
 }
-function filePath(typing, fileName) {
-    return path.join(typing.root, fileName);
-}
-function createPackageJSON(typing, { version, contentHash }, availableTypes) {
+function createPackageJSON(typing, { version, contentHash }, availableTypes, options) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
-        const pkgPath = filePath(typing, "package.json");
+        const pkgPath = common_1.filePath(typing, "package.json", options);
         let pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
-        const ignoredField = Object.keys(pkg).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
-        // Kludge: ignore "scripts" (See https://github.com/DefinitelyTyped/definition-tester/issues/35)
-        if (ignoredField && ignoredField !== "scripts") {
-            throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
-        }
         const dependencies = pkg.dependencies || {};
         const peerDependencies = pkg.peerDependencies || {};
         addInferredDependencies(dependencies, peerDependencies, typing, availableTypes);
@@ -185,7 +177,6 @@ function createReadme(typing) {
     lines.push("");
     lines.push(`Additional Details`);
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
-    lines.push(` * File structure: ${typing.kind}`);
     lines.push(` * Library Dependencies: ${typing.libraryDependencies.length ? typing.libraryDependencies.join(", ") : "none"}`);
     lines.push(` * Module Dependencies: ${typing.moduleDependencies.length ? typing.moduleDependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);

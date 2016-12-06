@@ -38,7 +38,7 @@ function main(options, all = false, tgz = false) {
         const { typeData, allPackages, versions } = yield loadPrerequisites(options);
         const packages = all ? allPackages : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const logs = yield package_generator_1.default(pkg, typeData, versions);
+            const logs = yield package_generator_1.default(pkg, typeData, versions, options);
             if (tgz) {
                 yield tgz_1.writeTgz(common_1.getOutputPath(pkg), common_1.getOutputPath(pkg) + ".tgz");
             }
@@ -54,7 +54,7 @@ function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const { typeData, versions } = yield loadPrerequisites(options);
         const pkg = common_1.getPackage(typeData, singleName);
-        const logs = yield package_generator_1.default(pkg, typeData, versions);
+        const logs = yield package_generator_1.default(pkg, typeData, versions, options);
         console.log(logs.join("\n"));
     });
 }

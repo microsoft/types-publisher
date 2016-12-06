@@ -36,28 +36,14 @@ function main(options) {
         const paths = yield fsp.readdir(options.definitelyTypedPath);
         const folders = yield filterPaths(paths, options);
         summaryLog(`Found ${folders.length} typings folders in ${options.definitelyTypedPath}`);
-        const [warningLog, warningLogResult] = logging_1.logger();
         const typings = {};
         for (const s of folders) {
-            const result = yield parser.getTypingInfo(s, options);
+            const { data, logs } = yield parser.getTypingInfo(s, options);
             detailedLog(`# ${s}`);
-            // Push warnings
-            if (result.logs.errors.length > 0) {
-                warningLog(` * ${s}`);
-                result.logs.errors.forEach(w => {
-                    warningLog(`   * ${w}`);
-                    detailedLog(`**Warning**: ${w}`);
-                });
-            }
-            if (result.data !== undefined) {
-                typings[s] = result.data;
-            }
+            typings[s] = data;
             // Flush detailed log
-            result.logs.infos.forEach(e => detailedLog(e));
+            logging_1.moveLogs(detailedLog, logs);
         }
-        summaryLog("\r\n### Overall Results\r\n");
-        summaryLog("\r\n### Warnings\r\n");
-        logging_1.moveLogs(summaryLog, warningLogResult());
         yield Promise.all([
             logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
             logging_1.writeLog("parser-log-details.md", detailedLogResult()),

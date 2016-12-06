@@ -3,7 +3,9 @@ const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
     static failureString(name, { parameters, returnType }) {
-        return `Interface has only a call signature -- use \`type ${name} = (${parameters}) => ${returnType}\` instead.`;
+        const suggestion = `type ${name} = (${parameters}) => ${returnType}`;
+        const disable = "Use `// tslint:disable-next-line:functional-interfaces` if you will extend this interface.";
+        return `Interface has only a call signature — use \`${suggestion}\` instead.\n${disable}`;
     }
     apply(sourceFile) {
         return this.applyWithWalker(new Walker(sourceFile, this.getOptions()));
@@ -21,7 +23,7 @@ Rule.metadata = {
 exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {
     visitInterfaceDeclaration(node) {
-        if (!node.heritageClauses && node.members.length === 1 && node.members[0].kind === ts.SyntaxKind.CallSignature) {
+        if (noSupertype(node.heritageClauses) && node.members.length === 1 && node.members[0].kind === ts.SyntaxKind.CallSignature) {
             const sig = signatureString(node.members[0]);
             if (sig) {
                 this.fail(node, Rule.failureString(node.name.getText(), sig));
@@ -32,6 +34,19 @@ class Walker extends Lint.RuleWalker {
     fail(node, message) {
         this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
+}
+/** True if there is no supertype or if the supertype is `Function`. */
+function noSupertype(heritageClauses) {
+    if (!heritageClauses) {
+        return true;
+    }
+    if (heritageClauses.length === 1) {
+        const expr = heritageClauses[0].types[0].expression;
+        if (expr.kind === ts.SyntaxKind.Identifier && expr.text === "Function") {
+            return true;
+        }
+    }
+    return false;
 }
 function signatureString(node) {
     return node.type && {
