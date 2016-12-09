@@ -20,32 +20,32 @@ export class Rule extends Lint.Rules.AbstractRule {
 }
 
 class Walker extends Lint.RuleWalker {
-    visitNode(node: ts.Node) {
-        if (node.kind === ts.SyntaxKind.VoidKeyword) {
-            //todo: isFunctionLike...
-            const parent = node.parent!;
-            if (!(isSignatureDeclaration(parent) && parent.type === node)) {
-                this.fail(node, Rule.FAILURE_STRING);
-            }
-        }
-        super.visitNode(node);
-    }
+	visitNode(node: ts.Node) {
+		if (node.kind === ts.SyntaxKind.VoidKeyword) {
+			//todo: isFunctionLike...
+			const parent = node.parent!;
+			if (!(isSignatureDeclaration(parent) && parent.type === node)) {
+				this.fail(node, Rule.FAILURE_STRING);
+			}
+		}
+		super.visitNode(node);
+	}
 
-    private fail(node: ts.Node, message: string) {
+	private fail(node: ts.Node, message: string) {
 		this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
 	}
 }
 
 function isSignatureDeclaration(node: ts.Node): node is ts.SignatureDeclaration {
-    switch (node.kind) {
-        case ts.SyntaxKind.ArrowFunction:
-        case ts.SyntaxKind.FunctionDeclaration:
-        case ts.SyntaxKind.FunctionType:
-        case ts.SyntaxKind.MethodDeclaration:
-        case ts.SyntaxKind.MethodSignature:
-            return true;
+	switch (node.kind) {
+		case ts.SyntaxKind.ArrowFunction:
+		case ts.SyntaxKind.FunctionDeclaration:
+		case ts.SyntaxKind.FunctionType:
+		case ts.SyntaxKind.MethodDeclaration:
+		case ts.SyntaxKind.MethodSignature:
+			return true;
 
-        default:
-            return false;
-    }
+		default:
+			return false;
+	}
 }
