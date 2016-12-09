@@ -143,3 +143,7 @@ export function min<T>(inputs: T[], lessThan: (a: T, b: T) => boolean): T | unde
 	}
 	return min;
 }
+export function max<T>(inputs: T[], greaterThan: (a: T, b: T) => boolean): T | undefined {
+	// Logic is the same either way.
+	return min(inputs, greaterThan);
+}
