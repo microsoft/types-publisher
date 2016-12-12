@@ -1,1 +1,1 @@
-export function shim(): void;
+export declare function shim(): void;

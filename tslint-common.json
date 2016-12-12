@@ -15,6 +15,7 @@
 		"no-public": true,
 		"no-single-declare-module": true,
 		"unified-signatures": true,
+		"unnecessary-modifiers": true,
 		"void-return": true,
 
 		"array-type": [true, "array-simple"],
