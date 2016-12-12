@@ -55,28 +55,28 @@ class Walker extends Lint.RuleWalker {
             this.fail(node, Rule.FAILURE_STRING(failure));
         }
 
-        function getUnnecessaryModifier(): "declare" | "export" | undefined {
+        function getUnnecessaryModifier(): "declare" | "export" | false {
             switch (context) {
                 case DeclarationContext.ExternalModule:
-                    return hasExport() && hasDeclare() ? "declare" : undefined;
+                    return hasExport() && hasDeclare() && "declare";
 
                 case DeclarationContext.Ambient:
                     // Impossible to have unnecessary modifier without a compile error.
-                    return undefined;
+                    return false;
 
                 case DeclarationContext.ModuleDeclaration:
-                    return hasExport() ? "export" : undefined;
+                    return hasExport() && "export";
             }
         }
 
-        function hasExport() {
+        function hasExport(): boolean {
             return hasModifier(ts.SyntaxKind.ExportKeyword);
         }
-        function hasDeclare() {
+        function hasDeclare(): boolean {
             return hasModifier(ts.SyntaxKind.DeclareKeyword);
         }
-        function hasModifier(kind: ts.SyntaxKind) {
-            return modifiers && Lint.hasModifier(modifiers, kind);
+        function hasModifier(kind: ts.SyntaxKind): boolean {
+            return !!modifiers && Lint.hasModifier(modifiers, kind);
         }
 	}
 
