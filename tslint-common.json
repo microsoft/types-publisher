@@ -12,6 +12,7 @@
 		"no-empty-interface": true,
 		"no-parent-references": true,
 		"no-public": true,
+		"no-reference-import": true,
 		"no-single-declare-module": true,
 		"unified-signatures": true,
 		"void-return": true,
