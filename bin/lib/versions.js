@@ -39,7 +39,7 @@ class Versions {
             const defaultVersionInfo = { version: { major: -1, minor: -1, patch: -1 }, contentHash: "", deprecated: false };
             yield util_1.nAtATime(25, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
-                const versionInfo = yield fetchTypesPackageVersionInfo(packageName);
+                const versionInfo = yield fetchTypesPackageVersionInfo(packageName, [pkg.libraryMajorVersion, pkg.libraryMinorVersion]);
                 if (!versionInfo) {
                     log(`Added: ${packageName}`);
                     additions.push(packageName);
@@ -94,12 +94,12 @@ function versionString(version) {
 }
 exports.versionString = versionString;
 /** Returns undefined if the package does not exist. */
-function fetchTypesPackageVersionInfo(packageName) {
+function fetchTypesPackageVersionInfo(packageName, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(common_2.fullPackageName(packageName).replace(/\//g, "%2f"));
+        return fetchVersionInfoFromNpm(common_2.fullPackageName(packageName).replace(/\//g, "%2f"), newMajorAndMinor);
     });
 }
-function fetchVersionInfoFromNpm(escapedPackageName) {
+function fetchVersionInfoFromNpm(escapedPackageName, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
         const uri = common_2.settings.npmRegistry + escapedPackageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
@@ -115,8 +115,7 @@ function fetchVersionInfoFromNpm(escapedPackageName) {
             return undefined;
         }
         else {
-            const versionSemver = info["dist-tags"].latest;
-            assert(typeof versionSemver === "string");
+            const versionSemver = getVersionSemver(info, newMajorAndMinor);
             const latestVersionInfo = info.versions[versionSemver];
             assert(!!latestVersionInfo);
             const contentHash = latestVersionInfo.typesPublisherContentHash || "";
@@ -126,15 +125,42 @@ function fetchVersionInfoFromNpm(escapedPackageName) {
     });
 }
 exports.fetchVersionInfoFromNpm = fetchVersionInfoFromNpm;
+function getVersionSemver(info, newMajorAndMinor) {
+    // If there's already a published package with this version, look for that first.
+    if (newMajorAndMinor) {
+        const [newMajor, newMinor] = newMajorAndMinor;
+        const patch = newMajor === -1 ? undefined : latestPatchMatchingMajorAndMinor(info.versions, newMajor, newMinor);
+        if (patch !== undefined) {
+            return `${newMajor}.${newMinor}.${patch}`;
+        }
+    }
+    return info["dist-tags"].latest;
+}
+/** Finds the version with matching major/minor with the latest patch version. */
+function latestPatchMatchingMajorAndMinor(versions, newMajor, newMinor) {
+    const versionsWithTypings = Object.keys(versions).map(v => {
+        const semver = tryParseSemver(v);
+        if (!semver) {
+            return undefined;
+        }
+        const { major, minor, patch } = semver;
+        return major === newMajor && minor === newMinor ? patch : undefined;
+    }).filter(x => x !== undefined);
+    return util_1.best(versionsWithTypings, (a, b) => a > b);
+}
 function parseSemver(semver) {
+    const result = tryParseSemver(semver);
+    if (!result) {
+        throw new Error(`Unexpected semver: ${semver}`);
+    }
+    return result;
+}
+function tryParseSemver(semver) {
     // Per the semver spec <http://semver.org/#spec-item-2>:
     // "A normal version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers, and MUST NOT contain leading zeroes."
     const rgx = /^(\d+)\.(\d+)\.(\d+)$/;
     const match = rgx.exec(semver);
-    if (!match) {
-        throw new Error(`Unexpected semver: ${semver}`);
-    }
-    return { major: util_1.intOfString(match[1]), minor: util_1.intOfString(match[2]), patch: util_1.intOfString(match[3]) };
+    return match ? { major: util_1.intOfString(match[1]), minor: util_1.intOfString(match[2]), patch: util_1.intOfString(match[3]) } : undefined;
 }
 /** Read all changed packages. */
 function readChanges() {

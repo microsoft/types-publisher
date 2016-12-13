@@ -78,7 +78,8 @@ function parseLabel(strict) {
         const tilNewline = input.slice(index, endIndex);
         // Parse in reverse. Once we've stripped off the version, the rest is the libary name.
         const reversed = reverse(tilNewline);
-        const rgx = /((\d+)\.(\d+)(\.\d+)?(v)? )?(.+)/;
+        // Last digit is allowed to be "x", which acts like "0"
+        const rgx = /((\d+|x)\.(\d+)(\.\d+)?(v)? )?(.+)/;
         const match = rgx.exec(reversed);
         if (!match) {
             return fail();
@@ -110,7 +111,7 @@ function parseLabel(strict) {
             minorReverse = "0";
         }
         const [name, major, minor] = [reverse(nameReverse), reverse(majorReverse), reverse(minorReverse)];
-        return pm.makeSuccess(end, { name, major: util_1.intOfString(major), minor: util_1.intOfString(minor) });
+        return pm.makeSuccess(end, { name, major: util_1.intOfString(major), minor: minor === "x" ? 0 : util_1.intOfString(minor) });
         function fail(msg) {
             let expected = "foo MAJOR.MINOR";
             if (msg) {

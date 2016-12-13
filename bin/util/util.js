@@ -144,4 +144,22 @@ function errorDetails(error) {
     return error.stack || error.message || `Non-Error error: ${util_1.inspect(error)}`;
 }
 exports.errorDetails = errorDetails;
+/**
+ * Returns the input that is better than all others, or `undefined` if there are no inputs.
+ * @param isBetter Returns true if `a` should be preferred over `b`.
+ */
+function best(inputs, isBetter) {
+    if (!inputs.length) {
+        return undefined;
+    }
+    let best = inputs[0];
+    for (let i = 1; i < inputs.length; i++) {
+        const candidate = inputs[i];
+        if (isBetter(candidate, best)) {
+            best = candidate;
+        }
+    }
+    return best;
+}
+exports.best = best;
 //# sourceMappingURL=util.js.map

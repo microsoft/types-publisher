@@ -160,6 +160,9 @@ function checkTsconfig(tsconfig) {
         throw new Error(`Expected compilerOptions["noImplicitAny"] and compilerOptions["strictNullChecks"] to exist`);
     }
     // baseUrl / typeRoots / types may be missing.
+    if (options.types && options.types.length) {
+        throw new Error('Use `/// <reference types="" />` in source files instead of using "types" in tsconfig.');
+    }
 }
 function checkPackageJson(typing, options) {
     return __awaiter(this, void 0, void 0, function* () {

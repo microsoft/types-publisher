@@ -154,7 +154,7 @@ function getOutputPath({ typingsPackageName }) {
 }
 exports.getOutputPath = getOutputPath;
 function fullPackageName(typingsPackageName) {
-    return `@${exports.settings.scopeName}/${typingsPackageName.toLowerCase()}`;
+    return `@${exports.settings.scopeName}/${typingsPackageName}`;
 }
 exports.fullPackageName = fullPackageName;
 function notNeededReadme({ libraryName, typingsPackageName, sourceRepoURL }, useNewline = true) {
