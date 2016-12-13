@@ -128,3 +128,22 @@ export async function execAndThrowErrors(cmd: string, cwd?: string): Promise<str
 export function errorDetails(error: Error): string {
 	return error.stack || error.message || `Non-Error error: ${inspect(error)}`;
 }
+
+/**
+ * Returns the input that is better than all others, or `undefined` if there are no inputs.
+ * @param isBetter Returns true if `a` should be preferred over `b`.
+ */
+export function best<T>(inputs: T[], isBetter: (a: T, b: T) => boolean): T | undefined {
+	if (!inputs.length) {
+		return undefined;
+	}
+
+	let best = inputs[0];
+	for (let i = 1; i < inputs.length; i++) {
+		const candidate = inputs[i];
+		if (isBetter(candidate, best)) {
+			best = candidate;
+		}
+	}
+	return best;
+}
