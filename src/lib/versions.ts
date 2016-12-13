@@ -3,7 +3,7 @@ import assert = require("assert");
 import { existsDataFileSync, readDataFile, writeDataFile } from "../lib/common";
 import { fetchJson } from "../util/io";
 import { Logger } from "../util/logging";
-import { max, nAtATime, intOfString, sortObjectKeys } from "../util/util";
+import { best, nAtATime, intOfString, sortObjectKeys } from "../util/util";
 
 import { AnyPackage, AllPackages, fullPackageName, settings } from "./common";
 
@@ -153,7 +153,7 @@ function latestPatchMatchingMajorAndMinor(versions: { [version: string]: never }
 		const { major, minor, patch } = semver;
 		return major === newMajor && minor === newMinor ? patch : undefined;
 	}).filter(x => x !== undefined);
-	return max(versionsWithTypings, (a, b) => a > b);
+	return best(versionsWithTypings, (a, b) => a > b);
 }
 
 function parseSemver(semver: string): Semver {
