@@ -2,10 +2,13 @@
 const Lint = require("tslint");
 const ts = require("typescript");
 class Rule extends Lint.Rules.AbstractRule {
-    static failureString(name, { parameters, returnType }) {
+    static failureStringForInterface(name, { parameters, returnType }) {
         const suggestion = `type ${name} = (${parameters}) => ${returnType}`;
         const disable = "Use `// tslint:disable-next-line:functional-interfaces` if you will extend this interface.";
         return `Interface has only a call signature — use \`${suggestion}\` instead.\n${disable}`;
+    }
+    static failureStringForTypeLiteral({ parameters, returnType }) {
+        return `Type literal has only a call signature — use \`(${parameters}) => ${returnType}\` instead.`;
     }
     apply(sourceFile) {
         return this.applyWithWalker(new Walker(sourceFile, this.getOptions()));
@@ -23,13 +26,22 @@ Rule.metadata = {
 exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {
     visitInterfaceDeclaration(node) {
-        if (noSupertype(node.heritageClauses) && node.members.length === 1 && node.members[0].kind === ts.SyntaxKind.CallSignature) {
-            const sig = signatureString(node.members[0]);
-            if (sig) {
-                this.fail(node, Rule.failureString(node.name.getText(), sig));
-            }
+        if (noSupertype(node.heritageClauses)) {
+            this.check(node);
         }
         super.visitInterfaceDeclaration(node);
+    }
+    visitTypeLiteral(node) {
+        this.check(node);
+        super.visitTypeLiteral(node);
+    }
+    check(node) {
+        if (node.members.length === 1 && node.members[0].kind === ts.SyntaxKind.CallSignature) {
+            const sig = signatureString(node.members[0]);
+            if (sig) {
+                this.fail(node, node.name ? Rule.failureStringForInterface(node.name.getText(), sig) : Rule.failureStringForTypeLiteral(sig));
+            }
+        }
     }
     fail(node, message) {
         this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
