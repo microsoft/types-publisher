@@ -1,6 +1,6 @@
 import * as yargs from "yargs";
 
-import { AnyPackage, Options, TypeScriptVersion, existsTypesDataFileSync, fullPackageName, readAllPackages } from "./lib/common";
+import { AnyPackage, TypeScriptVersion, existsTypesDataFileSync, fullPackageName, readTypings } from "./lib/common";
 import NpmClient from "./lib/npm-client";
 import Versions, { versionString } from "./lib/versions";
 
@@ -16,7 +16,7 @@ if (!module.parent) {
 	}
 	else {
 		const dry = !!yargs.argv.dry;
-		done(tagAll(Options.defaults, dry));
+		done(tagAll(dry));
 	}
 }
 
@@ -25,19 +25,16 @@ if (!module.parent) {
  * This shouldn't normally need to run, since we run `tagSingle` whenever we publish a package.
  * But this should be run if the way we calculate tags changes (e.g. when a new release is allowed to be tagged "latest").
  */
-async function tagAll(options: Options, dry: boolean) {
+async function tagAll(dry: boolean) {
 	const versions = await Versions.load();
 	const client = await NpmClient.create();
 
-	const { typings, notNeeded } = await readAllPackages(options);
-
-	for (const t of typings) {
+	for (const t of await readTypings()) {
 		const version = versionString(versions.versionInfo(t).version);
 		await addNpmTagsForPackage(t, version, client, console.log, dry);
 	}
 
-	//TODO: Do it for notNeeded too!
-	notNeeded;
+	// Don't tag notNeeded packages
 }
 
 export async function addNpmTagsForPackage(pkg: AnyPackage, version: string, client: NpmClient, log: Logger, dry: boolean): Promise<void> {
