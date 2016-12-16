@@ -191,16 +191,7 @@ function regexpIndexOf(s: string, rgx: RegExp, start: number): number {
 }
 
 declare module "parsimmon" {
-	export function Parser<T>(fn: (input: string, index: number) => pm.Result<T>): pm.Parser<T>;
-	export function makeSuccess<T>(endIndex: number, result: T): pm.Result<T>;
-	export function makeFailure(index: number, expected: string): pm.Result<any>;
-
-	export function sepBy1<T>(a: pm.Parser<T>, b: pm.Parser<any>): Parser<T[]>;
-	export function seqMap<T, U, V, W, X, Y, Z, AA, BB, CC>(
-		p1: Parser<T>, p2: Parser<U>, p3: Parser<V>, p4: Parser<W>, p5: Parser<X>, p6: Parser<Y>, p7: Parser<Z>, p8: Parser<AA>, p9: Parser<BB>,
-		cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z, a8: AA, a9: BB) => CC): Parser<CC>;
-
-	export interface Parser<T> {
-		fallback<U>(value: U): Parser<T | U>;
-	}
+	export function seqMap<T, U, V, W, X, Y, Z, A, B, C>(
+		p1: Parser<T>, p2: Parser<U>, p3: Parser<V>, p4: Parser<W>, p5: Parser<X>, p6: Parser<Y>, p7: Parser<Z>, p8: Parser<A>, p9: Parser<B>,
+		cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z, a8: A, a9: B) => C): Parser<C>;
 }

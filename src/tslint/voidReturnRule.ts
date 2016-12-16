@@ -21,7 +21,7 @@ export class Rule extends Lint.Rules.AbstractRule {
 
 class Walker extends Lint.RuleWalker {
 	visitNode(node: ts.Node) {
-		if (node.kind === ts.SyntaxKind.VoidKeyword && !isPromiseType(node) && !isReturnType(node)) {
+		if (node.kind === ts.SyntaxKind.VoidKeyword && !mayContainVoid(node.parent!) && !isReturnType(node)) {
 			this.fail(node, Rule.FAILURE_STRING);
 		}
 		super.visitNode(node);
@@ -32,25 +32,8 @@ class Walker extends Lint.RuleWalker {
 	}
 }
 
-function isPromiseType(node: ts.Node): boolean {
-	const parent = node.parent!;
-	switch (parent.kind) {
-		case ts.SyntaxKind.TypeReference: {
-			const ref = parent as ts.TypeReferenceNode;
-			return isPromiseIdentifier(ref.typeName) && ref.typeArguments![0] === node;
-		}
-		case ts.SyntaxKind.NewExpression: {
-			const ctr = parent as ts.NewExpression;
-			return isPromiseIdentifier(ctr.expression) && ctr.typeArguments![0] === node;
-		}
-		default:
-			return false;
-	}
-
-}
-
-function isPromiseIdentifier(node: ts.Node): boolean {
-	return node.kind === ts.SyntaxKind.Identifier && (node as ts.Identifier).text === "Promise";
+function mayContainVoid({ kind }: ts.Node) {
+	return kind === ts.SyntaxKind.TypeReference || kind === ts.SyntaxKind.NewExpression;
 }
 
 function isReturnType(node: ts.Node): boolean {
