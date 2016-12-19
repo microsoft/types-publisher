@@ -157,8 +157,10 @@ function checkTsconfig(tsconfig: any) {
 		}
 	}
 
-	if (!("noImplicitAny" in options && "strictNullChecks" in options)) {
-		throw new Error(`Expected compilerOptions["noImplicitAny"] and compilerOptions["strictNullChecks"] to exist`);
+	for (const key of ["noImplicitAny", "noImplicitThis", "strictNullChecks"]) {
+		if (!(key in options)) {
+			throw new Error(`Expected \`"${key}": true\` or \`"${key}": false\`.`);
+		}
 	}
 
 	// baseUrl / typeRoots / types may be missing.
