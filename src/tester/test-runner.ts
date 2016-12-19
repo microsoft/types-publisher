@@ -162,7 +162,7 @@ function checkTsconfig(tsconfig: any) {
 	}
 
 	if (("typeRoots" in options) && !("types" in options)) {
-		throw new Error('If "typeRoots" is specified, must include `"types": []` to prevent very long compile times.');
+		throw new Error('If the "typeRoots" option is specified in your tsconfig, you must include `"types": []` to prevent very long compile times.');
 	}
 
 	// baseUrl / typeRoots / types may be missing.
