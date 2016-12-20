@@ -12,7 +12,7 @@ const path = require("path");
 const common_1 = require("../lib/common");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-const installsDir = "typescript-installs";
+const installsDir = path.join(__dirname, "..", "..", "typescript-installs");
 function installAllTypeScriptVersions() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Installing TypeScript versions...");
@@ -27,7 +27,7 @@ function installAllTypeScriptVersions() {
 }
 exports.installAllTypeScriptVersions = installAllTypeScriptVersions;
 function pathToTsc(version) {
-    return path.join(__dirname, "..", "..", installDir(version), "node_modules", "typescript", "lib", "tsc.js");
+    return path.join(installDir(version), "node_modules", "typescript", "lib", "tsc.js");
 }
 exports.pathToTsc = pathToTsc;
 function installDir(version) {
