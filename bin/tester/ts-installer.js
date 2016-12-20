@@ -20,7 +20,7 @@ function installAllTypeScriptVersions() {
         for (const version of common_1.TypeScriptVersion.All) {
             const dir = installDir(version);
             yield fsp.mkdirp(dir);
-            io_1.writeJson(path.join(dir, "package.json"), packageJson(version));
+            yield io_1.writeJson(path.join(dir, "package.json"), packageJson(version));
             yield util_1.execAndThrowErrors("npm install", dir);
         }
     });
