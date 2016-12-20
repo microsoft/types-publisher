@@ -19,7 +19,7 @@ Rule.FAILURE_STRING = "Use the `void` type for return types only. Otherwise, use
 exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {
     visitNode(node) {
-        if (node.kind === ts.SyntaxKind.VoidKeyword && node.parent.kind !== ts.SyntaxKind.TypeReference && !isReturnType(node)) {
+        if (node.kind === ts.SyntaxKind.VoidKeyword && !mayContainVoid(node.parent) && !isReturnType(node)) {
             this.fail(node, Rule.FAILURE_STRING);
         }
         super.visitNode(node);
@@ -27,6 +27,9 @@ class Walker extends Lint.RuleWalker {
     fail(node, message) {
         this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
+}
+function mayContainVoid({ kind }) {
+    return kind === ts.SyntaxKind.TypeReference || kind === ts.SyntaxKind.NewExpression;
 }
 function isReturnType(node) {
     const parent = node.parent;

@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 const assert = require("assert");
@@ -33,6 +33,35 @@ var Options;
         definitelyTypedPath: "../DefinitelyTyped",
     };
 })(Options = exports.Options || (exports.Options = {}));
+var TypeScriptVersion;
+(function (TypeScriptVersion) {
+    TypeScriptVersion.All = ["2.0", "2.1"];
+    TypeScriptVersion.Latest = "2.1";
+    function isPrerelease(version) {
+        return version === "2.1";
+    }
+    TypeScriptVersion.isPrerelease = isPrerelease;
+    /** List of NPM tags that should be changed to point to the latest version. */
+    function tagsToUpdate(typeScriptVersion) {
+        switch (typeScriptVersion) {
+            case "2.0":
+                // A 2.0-compatible package is assumed compatible with TypeScript 2.1
+                // We want the "2.1" tag to always exist.
+                return [tags.latest, tags.v2_0, tags.v2_1];
+            case "2.1":
+                // Eventually this will change to include "latest", too.
+                // And obviously we shouldn't advance the "2.0" tag if the package is now 2.1-specific.
+                return [tags.v2_1];
+        }
+    }
+    TypeScriptVersion.tagsToUpdate = tagsToUpdate;
+    var tags;
+    (function (tags) {
+        tags.latest = "latest";
+        tags.v2_0 = "ts2.0";
+        tags.v2_1 = "ts2.1";
+    })(tags || (tags = {}));
+})(TypeScriptVersion = exports.TypeScriptVersion || (exports.TypeScriptVersion = {}));
 function isNotNeededPackage(pkg) {
     return pkg.packageKind === "not-needed";
 }
@@ -157,6 +186,10 @@ function fullPackageName(typingsPackageName) {
     return `@${exports.settings.scopeName}/${typingsPackageName}`;
 }
 exports.fullPackageName = fullPackageName;
+function fullEscapedPackageName(typingsPackageName) {
+    return `@${exports.settings.scopeName}%2f${typingsPackageName}`;
+}
+exports.fullEscapedPackageName = fullEscapedPackageName;
 function notNeededReadme({ libraryName, typingsPackageName, sourceRepoURL }, useNewline = true) {
     const lines = [
         `This is a stub types definition for ${libraryName} (${sourceRepoURL}).`,

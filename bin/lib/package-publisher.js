@@ -4,11 +4,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 const assert = require("assert");
 const path = require("path");
+const npmTags_1 = require("../npmTags");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -23,9 +24,7 @@ function publishPackage(client, pkg, dry) {
         const version = packageJson.version;
         assert(typeof version === "string");
         yield client.publish(packageDir, packageJson, dry);
-        if (common_1.settings.tag && common_1.settings.tag !== "latest" && !dry) {
-            yield client.tag(name, version, common_1.settings.tag);
-        }
+        yield npmTags_1.addNpmTagsForPackage(pkg, version, client, log, dry);
         if (common_1.isNotNeededPackage(pkg)) {
             log(`Deprecating ${name}`);
             // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.

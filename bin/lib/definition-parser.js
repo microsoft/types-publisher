@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 const assert = require("assert");
@@ -67,7 +67,7 @@ function getTypingInfo(folderName, options) {
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
         const mainFileContent = yield readFile(directory, mainFilename);
-        const { authors, libraryMajorVersion, libraryMinorVersion, libraryName, projects } = header_1.parseHeaderOrFail(mainFileContent, folderName);
+        const { authors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(mainFileContent, folderName);
         const allEntryFilenames = (yield entryFilesFromTsConfig(directory, log)) || [mainFilename];
         const { referencedLibraries, moduleDependencies, globalSymbols, declaredModules, declFiles } = yield getModuleInfo(directory, folderName, allEntryFilenames, log);
         const hasPackageJson = yield fsp.exists(path.join(directory, "package.json"));
@@ -79,6 +79,7 @@ function getTypingInfo(folderName, options) {
             moduleDependencies,
             libraryMajorVersion,
             libraryMinorVersion,
+            typeScriptVersion,
             libraryName,
             typingsPackageName: folderName,
             projectName: projects[0],

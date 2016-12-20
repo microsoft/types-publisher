@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 const fsp = require("fs-promise");
@@ -15,7 +15,7 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
-const tscPath = path.join(require.resolve("typescript"), "../tsc.js");
+const ts_installer_1 = require("./ts-installer");
 const tslintPath = path.join(require.resolve("tslint"), "../tslint-cli.js");
 if (!module.parent) {
     if (!common_1.existsTypesDataFileSync()) {
@@ -49,6 +49,7 @@ function testerOptions(runFromDefinitelyTyped) {
 exports.testerOptions = testerOptions;
 function main(options, nProcesses, regexp) {
     return __awaiter(this, void 0, void 0, function* () {
+        yield ts_installer_1.installAllTypeScriptVersions();
         const typings = regexp
             ? (yield common_1.readTypings()).filter(t => regexp.test(t.typingsPackageName))
             : yield get_affected_packages_1.default(console.log, options);
@@ -106,7 +107,19 @@ function single(pkg, log, options) {
             });
         }
         function tsc() {
-            return runCommand(log, cwd, tscPath);
+            return __awaiter(this, void 0, void 0, function* () {
+                const error = yield runCommand(log, cwd, ts_installer_1.pathToTsc(pkg.typeScriptVersion));
+                if (error && pkg.typeScriptVersion !== common_1.TypeScriptVersion.Latest) {
+                    const newError = yield runCommand(log, cwd, ts_installer_1.pathToTsc(common_1.TypeScriptVersion.Latest));
+                    if (!newError) {
+                        const message = `${error.message}\n` +
+                            `Package compiles in TypeScript ${common_1.TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
+                            `You can add a line '// TypeScript Version: ${common_1.TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
+                        return { message };
+                    }
+                }
+                return error;
+            });
         }
         function tslint() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -156,12 +169,17 @@ function checkTsconfig(tsconfig) {
             throw new Error(`Expected compilerOptions[${JSON.stringify(key)}] === ${value}`);
         }
     }
-    if (!("noImplicitAny" in options && "strictNullChecks" in options)) {
-        throw new Error(`Expected compilerOptions["noImplicitAny"] and compilerOptions["strictNullChecks"] to exist`);
+    for (const key of ["noImplicitAny", "noImplicitThis", "strictNullChecks"]) {
+        if (!(key in options)) {
+            throw new Error(`Expected \`"${key}": true\` or \`"${key}": false\`.`);
+        }
+    }
+    if (("typeRoots" in options) && !("types" in options)) {
+        throw new Error('If the "typeRoots" option is specified in your tsconfig, you must include `"types": []` to prevent very long compile times.');
     }
     // baseUrl / typeRoots / types may be missing.
     if (options.types && options.types.length) {
-        throw new Error('Use `/// <reference types="" />` in source files instead of using "types" in tsconfig.');
+        throw new Error('Use `/// <reference types="..." />` directives in source files and ensure that the "types" field in your tsconfig is an empty array.');
     }
 }
 function checkPackageJson(typing, options) {

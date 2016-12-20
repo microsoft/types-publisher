@@ -1,6 +1,6 @@
 "use strict";
-const util_1 = require("../util/util");
 const pm = require("parsimmon");
+const util_1 = require("../util/util");
 function parseHeaderOrFail(mainFileContent, name) {
     const header = parseHeader(mainFileContent, /*strict*/ false);
     if (isParseError(header)) {
@@ -28,16 +28,16 @@ function isParseError(x) {
 function parseHeader(text, strict) {
     const res = headerParser(strict).parse(text);
     if (res.status) {
-        const { label: { name, major, minor }, projects, authors } = res.value;
-        return { libraryName: name, libraryMajorVersion: major, libraryMinorVersion: minor, projects, authors };
+        const { label: { name, major, minor }, projects, authors, typeScriptVersion } = res.value;
+        return { libraryName: name, libraryMajorVersion: major, libraryMinorVersion: minor, projects, authors, typeScriptVersion };
     }
     // parsimmon types are wrong: expected is actually string[]
     return { index: res.index.offset, line: res.index.line, column: res.index.column, expected: res.expected };
 }
 function headerParser(strict) {
-    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), authorsParser(strict), parseDefinitions, pm.all, // Don't care about the rest of the file
+    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), authorsParser(strict), parseDefinitions, parseTypeScriptVersion, pm.all, // Don't care about the rest of the file
     // tslint:disable-next-line:variable-name
-    (_str, label, _project, projects, _defsBy, authors) => ({ label, projects, authors }));
+    (_str, label, _project, projects, _defsBy, authors, _definitions, typeScriptVersion) => ({ label, projects, authors, typeScriptVersion }));
 }
 /*
 Allow any of the following:
@@ -121,6 +121,9 @@ function parseLabel(strict) {
         }
     });
 }
+const parseTypeScriptVersion = pm.regexp(/\r?\n\/\/ TypeScript Version: 2.1/)
+    .result("2.1")
+    .fallback("2.0");
 function reverse(s) {
     let out = "";
     for (let i = s.length - 1; i >= 0; i--) {
