@@ -58,8 +58,8 @@ function main(options, nProcesses, regexp) {
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing dependencies...");
-        yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const cwd = common_1.packagePath(pkg, options);
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(typings), (packageName) => __awaiter(this, void 0, void 0, function* () {
+            const cwd = common_1.definitelyTypedPath(packageName, options);
             if (yield fsp.exists(path.join(cwd, "package.json"))) {
                 let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");

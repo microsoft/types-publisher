@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+const flatten = require("lodash.flatten");
 const common_1 = require("../lib/common");
 const util_1 = require("../util/util");
 if (!module.parent) {
@@ -29,6 +30,11 @@ function getAffectedPackages(log, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
+/** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
+function allDependencies(packages) {
+    return util_1.unique(flatten(packages.map(getDependencies)));
+}
+exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
 function collectDependers(typings, changedPackageNames, reverseDependencies) {
     // All packages that have change or depend on something in allDependers.
@@ -62,7 +68,7 @@ function getReverseDependencies(typesData) {
         map.set(typing, new Set());
     }
     for (const typing of typings) {
-        for (const dependencyName of typing.libraryDependencies.concat(typing.moduleDependencies)) {
+        for (const dependencyName of getDependencies(typing)) {
             const dependency = typesData[dependencyName];
             if (dependency) {
                 map.get(dependency).add(typing);
@@ -70,6 +76,9 @@ function getReverseDependencies(typesData) {
         }
     }
     return map;
+}
+function getDependencies(typing) {
+    return typing.libraryDependencies.concat(typing.moduleDependencies);
 }
 /** Returns all immediate subdirectories of the root directory that have changed. */
 function gitChanges(log, options) {
