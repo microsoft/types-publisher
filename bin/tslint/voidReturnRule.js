@@ -28,19 +28,14 @@ class Walker extends Lint.RuleWalker {
         this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
 }
-function mayContainVoid(node) {
-    switch (node.kind) {
-        case ts.SyntaxKind.UnionType:
-            return mayContainVoid(node.parent);
-        case ts.SyntaxKind.TypeReference:
-        case ts.SyntaxKind.NewExpression:
-            return true;
-        default:
-            return false;
-    }
+function mayContainVoid({ kind }) {
+    return kind === ts.SyntaxKind.TypeReference || kind === ts.SyntaxKind.NewExpression;
 }
 function isReturnType(node) {
-    const parent = node.parent;
+    let parent = node.parent;
+    if (parent.kind === ts.SyntaxKind.UnionType) {
+        [node, parent] = [parent, parent.parent];
+    }
     return isSignatureDeclaration(parent) && parent.type === node;
 }
 function isSignatureDeclaration(node) {
