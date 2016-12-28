@@ -50,16 +50,17 @@ exports.testerOptions = testerOptions;
 function main(options, nProcesses, regexp) {
     return __awaiter(this, void 0, void 0, function* () {
         yield ts_installer_1.installAllTypeScriptVersions();
+        const typesData = yield common_1.readTypesDataFile();
         const typings = regexp
-            ? (yield common_1.readTypings()).filter(t => regexp.test(t.typingsPackageName))
-            : yield get_affected_packages_1.default(console.log, options);
+            ? (common_1.typingsFromData(typesData)).filter(t => regexp.test(t.typingsPackageName))
+            : yield get_affected_packages_1.default(typesData, console.log, options);
         nProcesses = nProcesses || util_1.numberOfOsProcesses;
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing dependencies...");
-        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(typings), (packageName) => __awaiter(this, void 0, void 0, function* () {
-            const cwd = common_1.definitelyTypedPath(packageName, options);
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(typesData, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
+            const cwd = common_1.packagePath(pkg, options);
             if (yield fsp.exists(path.join(cwd, "package.json"))) {
                 let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
