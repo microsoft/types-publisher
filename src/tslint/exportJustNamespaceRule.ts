@@ -54,6 +54,7 @@ function isJustNamespace(statements: ts.Statement[], exportEqualsName: string) {
 					// OK. It's merged with a variable.
 					return false;
 				}
+				break;
 			case ts.SyntaxKind.FunctionDeclaration:
 			case ts.SyntaxKind.ClassDeclaration:
 			case ts.SyntaxKind.TypeAliasDeclaration:
@@ -62,6 +63,7 @@ function isJustNamespace(statements: ts.Statement[], exportEqualsName: string) {
 					// OK. It's merged with a function/class/type/interface.
 					return false;
 				}
+				break;
 		}
 	}
 
