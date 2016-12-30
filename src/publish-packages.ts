@@ -1,21 +1,16 @@
 import * as fs from "fs";
 import * as yargs from "yargs";
 
-import { Options, existsTypesDataFileSync, readAllPackagesArray } from "./lib/common";
+import { Options } from "./lib/common";
+import { AllPackages } from "./lib/packages";
 import NpmClient from "./lib/npm-client";
 import * as publisher from "./lib/package-publisher";
-import Versions, { changedPackages } from "./lib/versions";
+import { changedPackages } from "./lib/versions";
 import { LogWithErrors, logger, writeLog } from "./util/logging";
 import { done } from "./util/util";
 
 if (!module.parent) {
-	if (!existsTypesDataFileSync()) {
-		console.log("Run parse-definitions first!");
-	}
-	else if (!Versions.existsSync()) {
-		console.log("Run calculate-versions first!");
-	}
-	else if (!fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
+	if (!fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
 		console.log("Run generate-packages first!");
 	}
 	else {
@@ -32,12 +27,12 @@ if (!module.parent) {
 
 		async function go(): Promise<void> {
 			if (shouldUnpublish) {
-				await unpublish(dry, Options.defaults);
+				await unpublish(dry);
 			}
 			else {
 				const client = await NpmClient.create();
 				if (singleName) {
-					await single(client, singleName, dry, Options.defaults);
+					await single(client, singleName, dry);
 				}
 				else {
 					await main(client, dry, Options.defaults);
@@ -53,7 +48,7 @@ export default async function main(client: NpmClient, dry: boolean, options: Opt
 		log("=== DRY RUN ===");
 	}
 
-	const packagesShouldPublish = await changedPackages(await readAllPackagesArray(options));
+	const packagesShouldPublish = await changedPackages(await AllPackages.read(options));
 
 	for (const pkg of packagesShouldPublish) {
 		console.log(`Publishing ${pkg.libraryName}...`);
@@ -74,19 +69,14 @@ export default async function main(client: NpmClient, dry: boolean, options: Opt
 	console.log("Done!");
 }
 
-async function single(client: NpmClient, name: string, dry: boolean, options: Options): Promise<void> {
-	const pkg = (await readAllPackagesArray(options)).find(p => p.typingsPackageName === name);
-	if (pkg === undefined) {
-		throw new Error(`Can't find a package named ${name}`);
-	}
-
+async function single(client: NpmClient, name: string, dry: boolean): Promise<void> {
+	const pkg = await AllPackages.readSingle(name);
 	const publishLog = await publisher.publishPackage(client, pkg, dry);
-
 	console.log(publishLog);
 }
 
-async function unpublish(dry: boolean, options: Options): Promise<void> {
-	for (const pkg of await readAllPackagesArray(options)) {
+async function unpublish(dry: boolean): Promise<void> {
+	for (const pkg of await AllPackages.readTypings()) {
 		await publisher.unpublishPackage(pkg, dry);
 	}
 }
