@@ -2,7 +2,7 @@ import assert = require("assert");
 import * as path from "path";
 
 import { addNpmTagsForPackage } from "../npmTags";
-import { readJson } from "../util/io";
+import { readFileAndWarn } from "../lib/common";
 import { consoleLogger, quietLogger, Log, LoggerWithErrors } from "../util/logging";
 import { exec } from "../util/util";
 
@@ -15,7 +15,8 @@ export async function publishPackage(client: NpmClient, pkg: AnyPackage, dry: bo
 	log(`Publishing ${pkg.typingsPackageName}`);
 
 	const packageDir = pkg.outputDir();
-	const packageJson = await readJson(path.join(packageDir, "package.json"));
+	const packageJson = await readFileAndWarn("generate", path.join(packageDir, "package.json"));
+
 	const version = packageJson.version;
 	assert(typeof version === "string");
 

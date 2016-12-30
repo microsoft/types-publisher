@@ -4,7 +4,7 @@ import { fetchJson } from "../util/io";
 import { Logger } from "../util/logging";
 import { best, nAtATime, intOfString, sortObjectKeys } from "../util/util";
 
-import { existsDataFileSync, readDataFile, settings, writeDataFile } from "./common";
+import { readDataFile, settings, writeDataFile } from "./common";
 import { AllPackages, AnyPackage, TypeScriptVersion } from "./packages";
 
 const versionsFilename = "versions.json";
@@ -13,15 +13,7 @@ const additionsFilename = "version-additions.json";
 
 export default class Versions {
 	static async load(): Promise<Versions> {
-		try {
-			return new Versions(await readDataFile(versionsFilename));
-		} catch (e) {
-			throw new Error("Run calculate-versions first!");
-		}
-	}
-
-	static existsSync(): boolean {
-		return existsDataFileSync(versionsFilename);
+		return new Versions(await readDataFile("calculate-versions", versionsFilename));
 	}
 
 	/**
@@ -188,12 +180,12 @@ export type Changes = string[];
 
 /** Read all changed packages. */
 export function readChanges(): Promise<Changes> {
-	return readDataFile(changesFilename);
+	return readDataFile("calculate-versions", changesFilename);
 }
 
 /** Read only packages which are newly added. */
 export function readAdditions(): Promise<Changes> {
-	return readDataFile(additionsFilename);
+	return readDataFile("calculate-versions", additionsFilename);
 }
 
 export async function writeChanges(changes: Changes, additions: Changes): Promise<void> {

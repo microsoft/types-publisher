@@ -8,13 +8,8 @@ import { Logger } from "./util/logging";
 import { done } from "./util/util";
 
 if (!module.parent) {
-	if (!Versions.existsSync()) {
-		console.log("Run calculate-versions first!");
-	}
-	else {
-		const dry = !!yargs.argv.dry;
-		done(tagAll(dry));
-	}
+	const dry = !!yargs.argv.dry;
+	done(tagAll(dry));
 }
 
 /**

@@ -15,8 +15,7 @@ export class AllPackages {
 	}
 
 	static async readTypings(): Promise<TypingsData[]> {
-		const raw = await readTypesDataFile();
-		return Object.values(raw).map(raw => new TypingsData(raw));
+		return Object.values(await readTypesDataFile()).map(raw => new TypingsData(raw));
 	}
 
 	static async readSingle(name: string): Promise<TypingsData> {
@@ -202,12 +201,8 @@ export class TypingsData extends PackageBase implements TypingsDataRaw {
 	}
 }
 
-async function readTypesDataFile(): Promise<any> {
-	try {
-		return await readDataFile(typesDataFilename);
-	} catch (e) {
-		throw new Error("Run parse-definitions first!");
-	}
+function readTypesDataFile(): Promise<any> {
+	return readDataFile("parse-definitions", typesDataFilename);
 }
 
 function notNeededPackagesPath(options: Options) {
