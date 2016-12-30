@@ -4,7 +4,7 @@ import * as ts from "typescript";
 export class Rule extends Lint.Rules.AbstractRule {
 	static metadata: Lint.IRuleMetadata = {
 		ruleName: "export-just-namespace",
-		description: "Forbid to `export = foo` where `foo` is a namespace an isn't merged with a function/class.",
+		description: "Forbid to `export = foo` where `foo` is a namespace and isn't merged with a function/class/type/interface.",
 		optionsDescription: "Not configurable.",
 		options: null,
 		type: "functionality",
@@ -20,7 +20,7 @@ export class Rule extends Lint.Rules.AbstractRule {
 
 class Walker extends Lint.RuleWalker {
 	visitSourceFile(node: ts.SourceFile) {
-		const exportEqualsNode = node.statements.find(s => s.kind === ts.SyntaxKind.ExportAssignment) as ts.ExportAssignment | undefined;
+		const exportEqualsNode = node.statements.find(isExportEquals) as ts.ExportAssignment | undefined;
 		if (!exportEqualsNode) {
 			return;
 		}
@@ -34,6 +34,10 @@ class Walker extends Lint.RuleWalker {
 			this.addFailureAtNode(exportEqualsNode, Rule.FAILURE_STRING);
 		}
 	}
+}
+
+function isExportEquals(node: ts.Node): boolean {
+	return node.kind === ts.SyntaxKind.ExportAssignment && !!(node as ts.ExportAssignment).isExportEquals;
 }
 
 /** Returns true if there is a namespace but there are no functions/classes with the name. */
@@ -52,8 +56,10 @@ function isJustNamespace(statements: ts.Statement[], exportEqualsName: string) {
 				}
 			case ts.SyntaxKind.FunctionDeclaration:
 			case ts.SyntaxKind.ClassDeclaration:
-				if (nameMatches((statement as ts.FunctionDeclaration | ts.ClassDeclaration).name)) {
-					// OK. It's merged with a function/class.
+			case ts.SyntaxKind.TypeAliasDeclaration:
+			case ts.SyntaxKind.InterfaceDeclaration:
+				if (nameMatches((statement as ts.FunctionDeclaration | ts.ClassDeclaration | ts.TypeAliasDeclaration | ts.InterfaceDeclaration).name)) {
+					// OK. It's merged with a function/class/type/interface.
 					return false;
 				}
 		}
@@ -72,7 +78,7 @@ Tests:
 OK:
 	export = foo;
 	declare namespace foo {}
-	declare function foo(): void;
+	declare function foo(): void; // or interface, type, class
 
 Error:
 	export = foo;
