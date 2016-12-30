@@ -11,6 +11,7 @@
 		"interface-over-type-literal": true,
 		"no-dead-reference": true,
 		"no-empty-interface": true,
+		"no-empty-namespace": true,
 		"no-parent-references": true,
 		"no-public": true,
 		"no-reference-import": true,
