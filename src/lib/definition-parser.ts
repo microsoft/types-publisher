@@ -368,7 +368,12 @@ async function getModuleInfo(directory: string, folderName: string, allEntryFile
 
 /** Given "foo/bar/baz", return "foo". */
 function rootName(importText: string) {
-	const slash = importText.indexOf("/");
+	let slash = importText.indexOf("/");
+	// Root of `@foo/bar/baz` is `@foo/bar`
+	if (importText.startsWith("@")) {
+		// Use second "/"
+		slash = importText.indexOf("/", slash + 1);
+	}
 	return slash === -1 ? importText : importText.slice(0, slash);
 }
 
