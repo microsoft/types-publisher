@@ -6,9 +6,10 @@ import * as path from "path";
 import { readFile as readFileText } from "../util/io";
 import { Logger, Log, quietLogger } from "../util/logging";
 import { isExternalModule } from "../util/ts";
-import { mapAsyncOrdered, stripQuotes } from "../util/util";
+import { computeHash, mapAsyncOrdered, stripQuotes } from "../util/util";
 
-import { Options, TypingsData, computeHash, definitelyTypedPath, settings } from "./common";
+import { Options, settings } from "./common";
+import { TypingsDataRaw, definitelyTypedPath } from "./packages";
 import { parseHeaderOrFail } from "./header";
 
 enum DeclarationFlags {
@@ -53,7 +54,7 @@ function getNamespaceFlags(ns: ts.ModuleDeclaration): DeclarationFlags {
 	return result;
 }
 
-export async function getTypingInfo(folderName: string, options: Options): Promise<{ data: TypingsData, logs: Log }> {
+export async function getTypingInfo(folderName: string, options: Options): Promise<{ data: TypingsDataRaw, logs: Log }> {
 	const [log, logResult] = quietLogger();
 	const directory = definitelyTypedPath(folderName, options);
 	if (folderName !== folderName.toLowerCase()) {
@@ -78,7 +79,7 @@ export async function getTypingInfo(folderName: string, options: Options): Promi
 	const allFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
 
 	const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
-	const data: TypingsData = {
+	const data: TypingsDataRaw = {
 		authors: authors.map(a => `${a.name} <${a.url}>`).join(", "), // TODO: Store as JSON?
 		libraryDependencies: referencedLibraries,
 		moduleDependencies,
@@ -247,8 +248,9 @@ async function getModuleInfo(directory: string, folderName: string, allEntryFile
 
 		for (const ref of imports(src)) {
 			if (!ref.startsWith(".")) {
-				moduleDependencies.add(ref);
-				log(`Found import declaration from \`"${ref}"\``);
+				const importedModule = rootName(ref);
+				moduleDependencies.add(importedModule);
+				log(`Found import declaration from \`"${importedModule}"\``);
 			}
 		}
 
@@ -362,6 +364,17 @@ async function getModuleInfo(directory: string, folderName: string, allEntryFile
 	function arrayOf(strings: Iterable<string>): string[] {
 		return Array.from(strings).sort();
 	}
+}
+
+/** Given "foo/bar/baz", return "foo". */
+function rootName(importText: string) {
+	let slash = importText.indexOf("/");
+	// Root of `@foo/bar/baz` is `@foo/bar`
+	if (importText.startsWith("@")) {
+		// Use second "/"
+		slash = importText.indexOf("/", slash + 1);
+	}
+	return slash === -1 ? importText : importText.slice(0, slash);
 }
 
 /**
