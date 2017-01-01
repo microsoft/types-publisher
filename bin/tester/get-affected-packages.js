@@ -8,34 +8,35 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const common_1 = require("../lib/common");
+const packages_1 = require("../lib/packages");
 const util_1 = require("../util/util");
 if (!module.parent) {
     util_1.done(main(common_1.Options.defaults));
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield getAffectedPackages(yield common_1.readTypesDataFile(), console.log, options);
+        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), console.log, options);
         console.log(Array.from(changes).map(t => t.typingsPackageName));
     });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-function getAffectedPackages(typings, log, options) {
+function getAffectedPackages(allPackages, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const changedPackageNames = yield gitChanges(log, options);
-        const dependedOn = getReverseDependencies(typings);
-        return collectDependers(typings, changedPackageNames, dependedOn);
+        const dependedOn = getReverseDependencies(allPackages);
+        return collectDependers(allPackages, changedPackageNames, dependedOn);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
-function allDependencies(typings, packages) {
-    return Array.from(transitiveClosure(packages, pkg => packagesFromNames(typings, getDependencies(pkg))));
+function allDependencies(allPackages, packages) {
+    return Array.from(transitiveClosure(packages, pkg => packagesFromNames(allPackages, getDependencies(pkg))));
 }
 exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependers(typings, changedPackageNames, reverseDependencies) {
-    return sortPackages(transitiveClosure(packagesFromNames(typings, changedPackageNames), pkg => reverseDependencies.get(pkg) || []));
+function collectDependers(allPackages, changedPackageNames, reverseDependencies) {
+    return sortPackages(transitiveClosure(packagesFromNames(allPackages, changedPackageNames), pkg => reverseDependencies.get(pkg) || []));
 }
 function transitiveClosure(initialItems, getRelatedItems) {
     const all = new Set();
@@ -57,10 +58,11 @@ function transitiveClosure(initialItems, getRelatedItems) {
     }
     return all;
 }
-function* packagesFromNames(typings, names) {
+function* packagesFromNames(allPackages, names) {
     for (const name of names) {
-        if (name in typings) {
-            yield typings[name];
+        const pkg = allPackages.tryGetTypingsData(name);
+        if (pkg) {
+            yield pkg;
         }
     }
 }
@@ -68,15 +70,14 @@ function sortPackages(packages) {
     return Array.from(packages).sort((a, b) => a.typingsPackageName.localeCompare(b.typingsPackageName));
 }
 /** Generate a map from a package to packages that depend on it. */
-function getReverseDependencies(typesData) {
+function getReverseDependencies(allPackages) {
     const map = new Map();
-    const typings = common_1.typingsFromData(typesData);
-    for (const typing of typings) {
+    for (const typing of allPackages.allTypings()) {
         map.set(typing, new Set());
     }
-    for (const typing of typings) {
+    for (const typing of allPackages.allTypings()) {
         for (const dependencyName of getDependencies(typing)) {
-            const dependency = typesData[dependencyName];
+            const dependency = allPackages.tryGetTypingsData(dependencyName);
             if (dependency) {
                 map.get(dependency).add(typing);
             }

@@ -9,28 +9,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const util_1 = require("./util/util");
 const search_index_generator_1 = require("./lib/search-index-generator");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
+    const skipDownloads = yargs.argv.skipDownloads;
+    const single = yargs.argv.single;
+    if (single) {
+        util_1.done(doSingle(single, skipDownloads));
     }
     else {
-        const skipDownloads = yargs.argv.skipDownloads;
-        const single = yargs.argv.single;
-        if (single) {
-            util_1.done(doSingle(single, skipDownloads));
-        }
-        else {
-            const full = yargs.argv.full;
-            util_1.done(main(skipDownloads, full, common_1.Options.defaults));
-        }
+        const full = yargs.argv.full;
+        util_1.done(main(skipDownloads, full));
     }
 }
-function main(skipDownloads, full, options) {
+function main(skipDownloads, full) {
     return __awaiter(this, void 0, void 0, function* () {
-        const packages = yield common_1.readAllPackagesArray(options);
-        console.log(`Loaded ${packages.length} entries`);
+        const packages = yield packages_1.AllPackages.readTypings();
+        console.log(`Generating search index...`);
         const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads));
         // Most downloads first
         records.sort((a, b) => b.d - a.d);
@@ -46,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function doSingle(name, skipDownloads) {
     return __awaiter(this, void 0, void 0, function* () {
-        const pkg = yield common_1.readPackage(name);
+        const pkg = yield packages_1.AllPackages.readSingle(name);
         const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads);
         console.log(verboseRecord(record));
     });

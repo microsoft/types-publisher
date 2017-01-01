@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const yargs = require("yargs");
 const parser = require("./lib/definition-parser");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 const fsp = require("fs-promise");
@@ -23,7 +24,7 @@ function filterPaths(paths, options) {
             .filter(s => s[0] !== "." && s[0] !== "_" && s !== "node_modules" && s !== "scripts")
             .sort();
         // Remove non-folders
-        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(common_1.definitelyTypedPath(s, options))).isDirectory(); }));
+        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(packages_1.definitelyTypedPath(s, options))).isDirectory(); }));
     });
 }
 function main(options) {
@@ -47,7 +48,7 @@ function main(options) {
         yield Promise.all([
             logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
             logging_1.writeLog("parser-log-details.md", detailedLogResult()),
-            common_1.writeDataFile(common_1.typesDataFilename, typings)
+            common_1.writeDataFile(packages_1.typesDataFilename, typings)
         ]);
     });
 }
@@ -57,7 +58,7 @@ function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield parser.getTypingInfo(singleName, options);
         const typings = { [singleName]: result.data };
-        yield common_1.writeDataFile(common_1.typesDataFilename, typings);
+        yield common_1.writeDataFile(packages_1.typesDataFilename, typings);
         console.log(result);
     });
 }

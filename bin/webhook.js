@@ -12,8 +12,9 @@ const common_1 = require("./lib/common");
 const webhook_server_1 = require("./lib/webhook-server");
 const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
+const util_1 = require("./util/util");
 if (!module.parent) {
-    main().catch(console.error);
+    util_1.done(main());
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {

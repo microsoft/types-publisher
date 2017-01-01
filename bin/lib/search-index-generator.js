@@ -17,7 +17,7 @@ function createSearchRecord(info, skipDownloads) {
             t: info.typingsPackageName,
             m: info.declaredModules,
             d: yield getDownloads(),
-            r: info.packageKind === "not-needed" ? info.sourceRepoURL : undefined
+            r: info.isNotNeeded() ? info.sourceRepoURL : undefined
         };
         // See https://github.com/npm/download-counts
         function getDownloads() {

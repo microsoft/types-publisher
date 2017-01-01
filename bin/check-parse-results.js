@@ -9,24 +9,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const semver = require("semver");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const logging_1 = require("./util/logging");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
-    }
-    else {
-        util_1.done(main());
-    }
+    util_1.done(main());
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const infos = yield common_1.readTypings();
+        const packages = yield packages_1.AllPackages.readTypings();
         const [log, logResult] = logging_1.logger();
-        check(infos, info => info.libraryName, "Library Name", log);
-        check(infos, info => info.projectName, "Project Name", log);
-        yield util_1.nAtATime(10, infos, pkg => checkNpm(pkg, log));
+        check(packages, info => info.libraryName, "Library Name", log);
+        check(packages, info => info.projectName, "Project Name", log);
+        yield util_1.nAtATime(10, packages, pkg => checkNpm(pkg, log));
         yield logging_1.writeLog("conflicts.md", logResult());
     });
 }

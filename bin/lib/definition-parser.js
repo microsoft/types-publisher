@@ -16,6 +16,7 @@ const logging_1 = require("../util/logging");
 const ts_1 = require("../util/ts");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
+const packages_1 = require("./packages");
 const header_1 = require("./header");
 var DeclarationFlags;
 (function (DeclarationFlags) {
@@ -58,7 +59,7 @@ function getNamespaceFlags(ns) {
 function getTypingInfo(folderName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const directory = common_1.definitelyTypedPath(folderName, options);
+        const directory = packages_1.definitelyTypedPath(folderName, options);
         if (folderName !== folderName.toLowerCase()) {
             throw new Error(`Package name \`${folderName}\` should be strictly lowercase`);
         }
@@ -229,8 +230,9 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
             let hasAnyExport = false;
             for (const ref of imports(src)) {
                 if (!ref.startsWith(".")) {
-                    moduleDependencies.add(ref);
-                    log(`Found import declaration from \`"${ref}"\``);
+                    const importedModule = rootName(ref);
+                    moduleDependencies.add(importedModule);
+                    log(`Found import declaration from \`"${importedModule}"\``);
                 }
             }
             src.typeReferenceDirectives.forEach(ref => referencedLibraries.add(ref.fileName));
@@ -337,6 +339,16 @@ function getModuleInfo(directory, folderName, allEntryFilenames, log) {
         }
     });
 }
+/** Given "foo/bar/baz", return "foo". */
+function rootName(importText) {
+    let slash = importText.indexOf("/");
+    // Root of `@foo/bar/baz` is `@foo/bar`
+    if (importText.startsWith("@")) {
+        // Use second "/"
+        slash = importText.indexOf("/", slash + 1);
+    }
+    return slash === -1 ? importText : importText.slice(0, slash);
+}
 /**
  * Given a file name, get the name of the module it declares.
  * `foo/index.d.ts` declares "foo", `foo/bar.d.ts` declares "foo/bar", "foo/bar/index.d.ts" declares "foo/bar"
@@ -353,7 +365,7 @@ function hash(directory, files) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return f + "**" + (yield readFile(directory, f)); }));
         const allContent = fileContents.join("||");
-        return common_1.computeHash(allContent);
+        return util_1.computeHash(allContent);
     });
 }
 function readFile(directory, fileName) {

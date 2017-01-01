@@ -9,22 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
-    }
-    else {
-        const forceUpdate = yargs.argv.forceUpdate;
-        util_1.done(main(forceUpdate, common_1.Options.defaults));
-    }
+    const forceUpdate = yargs.argv.forceUpdate;
+    util_1.done(main(forceUpdate, common_1.Options.defaults));
 }
 function main(forceUpdate, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("=== Calculating versions ===");
-        const { changes, additions, versions } = yield versions_1.default.determineFromNpm(yield common_1.readAllPackages(options), logging_1.consoleLogger.info, forceUpdate);
+        const { changes, additions, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, forceUpdate);
         yield versions_1.writeChanges(changes, additions);
         yield versions.save();
     });

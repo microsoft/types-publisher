@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const child_process = require("child_process");
+const crypto = require("crypto");
 const moment = require("moment");
 const os = require("os");
 const object_entries_1 = require("object.entries");
@@ -162,4 +163,20 @@ function best(inputs, isBetter) {
     return best;
 }
 exports.best = best;
+function computeHash(content) {
+    // Normalize line endings
+    content = content.replace(/\r\n?/g, "\n");
+    const h = crypto.createHash("sha256");
+    h.update(content, "utf8");
+    return h.digest("hex");
+}
+exports.computeHash = computeHash;
+function mapValues(map, valueMapper) {
+    const out = new Map();
+    map.forEach((value, key) => {
+        out.set(key, valueMapper(value));
+    });
+    return out;
+}
+exports.mapValues = mapValues;
 //# sourceMappingURL=util.js.map

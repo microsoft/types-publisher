@@ -8,10 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const common_1 = require("../lib/common");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-const common_2 = require("./common");
+const common_1 = require("./common");
+const packages_1 = require("./packages");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
 const additionsFilename = "version-additions.json";
@@ -21,25 +21,22 @@ class Versions {
     }
     static load() {
         return __awaiter(this, void 0, void 0, function* () {
-            return new Versions(yield common_1.readDataFile(versionsFilename));
+            return new Versions(yield common_1.readDataFile("calculate-versions", versionsFilename));
         });
-    }
-    static existsSync() {
-        return common_1.existsDataFileSync(versionsFilename);
     }
     /**
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
      * `additions` is a subset of `changes`.
      */
-    static determineFromNpm({ typings, notNeeded }, log, forceUpdate) {
+    static determineFromNpm(allPackages, log, forceUpdate) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
             const additions = [];
             const data = {};
-            yield util_1.nAtATime(25, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
+            yield util_1.nAtATime(25, allPackages.allTypings(), (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
-                const isPrerelease = common_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
-                const versionInfo = yield fetchTypesPackageVersionInfo(packageName, isPrerelease, [pkg.libraryMajorVersion, pkg.libraryMinorVersion]);
+                const isPrerelease = packages_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
+                const versionInfo = yield fetchTypesPackageVersionInfo(pkg, isPrerelease, [pkg.libraryMajorVersion, pkg.libraryMinorVersion]);
                 if (!versionInfo) {
                     log(`Added: ${packageName}`);
                     additions.push(packageName);
@@ -54,10 +51,10 @@ class Versions {
                 }
                 data[packageName] = { version, contentHash, deprecated };
             }));
-            yield util_1.nAtATime(25, notNeeded, (pkg) => __awaiter(this, void 0, void 0, function* () {
+            yield util_1.nAtATime(25, allPackages.allNotNeeded(), (pkg) => __awaiter(this, void 0, void 0, function* () {
                 const packageName = pkg.typingsPackageName;
                 const isPrerelease = false; // Not-needed packages are never prerelease.
-                let { version, contentHash, deprecated } = (yield fetchTypesPackageVersionInfo(packageName, isPrerelease)) || defaultVersionInfo(isPrerelease);
+                let { version, contentHash, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, isPrerelease)) || defaultVersionInfo(isPrerelease);
                 if (!deprecated) {
                     log(`Now deprecated: ${packageName}`);
                     changes.push(packageName);
@@ -94,14 +91,14 @@ function versionString({ isPrerelease, major, minor, patch }) {
 }
 exports.versionString = versionString;
 /** Returns undefined if the package does not exist. */
-function fetchTypesPackageVersionInfo(packageName, isPrerelease, newMajorAndMinor) {
+function fetchTypesPackageVersionInfo(pkg, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(common_2.fullEscapedPackageName(packageName), isPrerelease, newMajorAndMinor);
+        return fetchVersionInfoFromNpm(pkg.fullEscapedName(), isPrerelease, newMajorAndMinor);
     });
 }
 function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = common_2.settings.npmRegistry + escapedPackageName;
+        const uri = common_1.settings.npmRegistry + escapedPackageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         if (info.error) {
             throw new Error(`Error getting version at ${uri}: ${info.error}`);
@@ -162,12 +159,12 @@ function tryParseSemver(semver, isPrerelease) {
 }
 /** Read all changed packages. */
 function readChanges() {
-    return common_1.readDataFile(changesFilename);
+    return common_1.readDataFile("calculate-versions", changesFilename);
 }
 exports.readChanges = readChanges;
 /** Read only packages which are newly added. */
 function readAdditions() {
-    return common_1.readDataFile(additionsFilename);
+    return common_1.readDataFile("calculate-versions", additionsFilename);
 }
 exports.readAdditions = readAdditions;
 function writeChanges(changes, additions) {
@@ -180,13 +177,7 @@ exports.writeChanges = writeChanges;
 function changedPackages(allPackages) {
     return __awaiter(this, void 0, void 0, function* () {
         const changes = yield readChanges();
-        return changes.map(changedPackageName => {
-            const pkg = allPackages.find(p => p.typingsPackageName === changedPackageName);
-            if (pkg === undefined) {
-                throw new Error(`Expected to find a package named ${changedPackageName}`);
-            }
-            return pkg;
-        });
+        return changes.map(changedPackageName => allPackages.getAnyPackage(changedPackageName));
     });
 }
 exports.changedPackages = changedPackages;

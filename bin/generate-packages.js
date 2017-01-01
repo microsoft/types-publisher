@@ -9,38 +9,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const package_generator_1 = require("./lib/package-generator");
 const logging_1 = require("./util/logging");
 const tgz_1 = require("./util/tgz");
 const util_1 = require("./util/util");
 const versions_1 = require("./lib/versions");
 if (!module.parent) {
-    if (!versions_1.default.existsSync()) {
-        console.log("Run calculate-versions first!");
+    const all = yargs.argv.all;
+    const singleName = yargs.argv.single;
+    const tgz = !!yargs.argv.tgz;
+    if (all && singleName) {
+        throw new Error("Select only one of -single=foo or --all.");
     }
-    else if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
-    }
-    else {
-        const all = yargs.argv.all;
-        const singleName = yargs.argv.single;
-        const tgz = !!yargs.argv.tgz;
-        if (all && singleName) {
-            throw new Error("Select only one of -single=foo or --all.");
-        }
-        util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults, all, tgz)));
-    }
+    util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults, all, tgz)));
 }
 function main(options, all = false, tgz = false) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
-        const { typeData, allPackages, versions } = yield loadPrerequisites(options);
-        const packages = all ? allPackages : yield versions_1.changedPackages(allPackages);
+        const allPackages = yield packages_1.AllPackages.read(options);
+        const versions = yield versions_1.default.load();
+        const packages = all ? allPackages.allPackages() : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const logs = yield package_generator_1.default(pkg, typeData, versions, options);
+            const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
             if (tgz) {
-                yield tgz_1.writeTgz(common_1.getOutputPath(pkg), common_1.getOutputPath(pkg) + ".tgz");
+                yield tgz_1.writeTgz(pkg.getOutputPath(), pkg.getOutputPath() + ".tgz");
             }
             log(` * ${pkg.libraryName}`);
             logging_1.moveLogs(log, logs, line => `   * ${line}`);
@@ -52,20 +46,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { typeData, versions } = yield loadPrerequisites(options);
-        const pkg = common_1.getPackage(typeData, singleName);
-        const logs = yield package_generator_1.default(pkg, typeData, versions, options);
-        console.log(logs.join("\n"));
-    });
-}
-function loadPrerequisites(options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const typeData = yield common_1.readTypesDataFile();
-        const notNeededPackages = yield common_1.readNotNeededPackages(options);
+        const allPackages = yield packages_1.AllPackages.read(options);
+        const pkg = allPackages.getAnyPackage(singleName);
         const versions = yield versions_1.default.load();
-        const typings = common_1.typingsFromData(typeData);
-        const allPackages = [...typings, ...notNeededPackages];
-        return { typeData, allPackages, versions };
+        const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
+        console.log(logs.join("\n"));
     });
 }
 //# sourceMappingURL=generate-packages.js.map

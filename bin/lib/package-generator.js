@@ -12,21 +12,21 @@ const path = require("path");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-const common_1 = require("./common");
+const packages_1 = require("./packages");
 const versions_1 = require("./versions");
 /** Generates the package to disk */
-function generateAnyPackage(pkg, availableTypes, versions, options) {
-    return pkg.packageKind === "not-needed" ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, availableTypes, versions, options);
+function generateAnyPackage(pkg, packages, versions, options) {
+    return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = generateAnyPackage;
-function generatePackage(typing, availableTypes, versions, options) {
+function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = common_1.getOutputPath(typing);
+        const outputPath = typing.getOutputPath();
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
-        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), availableTypes, options);
+        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), packages, options);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
@@ -37,7 +37,7 @@ function generatePackage(typing, availableTypes, versions, options) {
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy and patch ${file}`);
-            let content = yield io_1.readFile(common_1.filePath(typing, file, options));
+            let content = yield io_1.readFile(typing.filePath(file, options));
             content = patchDefinitionFile(content);
             return writeOutputFile(file, content);
         })));
@@ -58,11 +58,11 @@ function generatePackage(typing, availableTypes, versions, options) {
 function generateNotNeededPackage(pkg, versions) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = common_1.getOutputPath(pkg);
+        const outputPath = pkg.getOutputPath();
         yield clearOutputPath(outputPath, log);
         log("Generate package.json and README.md");
         const packageJson = createNotNeededPackageJSON(pkg, versions.versionInfo(pkg).version);
-        const readme = common_1.notNeededReadme(pkg);
+        const readme = pkg.readme();
         log("Write metadata files to disk");
         yield writeOutputFile("package.json", packageJson);
         yield writeOutputFile("README.md", readme);
@@ -91,18 +91,18 @@ function createMetadataJSON(typing) {
     const replacer = (key, value) => key === "root" ? undefined : value;
     return JSON.stringify(typing, replacer, 4);
 }
-function createPackageJSON(typing, { version, contentHash }, availableTypes, options) {
+function createPackageJSON(typing, { version, contentHash }, packages, options) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
-        const pkgPath = common_1.filePath(typing, "package.json", options);
+        const pkgPath = typing.filePath("package.json", options);
         let pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
         const dependencies = pkg.dependencies || {};
         const peerDependencies = pkg.peerDependencies || {};
-        addInferredDependencies(dependencies, peerDependencies, typing, availableTypes);
+        addInferredDependencies(dependencies, peerDependencies, typing, packages);
         const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
-            name: common_1.fullPackageName(typing.typingsPackageName),
+            name: typing.fullName(),
             version: versions_1.versionString(version),
             description,
             // keywords,
@@ -126,14 +126,14 @@ function createPackageJSON(typing, { version, contentHash }, availableTypes, opt
     });
 }
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
-function addInferredDependencies(dependencies, peerDependencies, typing, availableTypes) {
+function addInferredDependencies(dependencies, peerDependencies, typing, packages) {
     function addDependency(dependency) {
-        const typesDependency = common_1.fullPackageName(dependency);
+        const typesDependency = packages_1.fullPackageName(dependency);
         // A dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
         function handlesDependency(deps) {
             return util_1.hasOwnProperty(deps, dependency) || util_1.hasOwnProperty(deps, typesDependency);
         }
-        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && util_1.hasOwnProperty(availableTypes, dependency)) {
+        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && packages.hasTypingFor(dependency)) {
             // 1st/2nd case: Don't add a dependency if it was specified in the package.json or if it has already been added.
             // 3rd case: If it's not a package we know of, just ignore it.
             // For example, we may have an import of "http", where the package is depending on "node" to provide that.
@@ -145,7 +145,7 @@ function addInferredDependencies(dependencies, peerDependencies, typing, availab
 }
 function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL }, version) {
     return JSON.stringify({
-        name: common_1.fullPackageName(typingsPackageName),
+        name: packages_1.fullPackageName(typingsPackageName),
         version: versions_1.versionString(version),
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
@@ -163,7 +163,7 @@ function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRep
 function createReadme(typing) {
     const lines = [];
     lines.push("# Installation");
-    lines.push("> `npm install --save " + common_1.fullPackageName(typing.typingsPackageName) + "`");
+    lines.push("> `npm install --save " + packages_1.fullPackageName(typing.typingsPackageName) + "`");
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {

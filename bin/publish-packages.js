@@ -7,49 +7,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const fs = require("fs");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const npm_client_1 = require("./lib/npm-client");
-const publisher = require("./lib/package-publisher");
+const package_publisher_1 = require("./lib/package-publisher");
 const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
+    const dry = !!yargs.argv.dry;
+    const singleName = yargs.argv.single;
+    // For testing only. Do not use on real @types repo.
+    const shouldUnpublish = !!yargs.argv.unpublish;
+    if (singleName && shouldUnpublish) {
+        throw new Error("Select only one of --single=foo or --shouldUnpublish");
     }
-    else if (!versions_1.default.existsSync()) {
-        console.log("Run calculate-versions first!");
-    }
-    else if (!fs.existsSync("./output") || fs.readdirSync("./output").length === 0) {
-        console.log("Run generate-packages first!");
-    }
-    else {
-        const dry = !!yargs.argv.dry;
-        const singleName = yargs.argv.single;
-        // For testing only. Do not use on real @types repo.
-        const shouldUnpublish = !!yargs.argv.unpublish;
-        if (singleName && shouldUnpublish) {
-            throw new Error("Select only one of --single=foo or --shouldUnpublish");
-        }
-        util_1.done(go());
-        function go() {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (shouldUnpublish) {
-                    yield unpublish(dry, common_1.Options.defaults);
+    util_1.done(go());
+    function go() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (shouldUnpublish) {
+                yield unpublish(dry);
+            }
+            else {
+                const client = yield npm_client_1.default.create();
+                if (singleName) {
+                    yield single(client, singleName, dry);
                 }
                 else {
-                    const client = yield npm_client_1.default.create();
-                    if (singleName) {
-                        yield single(client, singleName, dry, common_1.Options.defaults);
-                    }
-                    else {
-                        yield main(client, dry, common_1.Options.defaults);
-                    }
+                    yield main(client, dry, common_1.Options.defaults);
                 }
-            });
-        }
+            }
+        });
     }
 }
 function main(client, dry, options) {
@@ -58,10 +47,10 @@ function main(client, dry, options) {
         if (dry) {
             log("=== DRY RUN ===");
         }
-        const packagesShouldPublish = yield versions_1.changedPackages(yield common_1.readAllPackagesArray(options));
+        const packagesShouldPublish = yield versions_1.changedPackages(yield packages_1.AllPackages.read(options));
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.libraryName}...`);
-            const publishLog = yield publisher.publishPackage(client, pkg, dry);
+            const publishLog = yield package_publisher_1.publishPackage(client, pkg, dry);
             writeLogs({ infos: publishLog, errors: [] });
         }
         function writeLogs(res) {
@@ -78,20 +67,17 @@ function main(client, dry, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function single(client, name, dry, options) {
+function single(client, name, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const pkg = (yield common_1.readAllPackagesArray(options)).find(p => p.typingsPackageName === name);
-        if (pkg === undefined) {
-            throw new Error(`Can't find a package named ${name}`);
-        }
-        const publishLog = yield publisher.publishPackage(client, pkg, dry);
+        const pkg = yield packages_1.AllPackages.readSingle(name);
+        const publishLog = yield package_publisher_1.publishPackage(client, pkg, dry);
         console.log(publishLog);
     });
 }
-function unpublish(dry, options) {
+function unpublish(dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        for (const pkg of yield common_1.readAllPackagesArray(options)) {
-            yield publisher.unpublishPackage(pkg, dry);
+        for (const pkg of yield packages_1.AllPackages.readTypings()) {
+            yield package_publisher_1.unpublishPackage(pkg, dry);
         }
     });
 }

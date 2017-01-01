@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const fsp = require("fs-promise");
 const path = require("path");
-const common_1 = require("../lib/common");
+const packages_1 = require("../lib/packages");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const installsDir = path.join(__dirname, "..", "..", "typescript-installs");
@@ -17,7 +17,7 @@ function installAllTypeScriptVersions() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Installing TypeScript versions...");
         yield fsp.mkdirp(installsDir);
-        for (const version of common_1.TypeScriptVersion.All) {
+        for (const version of packages_1.TypeScriptVersion.All) {
             const dir = installDir(version);
             yield fsp.mkdirp(dir);
             yield io_1.writeJson(path.join(dir, "package.json"), packageJson(version));

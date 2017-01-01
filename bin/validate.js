@@ -11,36 +11,32 @@ const fsp = require("fs-promise");
 const path = require("path");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const packages_1 = require("./lib/packages");
 const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 const versions_1 = require("./lib/versions");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
+    const all = !!yargs.argv.all;
+    const packageNames = yargs.argv._;
+    if (all && packageNames.length) {
+        throw new Error("Can't combine --all with listed package names.");
+    }
+    if (all) {
+        console.log("Validating all packages");
+        util_1.done(doAll());
+    }
+    else if (packageNames.length) {
+        console.log("Validating: " + JSON.stringify(packageNames));
+        util_1.done(doValidate(packageNames));
     }
     else {
-        const all = !!yargs.argv.all;
-        const packageNames = yargs.argv._;
-        if (all && packageNames.length) {
-            throw new Error("Can't combine --all with listed package names.");
-        }
-        if (all) {
-            console.log("Validating all packages");
-            util_1.done(doAll());
-        }
-        else if (packageNames.length) {
-            console.log("Validating: " + JSON.stringify(packageNames));
-            util_1.done(doValidate(packageNames));
-        }
-        else {
-            main(common_1.Options.defaults);
-        }
+        main(common_1.Options.defaults);
     }
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changed = yield versions_1.changedPackages(yield common_1.readAllPackagesArray(options));
+        const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(options));
         yield doValidate(changed.map(c => c.typingsPackageName));
     });
 }
@@ -48,7 +44,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function doAll() {
     return __awaiter(this, void 0, void 0, function* () {
-        const packageNames = (yield common_1.readTypings()).map(t => t.typingsPackageName).sort();
+        const packageNames = (yield packages_1.AllPackages.readTypings()).map(t => t.typingsPackageName).sort();
         yield doValidate(packageNames);
     });
 }
@@ -137,7 +133,7 @@ function writePackage(packageDirectory, packageName) {
             author: "",
             license: "ISC",
             repository: "https://github.com/Microsoft/types-publisher",
-            dependencies: { [common_1.fullPackageName(packageName)]: "latest" }
+            dependencies: { [packages_1.fullPackageName(packageName)]: "latest" }
         });
         // Write tsconfig.json
         yield io_1.writeJson(path.join(packageDirectory, "tsconfig.json"), {

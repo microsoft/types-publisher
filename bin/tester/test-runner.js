@@ -11,6 +11,7 @@ const fsp = require("fs-promise");
 const path = require("path");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
+const packages_1 = require("../lib/packages");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -18,13 +19,8 @@ const get_affected_packages_1 = require("./get-affected-packages");
 const ts_installer_1 = require("./ts-installer");
 const tslintPath = path.join(require.resolve("tslint"), "../tslint-cli.js");
 if (!module.parent) {
-    if (!common_1.existsTypesDataFileSync()) {
-        console.log("Run parse-definitions first!");
-    }
-    else {
-        const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
-        util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
-    }
+    const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
+    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
 }
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
@@ -50,17 +46,17 @@ exports.testerOptions = testerOptions;
 function main(options, nProcesses, regexp) {
     return __awaiter(this, void 0, void 0, function* () {
         yield ts_installer_1.installAllTypeScriptVersions();
-        const typesData = yield common_1.readTypesDataFile();
+        const allPackages = yield packages_1.AllPackages.read(options);
         const typings = regexp
-            ? (common_1.typingsFromData(typesData)).filter(t => regexp.test(t.typingsPackageName))
-            : yield get_affected_packages_1.default(typesData, console.log, options);
+            ? allPackages.allTypings().filter(t => regexp.test(t.typingsPackageName))
+            : yield get_affected_packages_1.default(allPackages, console.log, options);
         nProcesses = nProcesses || util_1.numberOfOsProcesses;
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing dependencies...");
-        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(typesData, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const cwd = common_1.packagePath(pkg, options);
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
+            const cwd = pkg.directoryPath(options);
             if (yield fsp.exists(path.join(cwd, "package.json"))) {
                 let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
@@ -83,7 +79,7 @@ function main(options, nProcesses, regexp) {
             allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => pkgA.typingsPackageName.localeCompare(pkgB.typingsPackageName));
             console.log("\n\n=== ERRORS ===\n");
             for (const { err, pkg } of allErrors) {
-                console.error(`Error in ${pkg.typingsPackageName}`);
+                console.error(`\n\nError in ${pkg.typingsPackageName}`);
                 console.error(err.message);
             }
             throw new Error("There was a test failure.");
@@ -94,7 +90,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const cwd = common_1.packagePath(pkg, options);
+        const cwd = pkg.directoryPath(options);
         return (yield tsConfig()) || (yield packageJson()) || (yield tsc()) || (yield tslint());
         function tsConfig() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -110,12 +106,12 @@ function single(pkg, log, options) {
         function tsc() {
             return __awaiter(this, void 0, void 0, function* () {
                 const error = yield runCommand(log, cwd, ts_installer_1.pathToTsc(pkg.typeScriptVersion));
-                if (error && pkg.typeScriptVersion !== common_1.TypeScriptVersion.Latest) {
-                    const newError = yield runCommand(log, cwd, ts_installer_1.pathToTsc(common_1.TypeScriptVersion.Latest));
+                if (error && pkg.typeScriptVersion !== packages_1.TypeScriptVersion.Latest) {
+                    const newError = yield runCommand(log, cwd, ts_installer_1.pathToTsc(packages_1.TypeScriptVersion.Latest));
                     if (!newError) {
                         const message = `${error.message}\n` +
-                            `Package compiles in TypeScript ${common_1.TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
-                            `You can add a line '// TypeScript Version: ${common_1.TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
+                            `Package compiles in TypeScript ${packages_1.TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
+                            `You can add a line '// TypeScript Version: ${packages_1.TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
                         return { message };
                     }
                 }
@@ -188,11 +184,11 @@ function checkPackageJson(typing, options) {
         if (!typing.hasPackageJson) {
             return;
         }
-        const pkgPath = common_1.filePath(typing, "package.json", options);
-        const pkg = yield io_1.readJson(pkgPath);
-        const ignoredField = Object.keys(pkg).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
+        const pkgJsonPath = typing.filePath("package.json", options);
+        const pkgJson = yield io_1.readJson(pkgJsonPath);
+        const ignoredField = Object.keys(pkgJson).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
         if (ignoredField) {
-            throw new Error(`Ignored field in ${pkgPath}: ${ignoredField}`);
+            throw new Error(`Ignored field in ${pkgJsonPath}: ${ignoredField}`);
         }
     });
 }
