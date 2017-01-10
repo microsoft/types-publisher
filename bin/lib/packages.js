@@ -56,11 +56,15 @@ class AllPackages {
         return this.tryGetTypingsData(dep) !== undefined;
     }
     getLatestVersion(packageName) {
-        const versions = this.data.get(packageName);
-        if (!versions) {
+        const latest = this.tryGetLatestVersion(packageName);
+        if (!latest) {
             throw new Error(`No such package ${packageName}.`);
         }
-        return versions.getLatest();
+        return latest;
+    }
+    tryGetLatestVersion(packageName) {
+        const versions = this.data.get(packageName);
+        return versions && versions.getLatest();
     }
     getTypingsData(id) {
         const pkg = this.tryGetTypingsData(id);

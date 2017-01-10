@@ -26,7 +26,8 @@ function main(options) {
 function getAffectedPackages(allPackages, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const changedPackageIds = yield gitChanges(log, options);
-        const changedPackages = util_1.map(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.getLatestVersion(name) : allPackages.getTypingsData({ name, majorVersion })));
+        // If a package doesn't exist, that's because it was deleted.
+        const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
         const dependedOn = getReverseDependencies(allPackages);
         return collectDependers(changedPackages, dependedOn);
     });
