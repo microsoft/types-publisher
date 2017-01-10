@@ -23,6 +23,10 @@ var Options;
         definitelyTypedPath: "../DefinitelyTyped",
         progress: true
     };
+    Options.azure = {
+        definitelyTypedPath: "../DefinitelyTyped",
+        progress: false
+    };
 })(Options = exports.Options || (exports.Options = {}));
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));

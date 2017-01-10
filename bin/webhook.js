@@ -27,7 +27,7 @@ function main() {
         }
         else {
             console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-            const s = yield webhook_server_1.default(key, githubAccessToken, dry, common_1.Options.defaults);
+            const s = yield webhook_server_1.default(key, githubAccessToken, dry, common_1.Options.azure);
             yield issue_updater_1.setIssueOk(githubAccessToken);
             console.log(`Listening on port ${port}`);
             s.listen(port);
