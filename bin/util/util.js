@@ -15,7 +15,10 @@ const object_entries_1 = require("object.entries");
 object_entries_1.shim();
 const object_values_1 = require("object.values");
 object_values_1.shim();
+const sourceMapSupport = require("source-map-support");
+sourceMapSupport.install();
 const util_1 = require("util");
+const progress_1 = require("./progress");
 function parseJson(text) {
     try {
         return JSON.parse(text);
@@ -30,8 +33,9 @@ function currentTimeStamp() {
 }
 exports.currentTimeStamp = currentTimeStamp;
 exports.numberOfOsProcesses = os.cpus().length;
-function nAtATime(n, inputs, use) {
+function nAtATime(n, inputs, use, progressOptions) {
     return __awaiter(this, void 0, void 0, function* () {
+        const progress = progressOptions && new progress_1.default({ name: progressOptions.name });
         const results = new Array(inputs.length);
         // We have n "threads" which each run `continuouslyWork`.
         // They all share `nextIndex`, so each work item is done only once.
@@ -40,13 +44,28 @@ function nAtATime(n, inputs, use) {
             while (nextIndex !== inputs.length) {
                 const index = nextIndex;
                 nextIndex++;
-                results[index] = yield use(inputs[index]);
+                const input = inputs[index];
+                const output = yield use(inputs[index]);
+                results[index] = output;
+                if (progress) {
+                    progress.update(index / inputs.length, progressOptions.flavor(input, output));
+                }
             }
         })));
+        if (progress) {
+            progress.done();
+        }
         return results;
     });
 }
 exports.nAtATime = nAtATime;
+function filterNAtATime(n, inputs, shouldKeep, progress) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const shouldKeeps = yield nAtATime(n, inputs, shouldKeep, progress);
+        return inputs.filter((_, idx) => shouldKeeps[idx]);
+    });
+}
+exports.filterNAtATime = filterNAtATime;
 function filterAsyncOrdered(arr, shouldKeep) {
     return __awaiter(this, void 0, void 0, function* () {
         const shouldKeeps = yield Promise.all(arr.map(shouldKeep));
@@ -95,10 +114,20 @@ function initArray(length, makeElement) {
     }
     return arr;
 }
+/** Always use "/" for consistency. (This affects package content hash.) */
+function joinPaths(...paths) {
+    return paths.join("/");
+}
+exports.joinPaths = joinPaths;
+/** Convert a path to use "/" instead of "\\" for consistency. (This affects content hash.) */
 function normalizeSlashes(path) {
     return path.replace(/\\/g, "/");
 }
 exports.normalizeSlashes = normalizeSlashes;
+function hasWindowsSlashes(path) {
+    return path.includes("\\");
+}
+exports.hasWindowsSlashes = hasWindowsSlashes;
 function hasOwnProperty(object, propertyName) {
     return Object.prototype.hasOwnProperty.call(object, propertyName);
 }
@@ -179,4 +208,57 @@ function mapValues(map, valueMapper) {
     return out;
 }
 exports.mapValues = mapValues;
+function multiMapAdd(map, key, value) {
+    const values = map.get(key);
+    if (values) {
+        values.push(value);
+    }
+    else {
+        map.set(key, [value]);
+    }
+}
+exports.multiMapAdd = multiMapAdd;
+function mapDefined(arr, mapper) {
+    const out = [];
+    for (const a of arr) {
+        const res = mapper(a);
+        if (res !== undefined) {
+            out.push(res);
+        }
+    }
+    return out;
+}
+exports.mapDefined = mapDefined;
+function* map(inputs, mapper) {
+    for (const input of inputs) {
+        yield mapper(input);
+    }
+}
+exports.map = map;
+function* flatMap(inputs, mapper) {
+    for (const input of inputs) {
+        yield* mapper(input);
+    }
+}
+exports.flatMap = flatMap;
+function sort(values, comparer) {
+    return Array.from(values).sort(comparer);
+}
+exports.sort = sort;
+function join(values, joiner = ", ") {
+    let s = "";
+    for (const v of values) {
+        s += v + joiner;
+    }
+    return s.slice(0, s.length - joiner.length);
+}
+exports.join = join;
+function makeObject(keys, getValue) {
+    const obj = Object.create(null);
+    for (const key of keys) {
+        obj[key] = getValue(key);
+    }
+    return obj;
+}
+exports.makeObject = makeObject;
 //# sourceMappingURL=util.js.map

@@ -9,10 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const assert = require("assert");
 const RegClient = require("npm-registry-client");
-const path = require("path");
 const url = require("url");
 const io_1 = require("../util/io");
 const tgz_1 = require("../util/tgz");
+const util_1 = require("../util/util");
 const common_1 = require("./common");
 const secrets_1 = require("./secrets");
 const registry = common_1.settings.npmRegistry;
@@ -33,7 +33,7 @@ class NpmClient {
     }
     publish(publishedDirectory, packageJson, dry) {
         return __awaiter(this, void 0, void 0, function* () {
-            const readme = yield io_1.readFile(path.join(publishedDirectory, "README.md"));
+            const readme = yield io_1.readFile(util_1.joinPaths(publishedDirectory, "README.md"));
             return new Promise((resolve, reject) => {
                 const body = tgz_1.createTgz(publishedDirectory, reject);
                 const metadata = Object.assign({ readme }, packageJson);

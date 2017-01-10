@@ -20,7 +20,7 @@ class Walker extends Lint.RuleWalker {
     visitSourceFile(node) {
         for (const ref of node.referencedFiles) {
             if (ref.fileName.startsWith("..")) {
-                this.addFailure(this.createFailure(ref.pos, ref.end, Rule.FAILURE_STRING));
+                this.addFailureAt(ref.pos, ref.end, Rule.FAILURE_STRING);
             }
         }
     }

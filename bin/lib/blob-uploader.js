@@ -60,8 +60,8 @@ function uploadDirectory(container, uploadedDirPath, dirPath, log, filter) {
             files = files.filter(filter);
         }
         return yield Promise.all(files.map(fileName => {
-            const fullPath = path.join(dirPath, fileName);
-            const blobName = `${uploadedDirPath}/${fileName}`;
+            const fullPath = util_1.joinPaths(dirPath, fileName);
+            const blobName = util_1.joinPaths(uploadedDirPath, fileName);
             return logAndUploadFile(container, blobName, fullPath, log);
         }));
     });

@@ -14,48 +14,66 @@ const logging_1 = require("./util/logging");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main());
+    util_1.done(main(true));
 }
-function main() {
+function main(includeNpmChecks) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         const [log, logResult] = logging_1.logger();
         check(packages, info => info.libraryName, "Library Name", log);
         check(packages, info => info.projectName, "Project Name", log);
-        yield util_1.nAtATime(10, packages, pkg => checkNpm(pkg, log));
+        if (includeNpmChecks) {
+            yield util_1.nAtATime(10, packages, pkg => checkNpm(pkg, log), {
+                name: "Checking for typed packages...",
+                flavor: pkg => pkg.desc
+            });
+        }
         yield logging_1.writeLog("conflicts.md", logResult());
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function check(infos, func, key, log) {
-    const lookup = {};
-    infos.forEach(info => {
-        const name = func(info);
-        if (name !== undefined) {
-            (lookup[name] || (lookup[name] = [])).push(info.typingsPackageName);
+    const lookup = new Map();
+    for (const info of infos) {
+        const libraryOrProjectName = func(info);
+        if (libraryOrProjectName !== undefined) {
+            util_1.multiMapAdd(lookup, libraryOrProjectName, info);
         }
-    });
-    for (const k of Object.keys(lookup)) {
-        if (lookup[k].length > 1) {
-            log(` * Duplicate ${key} descriptions "${k}"`);
-            lookup[k].forEach(n => log(`   * ${n}`));
+    }
+    for (const [libName, values] of lookup) {
+        if (values.length > 1) {
+            log(` * Duplicate ${key} descriptions "${libName}"`);
+            for (const n of values) {
+                log(`   * ${n.desc}`);
+            }
         }
     }
 }
 function checkNpm(pkg, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = common_1.settings.npmRegistry + pkg.typingsPackageName;
+        const asOfVersion = yield firstPackageVersionWithTypes(pkg.name);
+        if (asOfVersion) {
+            const ourVersion = `${pkg.major}.${pkg.minor}`;
+            log(`Typings already defined for ${pkg.name} (${pkg.libraryName}) as of ${asOfVersion} (our version: ${ourVersion})`);
+        }
+    });
+}
+function packageHasTypes(packageName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return (yield firstPackageVersionWithTypes(packageName)) !== undefined;
+    });
+}
+exports.packageHasTypes = packageHasTypes;
+function firstPackageVersionWithTypes(packageName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const uri = common_1.settings.npmRegistry + packageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         // Info may be empty if the package is not on NPM
         if (!info.versions) {
-            return;
+            return undefined;
         }
-        const asOfVersion = firstVersionWithTypes(info.versions);
-        if (asOfVersion) {
-            const ourVersion = `${pkg.libraryMajorVersion}.${pkg.libraryMinorVersion}`;
-            log(`Typings already defined for ${pkg.typingsPackageName} (${pkg.libraryName}) as of ${asOfVersion} (our version: ${ourVersion})`);
-        }
+        return firstVersionWithTypes(info.versions);
     });
 }
 function firstVersionWithTypes(versions) {

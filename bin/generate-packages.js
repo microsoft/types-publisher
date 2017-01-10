@@ -11,10 +11,10 @@ const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const package_generator_1 = require("./lib/package-generator");
+const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const tgz_1 = require("./util/tgz");
 const util_1 = require("./util/util");
-const versions_1 = require("./lib/versions");
 if (!module.parent) {
     const all = yargs.argv.all;
     const singleName = yargs.argv.single;
@@ -34,7 +34,7 @@ function main(options, all = false, tgz = false) {
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
             if (tgz) {
-                yield tgz_1.writeTgz(pkg.getOutputPath(), pkg.getOutputPath() + ".tgz");
+                yield tgz_1.writeTgz(pkg.outputDirectory, pkg.outputDirectory + ".tgz");
             }
             log(` * ${pkg.libraryName}`);
             logging_1.moveLogs(log, logs, line => `   * ${line}`);
@@ -47,7 +47,7 @@ exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
-        const pkg = allPackages.getAnyPackage(singleName);
+        const pkg = allPackages.getLatestVersion(singleName);
         const versions = yield versions_1.default.load();
         const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
         console.log(logs.join("\n"));

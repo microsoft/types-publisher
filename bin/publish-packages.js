@@ -32,7 +32,7 @@ if (!module.parent) {
             else {
                 const client = yield npm_client_1.default.create();
                 if (singleName) {
-                    yield single(client, singleName, dry);
+                    yield single(client, singleName, common_1.Options.defaults, dry);
                 }
                 else {
                     yield main(client, dry, common_1.Options.defaults);
@@ -47,10 +47,12 @@ function main(client, dry, options) {
         if (dry) {
             log("=== DRY RUN ===");
         }
-        const packagesShouldPublish = yield versions_1.changedPackages(yield packages_1.AllPackages.read(options));
+        const allPackages = yield packages_1.AllPackages.read(options);
+        const versions = yield versions_1.default.load();
+        const packagesShouldPublish = yield versions_1.changedPackages(allPackages);
         for (const pkg of packagesShouldPublish) {
-            console.log(`Publishing ${pkg.libraryName}...`);
-            const publishLog = yield package_publisher_1.publishPackage(client, pkg, dry);
+            console.log(`Publishing ${pkg.desc}...`);
+            const publishLog = yield publish(pkg, client, allPackages, versions, dry);
             writeLogs({ infos: publishLog, errors: [] });
         }
         function writeLogs(res) {
@@ -67,12 +69,18 @@ function main(client, dry, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function single(client, name, dry) {
+function single(client, name, options, dry) {
     return __awaiter(this, void 0, void 0, function* () {
+        const allPackages = yield packages_1.AllPackages.read(options);
+        const versions = yield versions_1.default.load();
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const publishLog = yield package_publisher_1.publishPackage(client, pkg, dry);
+        const publishLog = yield publish(pkg, client, allPackages, versions, dry);
         console.log(publishLog);
     });
+}
+function publish(pkg, client, allPackages, versions, dry) {
+    const latest = allPackages.getLatestVersion(pkg.name);
+    return package_publisher_1.default(client, pkg, versions, latest, dry);
 }
 function unpublish(dry) {
     return __awaiter(this, void 0, void 0, function* () {

@@ -8,8 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
-const path = require("path");
 const common_1 = require("../lib/common");
+const util_1 = require("../util/util");
 const io_1 = require("./io");
 /** Logger that *just* outputs to the console and does not save anything. */
 exports.consoleLogger = {
@@ -73,9 +73,9 @@ function moveLogsWithErrors(dest, { infos, errors }, mapper) {
     moveLogs(dest.error, errors, mapper);
 }
 exports.moveLogsWithErrors = moveLogsWithErrors;
-const logDir = path.join(common_1.home, "logs");
+const logDir = util_1.joinPaths(common_1.home, "logs");
 function logPath(logName) {
-    return path.join(logDir, logName);
+    return util_1.joinPaths(logDir, logName);
 }
 exports.logPath = logPath;
 function writeLog(logName, contents) {

@@ -63,7 +63,8 @@ function streamDone(stream) {
 exports.streamDone = streamDone;
 function fetchWithRetries(url, init) {
     return __awaiter(this, void 0, void 0, function* () {
-        for (let retries = init.retries === true ? 5 : init.retries; retries > 1; retries--) {
+        const maxRetries = init.retries === true ? 10 : init.retries;
+        for (let retries = maxRetries; retries > 1; retries--) {
             try {
                 return yield node_fetch_1.default(url, init);
             }
@@ -76,4 +77,10 @@ function fetchWithRetries(url, init) {
         return yield node_fetch_1.default(url);
     });
 }
+function isDirectory(path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return (yield fsp.stat(path)).isDirectory();
+    });
+}
+exports.isDirectory = isDirectory;
 //# sourceMappingURL=io.js.map

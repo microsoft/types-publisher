@@ -8,16 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const io_1 = require("../util/io");
-function createSearchRecord(info, skipDownloads) {
+function createSearchRecord(pkg, skipDownloads) {
     return __awaiter(this, void 0, void 0, function* () {
         return {
-            p: info.projectName,
-            l: info.libraryName,
-            g: info.globals,
-            t: info.typingsPackageName,
-            m: info.declaredModules,
+            p: pkg.projectName,
+            l: pkg.libraryName,
+            g: pkg.globals,
+            t: pkg.name,
+            m: pkg.declaredModules,
             d: yield getDownloads(),
-            r: info.isNotNeeded() ? info.sourceRepoURL : undefined
+            r: pkg.isNotNeeded() ? pkg.sourceRepoURL : undefined
         };
         // See https://github.com/npm/download-counts
         function getDownloads() {
@@ -26,8 +26,8 @@ function createSearchRecord(info, skipDownloads) {
                     return -1;
                 }
                 else {
-                    const url = `https://api.npmjs.org/downloads/point/last-month/${info.typingsPackageName}`;
-                    const json = (yield io_1.fetchJson(url, { retries: true }));
+                    const url = `https://api.npmjs.org/downloads/point/last-month/${pkg.name}`;
+                    const json = yield io_1.fetchJson(url, { retries: true });
                     // Json may contain "error" instead of "downloads", because some packages aren't available on NPM.
                     return json.downloads || 0;
                 }

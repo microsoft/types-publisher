@@ -12,8 +12,8 @@ const path = require("path");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
+const common_1 = require("./common");
 const packages_1 = require("./packages");
-const versions_1 = require("./versions");
 /** Generates the package to disk */
 function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
@@ -23,10 +23,10 @@ exports.default = generateAnyPackage;
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = typing.getOutputPath();
+        const outputPath = typing.outputDirectory;
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
-        const packageJson = yield createPackageJSON(typing, versions.versionInfo(typing), packages, options);
+        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing.id), packages, options);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
@@ -36,21 +36,24 @@ function generatePackage(typing, packages, versions, options) {
             writeOutputFile("README.md", readme)
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
-            log(`Copy and patch ${file}`);
-            let content = yield io_1.readFile(typing.filePath(file, options));
-            content = patchDefinitionFile(content);
-            return writeOutputFile(file, content);
+            log(`Copy ${file}`);
+            yield fsp.copy(typing.filePath(file, options), yield outputFilePath(file));
         })));
         yield Promise.all(outputs);
         return logResult();
         function writeOutputFile(filename, content) {
             return __awaiter(this, void 0, void 0, function* () {
-                const full = path.join(outputPath, filename);
+                yield io_1.writeFile(yield outputFilePath(filename), content);
+            });
+        }
+        function outputFilePath(filename) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const full = util_1.joinPaths(outputPath, filename);
                 const dir = path.dirname(full);
                 if (dir !== outputPath) {
                     yield fsp.mkdirp(dir);
                 }
-                return yield io_1.writeFile(full, content);
+                return full;
             });
         }
     });
@@ -58,10 +61,10 @@ function generatePackage(typing, packages, versions, options) {
 function generateNotNeededPackage(pkg, versions) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = pkg.getOutputPath();
+        const outputPath = pkg.outputDirectory;
         yield clearOutputPath(outputPath, log);
         log("Generate package.json and README.md");
-        const packageJson = createNotNeededPackageJSON(pkg, versions.versionInfo(pkg).version);
+        const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg.id));
         const readme = pkg.readme();
         log("Write metadata files to disk");
         yield writeOutputFile("package.json", packageJson);
@@ -69,7 +72,7 @@ function generateNotNeededPackage(pkg, versions) {
         // Not-needed packages never change version
         return logResult();
         function writeOutputFile(filename, content) {
-            return io_1.writeFile(path.join(outputPath, filename), content);
+            return io_1.writeFile(util_1.joinPaths(outputPath, filename), content);
         }
     });
 }
@@ -82,28 +85,23 @@ function clearOutputPath(outputPath, log) {
     });
 }
 exports.clearOutputPath = clearOutputPath;
-function patchDefinitionFile(input) {
-    const pathToLibrary = /\/\/\/ <reference path="..\/(\w.+)\/.+"/gm;
-    let output = input.replace(pathToLibrary, '/// <reference types="$1"');
-    return output;
-}
 function createMetadataJSON(typing) {
     const replacer = (key, value) => key === "root" ? undefined : value;
     return JSON.stringify(typing, replacer, 4);
 }
-function createPackageJSON(typing, { version, contentHash }, packages, options) {
+function createPackageJSON(typing, version, packages, options) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
         const pkgPath = typing.filePath("package.json", options);
-        let pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
+        const pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
         const dependencies = pkg.dependencies || {};
         const peerDependencies = pkg.peerDependencies || {};
         addInferredDependencies(dependencies, peerDependencies, typing, packages);
         const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
-            name: typing.fullName(),
-            version: versions_1.versionString(version),
+            name: typing.fullNpmName,
+            version: version.versionString,
             description,
             // keywords,
             // homepage,
@@ -119,34 +117,32 @@ function createPackageJSON(typing, { version, contentHash }, packages, options) 
             scripts: {},
             dependencies,
             peerDependencies,
-            typesPublisherContentHash: contentHash,
+            typesPublisherContentHash: typing.contentHash,
             typeScriptVersion: typing.typeScriptVersion
         };
         return JSON.stringify(out, undefined, 4);
     });
 }
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
-function addInferredDependencies(dependencies, peerDependencies, typing, packages) {
-    function addDependency(dependency) {
-        const typesDependency = packages_1.fullPackageName(dependency);
+function addInferredDependencies(dependencies, peerDependencies, typing, allPackages) {
+    for (const dependency of typing.dependencies) {
+        const typesDependency = packages_1.fullNpmName(dependency.name);
         // A dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
         function handlesDependency(deps) {
-            return util_1.hasOwnProperty(deps, dependency) || util_1.hasOwnProperty(deps, typesDependency);
+            return util_1.hasOwnProperty(deps, dependency.name) || util_1.hasOwnProperty(deps, typesDependency);
         }
-        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && packages.hasTypingFor(dependency)) {
-            // 1st/2nd case: Don't add a dependency if it was specified in the package.json or if it has already been added.
-            // 3rd case: If it's not a package we know of, just ignore it.
-            // For example, we may have an import of "http", where the package is depending on "node" to provide that.
-            dependencies[typesDependency] = "*";
+        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && allPackages.hasTypingFor(dependency)) {
+            dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
         }
     }
-    typing.moduleDependencies.forEach(addDependency);
-    typing.libraryDependencies.forEach(addDependency);
 }
-function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRepoURL }, version) {
+function dependencySemver(dependency) {
+    return dependency === "*" ? dependency : `^${dependency}`;
+}
+function createNotNeededPackageJSON({ libraryName, name, fullNpmName, sourceRepoURL }, version) {
     return JSON.stringify({
-        name: packages_1.fullPackageName(typingsPackageName),
-        version: versions_1.versionString(version),
+        name: fullNpmName,
+        version: version.versionString,
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",
@@ -156,14 +152,14 @@ function createNotNeededPackageJSON({ libraryName, typingsPackageName, sourceRep
         license: "MIT",
         // No `typings`, that's provided by the dependency.
         dependencies: {
-            [typingsPackageName]: "*"
+            [name]: "*"
         }
     }, undefined, 4);
 }
 function createReadme(typing) {
     const lines = [];
     lines.push("# Installation");
-    lines.push("> `npm install --save " + packages_1.fullPackageName(typing.typingsPackageName) + "`");
+    lines.push("> `npm install --save " + typing.fullNpmName + "`");
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {
@@ -174,12 +170,12 @@ function createReadme(typing) {
     }
     lines.push("");
     lines.push("# Details");
-    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${typing.sourceBranch}/${typing.typingsPackageName}`);
+    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${common_1.settings.sourceBranch}/${typing.subDirectoryPath}`);
     lines.push("");
     lines.push(`Additional Details`);
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
-    lines.push(` * Library Dependencies: ${typing.libraryDependencies.length ? typing.libraryDependencies.join(", ") : "none"}`);
-    lines.push(` * Module Dependencies: ${typing.moduleDependencies.length ? typing.moduleDependencies.join(", ") : "none"}`);
+    const dependencies = Array.from(typing.dependencies).map(d => d.name);
+    lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");
     if (typing.authors) {

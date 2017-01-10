@@ -20,12 +20,9 @@ exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {
     visitNode(node) {
         if (node.kind === ts.SyntaxKind.VoidKeyword && !mayContainVoid(node.parent) && !isReturnType(node)) {
-            this.fail(node, Rule.FAILURE_STRING);
+            this.addFailureAtNode(node, Rule.FAILURE_STRING);
         }
         super.visitNode(node);
-    }
-    fail(node, message) {
-        this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
 }
 function mayContainVoid({ kind }) {

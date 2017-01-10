@@ -7,7 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+const path = require("path");
 const common_1 = require("../lib/common");
+const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
 const util_1 = require("../util/util");
 if (!module.parent) {
@@ -16,27 +18,31 @@ if (!module.parent) {
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), console.log, options);
-        console.log(Array.from(changes).map(t => t.typingsPackageName));
+        console.log(util_1.join(util_1.map(changes, t => t.desc)));
     });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 function getAffectedPackages(allPackages, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changedPackageNames = yield gitChanges(log, options);
+        const changedPackageIds = yield gitChanges(log, options);
+        const changedPackages = util_1.map(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.getLatestVersion(name) : allPackages.getTypingsData({ name, majorVersion })));
         const dependedOn = getReverseDependencies(allPackages);
-        return collectDependers(allPackages, changedPackageNames, dependedOn);
+        return collectDependers(changedPackages, dependedOn);
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
 function allDependencies(allPackages, packages) {
-    return Array.from(transitiveClosure(packages, pkg => packagesFromNames(allPackages, getDependencies(pkg))));
+    return sortPackages(transitiveClosure(packages, pkg => allPackages.dependencyTypings(pkg)));
 }
 exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependers(allPackages, changedPackageNames, reverseDependencies) {
-    return sortPackages(transitiveClosure(packagesFromNames(allPackages, changedPackageNames), pkg => reverseDependencies.get(pkg) || []));
+function collectDependers(changedPackages, reverseDependencies) {
+    return sortPackages(transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []));
+}
+function sortPackages(packages) {
+    return util_1.sort(packages, packages_1.PackageBase.compare);
 }
 function transitiveClosure(initialItems, getRelatedItems) {
     const all = new Set();
@@ -58,17 +64,6 @@ function transitiveClosure(initialItems, getRelatedItems) {
     }
     return all;
 }
-function* packagesFromNames(allPackages, names) {
-    for (const name of names) {
-        const pkg = allPackages.tryGetTypingsData(name);
-        if (pkg) {
-            yield pkg;
-        }
-    }
-}
-function sortPackages(packages) {
-    return Array.from(packages).sort((a, b) => a.typingsPackageName.localeCompare(b.typingsPackageName));
-}
 /** Generate a map from a package to packages that depend on it. */
 function getReverseDependencies(allPackages) {
     const map = new Map();
@@ -76,29 +71,29 @@ function getReverseDependencies(allPackages) {
         map.set(typing, new Set());
     }
     for (const typing of allPackages.allTypings()) {
-        for (const dependencyName of getDependencies(typing)) {
-            const dependency = allPackages.tryGetTypingsData(dependencyName);
-            if (dependency) {
-                map.get(dependency).add(typing);
-            }
+        for (const dependency of allPackages.dependencyTypings(typing)) {
+            map.get(dependency).add(typing);
         }
     }
     return map;
 }
-function getDependencies(typing) {
-    return typing.libraryDependencies.concat(typing.moduleDependencies);
-}
 /** Returns all immediate subdirectories of the root directory that have changed. */
 function gitChanges(log, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changedPackages = new Set();
+        const changedPackages = new Map();
         for (const fileName of yield gitDiff(log, options)) {
-            const root = rootDirName(fileName);
-            if (root) {
-                changedPackages.add(root);
+            const dep = getDependencyFromFile(fileName);
+            if (dep) {
+                const versions = changedPackages.get(dep.name);
+                if (!versions) {
+                    changedPackages.set(dep.name, new Set([dep.majorVersion]));
+                }
+                else {
+                    versions.add(dep.majorVersion);
+                }
             }
         }
-        return changedPackages;
+        return util_1.flatMap(changedPackages, ([name, versions]) => util_1.map(versions, majorVersion => ({ name, majorVersion })));
     });
 }
 /*
@@ -136,9 +131,27 @@ function gitDiff(log, options) {
         }
     });
 }
-// For "a/b/c", returns "a". For "a", returns undefined.
-function rootDirName(fileName) {
-    const slash = fileName.indexOf("/");
-    return slash === -1 ? undefined : fileName.slice(0, slash);
+/**
+ * For "a/b/c", returns { name: "a", version: "latest" }.
+ * For "a/v3/c", returns { name: "a", version: 3 }.
+ * For "a", returns undefined.
+ */
+function getDependencyFromFile(fileName) {
+    const parts = fileName.split(path.sep);
+    if (parts.length === 1) {
+        // It's not in a typings directory at all.
+        return undefined;
+    }
+    const name = parts[0];
+    if (!common_1.isTypingDirectory(name)) {
+        return undefined;
+    }
+    if (parts.length > 2) {
+        const majorVersion = definition_parser_1.parseMajorVersionFromDirectoryName(parts[1]);
+        if (majorVersion !== undefined) {
+            return { name, majorVersion };
+        }
+    }
+    return { name, majorVersion: "latest" };
 }
 //# sourceMappingURL=get-affected-packages.js.map

@@ -40,11 +40,8 @@ class Walker extends Lint.RuleWalker {
     }
     check(node) {
         if (node.modifiers && Lint.hasModifier(node.modifiers, ts.SyntaxKind.PublicKeyword)) {
-            this.fail(node, Rule.FAILURE_STRING);
+            this.addFailureAtNode(node, Rule.FAILURE_STRING);
         }
-    }
-    fail(node, message) {
-        this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
 }
 //# sourceMappingURL=noPublicRule.js.map

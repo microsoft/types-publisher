@@ -8,7 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
-const path = require("path");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
@@ -17,7 +16,7 @@ const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 const ts_installer_1 = require("./ts-installer");
-const tslintPath = path.join(require.resolve("tslint"), "../tslint-cli.js");
+const tslintPath = util_1.joinPaths(require.resolve("tslint"), "../tslint-cli.js");
 if (!module.parent) {
     const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
     util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
@@ -48,16 +47,16 @@ function main(options, nProcesses, regexp) {
         yield ts_installer_1.installAllTypeScriptVersions();
         const allPackages = yield packages_1.AllPackages.read(options);
         const typings = regexp
-            ? allPackages.allTypings().filter(t => regexp.test(t.typingsPackageName))
+            ? allPackages.allTypings().filter(t => regexp.test(t.name))
             : yield get_affected_packages_1.default(allPackages, console.log, options);
         nProcesses = nProcesses || util_1.numberOfOsProcesses;
-        console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
+        console.log(`Testing ${typings.length} packages: ${typings.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing dependencies...");
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
-            if (yield fsp.exists(path.join(cwd, "package.json"))) {
+            if (yield fsp.exists(util_1.joinPaths(cwd, "package.json"))) {
                 let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
                 if (stdout) {
@@ -69,17 +68,17 @@ function main(options, nProcesses, regexp) {
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
             const err = yield single(pkg, log, options);
-            console.log(`Testing ${pkg.typingsPackageName}`);
+            console.log(`Testing ${pkg.desc}`);
             logging_1.moveLogsWithErrors(console, logResult(), msg => "\t" + msg);
             if (err) {
                 allErrors.push({ err, pkg });
             }
         }));
         if (allErrors.length) {
-            allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => pkgA.typingsPackageName.localeCompare(pkgB.typingsPackageName));
+            allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => packages_1.PackageBase.compare(pkgA, pkgB));
             console.log("\n\n=== ERRORS ===\n");
             for (const { err, pkg } of allErrors) {
-                console.error(`\n\nError in ${pkg.typingsPackageName}`);
+                console.error(`\n\nError in ${pkg.desc}`);
                 console.error(err.message);
             }
             throw new Error("There was a test failure.");
@@ -94,7 +93,7 @@ function single(pkg, log, options) {
         return (yield tsConfig()) || (yield packageJson()) || (yield tsc()) || (yield tslint());
         function tsConfig() {
             return __awaiter(this, void 0, void 0, function* () {
-                const tsconfigPath = path.join(cwd, "tsconfig.json");
+                const tsconfigPath = util_1.joinPaths(cwd, "tsconfig.json");
                 return catchErrors(log, () => __awaiter(this, void 0, void 0, function* () { return checkTsconfig(yield io_1.readJson(tsconfigPath)); }));
             });
         }
@@ -120,7 +119,7 @@ function single(pkg, log, options) {
         }
         function tslint() {
             return __awaiter(this, void 0, void 0, function* () {
-                return (yield fsp.exists(path.join(cwd, "tslint.json")))
+                return (yield fsp.exists(util_1.joinPaths(cwd, "tslint.json")))
                     ? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
                     : undefined;
             });

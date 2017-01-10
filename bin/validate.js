@@ -8,7 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
-const path = require("path");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
@@ -37,14 +36,15 @@ if (!module.parent) {
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(options));
-        yield doValidate(changed.map(c => c.typingsPackageName));
+        yield doValidate(changed.map(c => c.name));
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function doAll() {
     return __awaiter(this, void 0, void 0, function* () {
-        const packageNames = (yield packages_1.AllPackages.readTypings()).map(t => t.typingsPackageName).sort();
+        // todo: validate older versions too
+        const packageNames = (yield packages_1.AllPackages.readTypings()).map(t => t.name).sort();
         yield doValidate(packageNames);
     });
 }
@@ -101,7 +101,7 @@ function validatePackage(packageName, outputDirecory, mainLog) {
         const [log, logResult] = logging_1.quietLoggerWithErrors();
         let passed = false;
         try {
-            const packageDirectory = path.join(outputDirecory, packageName);
+            const packageDirectory = util_1.joinPaths(outputDirecory, packageName);
             log.info("");
             log.info("Processing `" + packageName + "`...");
             yield fsp.mkdirp(packageDirectory);
@@ -126,17 +126,17 @@ function validatePackage(packageName, outputDirecory, mainLog) {
 function writePackage(packageDirectory, packageName) {
     return __awaiter(this, void 0, void 0, function* () {
         // Write package.json
-        yield io_1.writeJson(path.join(packageDirectory, "package.json"), {
+        yield io_1.writeJson(util_1.joinPaths(packageDirectory, "package.json"), {
             name: `${packageName}_test`,
             version: "1.0.0",
             description: "test",
             author: "",
             license: "ISC",
             repository: "https://github.com/Microsoft/types-publisher",
-            dependencies: { [packages_1.fullPackageName(packageName)]: "latest" }
+            dependencies: { [packages_1.fullNpmName(packageName)]: "latest" }
         });
         // Write tsconfig.json
-        yield io_1.writeJson(path.join(packageDirectory, "tsconfig.json"), {
+        yield io_1.writeJson(util_1.joinPaths(packageDirectory, "tsconfig.json"), {
             compilerOptions: {
                 module: "commonjs",
                 target: "es5",
@@ -147,7 +147,7 @@ function writePackage(packageDirectory, packageName) {
             }
         });
         // Write index.ts
-        yield io_1.writeFile(path.join(packageDirectory, "index.ts"), `/// <reference types="${packageName}" />\r\n`);
+        yield io_1.writeFile(util_1.joinPaths(packageDirectory, "index.ts"), `/// <reference types="${packageName}" />\r\n`);
     });
 }
 // Returns whether the command succeeded.

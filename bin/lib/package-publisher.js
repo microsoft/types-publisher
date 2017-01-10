@@ -8,38 +8,40 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const assert = require("assert");
-const path = require("path");
 const npmTags_1 = require("../npmTags");
 const common_1 = require("../lib/common");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-function publishPackage(client, pkg, dry) {
+function publishPackage(client, pkg, versions, latestVersion, dry) {
     return __awaiter(this, void 0, void 0, function* () {
+        assert(pkg.isLatest === (pkg === latestVersion));
         const [log, logResult] = logging_1.quietLogger();
-        log(`Publishing ${pkg.typingsPackageName}`);
-        const packageDir = pkg.outputDir();
-        const packageJson = yield common_1.readFileAndWarn("generate", path.join(packageDir, "package.json"));
-        const version = packageJson.version;
-        assert(typeof version === "string");
+        log(`Publishing ${pkg.desc}`);
+        const packageDir = pkg.outputDirectory;
+        const packageJson = yield common_1.readFileAndWarn("generate", util_1.joinPaths(packageDir, "package.json"));
         yield client.publish(packageDir, packageJson, dry);
-        yield npmTags_1.addNpmTagsForPackage(pkg, version, client, log, dry);
+        const latestVersionString = versions.getVersion(latestVersion.id).versionString;
+        // If this is an older version of the package, we still update tags for the *latest*.
+        // NPM will update "latest" even if we are publishing an older version of a package (https://github.com/npm/npm/issues/6778),
+        // so we must undo that by re-tagging latest.
+        yield npmTags_1.addNpmTagsForPackage(latestVersion, versions, latestVersionString, client, log, dry);
         if (pkg.isNotNeeded()) {
-            log(`Deprecating ${pkg.typingsPackageName}`);
+            log(`Deprecating ${pkg.name}`);
             // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
             const message = pkg.readme(/*useNewline*/ false);
             if (!dry) {
-                yield client.deprecate(pkg.fullName(), version, message);
+                yield client.deprecate(pkg.fullNpmName, latestVersionString, message);
             }
         }
         return logResult();
     });
 }
-exports.publishPackage = publishPackage;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = publishPackage;
 // Used for testing only.
 function unpublishPackage(pkg, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const name = pkg.fullName();
-        const args = ["npm", "unpublish", name, "--force"];
+        const args = ["npm", "unpublish", pkg.fullNpmName, "--force"];
         yield runCommand("Unpublish", logging_1.consoleLogger, dry, args);
     });
 }

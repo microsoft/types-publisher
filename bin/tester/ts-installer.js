@@ -8,11 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
-const path = require("path");
 const packages_1 = require("../lib/packages");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-const installsDir = path.join(__dirname, "..", "..", "typescript-installs");
+const installsDir = util_1.joinPaths(__dirname, "..", "..", "typescript-installs");
 function installAllTypeScriptVersions() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Installing TypeScript versions...");
@@ -20,18 +19,18 @@ function installAllTypeScriptVersions() {
         for (const version of packages_1.TypeScriptVersion.All) {
             const dir = installDir(version);
             yield fsp.mkdirp(dir);
-            yield io_1.writeJson(path.join(dir, "package.json"), packageJson(version));
+            yield io_1.writeJson(util_1.joinPaths(dir, "package.json"), packageJson(version));
             yield util_1.execAndThrowErrors("npm install", dir);
         }
     });
 }
 exports.installAllTypeScriptVersions = installAllTypeScriptVersions;
 function pathToTsc(version) {
-    return path.join(installDir(version), "node_modules", "typescript", "lib", "tsc.js");
+    return util_1.joinPaths(installDir(version), "node_modules", "typescript", "lib", "tsc.js");
 }
 exports.pathToTsc = pathToTsc;
 function installDir(version) {
-    return path.join(installsDir, version);
+    return util_1.joinPaths(installsDir, version);
 }
 function packageJson(version) {
     return {

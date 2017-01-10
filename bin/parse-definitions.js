@@ -21,10 +21,10 @@ if (!module.parent) {
 function filterPaths(paths, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fullPaths = paths
-            .filter(s => s[0] !== "." && s[0] !== "_" && s !== "node_modules" && s !== "scripts")
+            .filter(s => s[0] !== "." && s[0] !== "_" && common_1.isTypingDirectory(s))
             .sort();
         // Remove non-folders
-        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(packages_1.definitelyTypedPath(s, options))).isDirectory(); }));
+        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(packages_1.packageRootPath(s, options))).isDirectory(); }));
     });
 }
 function main(options) {
@@ -33,17 +33,18 @@ function main(options) {
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        // TypesData
-        const paths = yield fsp.readdir(options.definitelyTypedPath);
-        const folders = yield filterPaths(paths, options);
-        summaryLog(`Found ${folders.length} typings folders in ${options.definitelyTypedPath}`);
+        const packageNames = yield filterPaths(yield fsp.readdir(options.definitelyTypedPath), options);
+        summaryLog(`Found ${packageNames.length} typings folders in ${options.definitelyTypedPath}`);
         const typings = {};
-        for (const s of folders) {
-            const { data, logs } = yield parser.getTypingInfo(s, options);
-            detailedLog(`# ${s}`);
-            typings[s] = data;
-            // Flush detailed log
-            logging_1.moveLogs(detailedLog, logs);
+        yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name });
+        function use(packageName) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const { data, logs } = yield parser.getTypingInfo(packageName, options);
+                typings[packageName] = data;
+                // Flush detailed log
+                detailedLog(`# ${packageName}`);
+                logging_1.moveLogs(detailedLog, logs);
+            });
         }
         yield Promise.all([
             logging_1.writeLog("parser-log-summary.md", summaryLogResult()),

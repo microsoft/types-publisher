@@ -32,7 +32,7 @@ function full(client, dry, timeStamp, options) {
         yield clean_1.default();
         yield get_definitely_typed_1.default(options);
         yield parse_definitions_1.default(options);
-        yield check_parse_results_1.default();
+        yield check_parse_results_1.default(/*includeNpmChecks*/ false);
         yield calculate_versions_1.default(/*forceUpdate*/ false, options);
         yield generate_packages_1.default(options);
         yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false);

@@ -25,21 +25,37 @@ function tagAll(dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const versions = yield versions_1.default.load();
         const client = yield npm_client_1.default.create();
-        for (const t of yield packages_1.AllPackages.readTypings()) {
-            const version = versions_1.versionString(versions.versionInfo(t).version);
-            yield addNpmTagsForPackage(t, version, client, console.log, dry);
+        for (const pkg of yield packages_1.AllPackages.readTypings()) {
+            // Only update tags for the latest version of the package.
+            if (pkg.isLatest) {
+                const version = versions.getVersion(pkg.id).versionString;
+                yield addNpmTagsForPackage(pkg, versions, version, client, console.log, dry);
+            }
         }
         // Don't tag notNeeded packages
     });
 }
-function addNpmTagsForPackage(pkg, version, client, log, dry) {
+function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const tags = packages_1.TypeScriptVersion.tagsToUpdate(pkg.isNotNeeded() ? "2.0" : pkg.typeScriptVersion);
-        log(`Tag ${pkg.fullName()}@${version} as ${JSON.stringify(tags)}`);
+        const tags = packages_1.TypeScriptVersion.tagsToUpdate(pkg.typeScriptVersion);
+        log(`Tag ${pkg.fullNpmName}@${version} as ${JSON.stringify(tags)}`);
         if (!dry) {
             for (const tag of tags) {
-                yield client.tag(pkg.fullEscapedName(), version, tag);
+                yield client.tag(pkg.fullEscapedNpmName, version, tag);
             }
+        }
+        // Prerelease packages should never be tagged latest
+        const latestNonPrerelease = versions.latestNonPrerelease(pkg.id);
+        if (latestNonPrerelease) {
+            log(`	but tag ${pkg.fullNpmName}@${latestNonPrerelease.versionString} as "latest"`);
+            if (!dry) {
+                yield tag(latestNonPrerelease.versionString, "latest");
+            }
+        }
+        function tag(versionString, tag) {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield client.tag(pkg.fullEscapedNpmName, versionString, tag);
+            });
         }
     });
 }

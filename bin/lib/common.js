@@ -7,20 +7,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const path = require("path");
 const fs_1 = require("fs");
 const fsp = require("fs-promise");
-const sourceMapSupport = require("source-map-support");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-sourceMapSupport.install();
 if (process.env.LONGJOHN) {
     console.log("=== USING LONGJOHN ===");
     const longjohn = require("longjohn");
     longjohn.async_trace_limit = -1; // unlimited
 }
-exports.home = path.join(__dirname, "..", "..");
-exports.settings = util_1.parseJson(fs_1.readFileSync(path.join(exports.home, "settings.json"), "utf-8"));
+exports.home = util_1.joinPaths(__dirname, "..", "..");
+exports.settings = util_1.parseJson(fs_1.readFileSync(util_1.joinPaths(exports.home, "settings.json"), "utf-8"));
 var Options;
 (function (Options) {
     Options.defaults = {
@@ -51,8 +48,12 @@ function writeDataFile(filename, content, formatted = true) {
     });
 }
 exports.writeDataFile = writeDataFile;
-const dataDir = path.join(exports.home, "data");
+const dataDir = util_1.joinPaths(exports.home, "data");
 function dataFilePath(filename) {
-    return path.join(dataDir, filename);
+    return util_1.joinPaths(dataDir, filename);
 }
+function isTypingDirectory(directoryName) {
+    return directoryName !== "node_modules" && directoryName !== "scripts";
+}
+exports.isTypingDirectory = isTypingDirectory;
 //# sourceMappingURL=common.js.map

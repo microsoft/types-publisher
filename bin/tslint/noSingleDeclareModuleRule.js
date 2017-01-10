@@ -31,11 +31,8 @@ exports.Rule = Rule;
 class Walker extends Lint.RuleWalker {
     visitModuleDeclaration(node) {
         if (isModuleDeclaration(node)) {
-            this.fail(node, Rule.FAILURE_STRING);
+            this.addFailureAtNode(node, Rule.FAILURE_STRING);
         }
-    }
-    fail(node, message) {
-        this.addFailure(this.createFailure(node.getStart(), node.getWidth(), message));
     }
 }
 function hasSoleModuleDeclaration({ statements }) {
