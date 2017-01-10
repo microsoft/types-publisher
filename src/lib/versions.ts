@@ -4,8 +4,9 @@ import { fetchJson } from "../util/io";
 import { Logger } from "../util/logging";
 import { best, nAtATime, intOfString, sortObjectKeys } from "../util/util";
 
-import { readDataFile, settings, writeDataFile } from "./common";
+import { Options, readDataFile, writeDataFile } from "./common";
 import { AllPackages, AnyPackage, PackageId, MajorMinor, NotNeededPackage, TypeScriptVersion, TypingsData } from "./packages";
+import { npmRegistry } from "./settings";
 
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
@@ -31,13 +32,13 @@ export default class Versions {
 	 * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
 	 * `additions` is a subset of `changes`.
 	 */
-	static async determineFromNpm(allPackages: AllPackages, log: Logger, forceUpdate: boolean
+	static async determineFromNpm(allPackages: AllPackages, log: Logger, forceUpdate: boolean, options: Options
 		): Promise<{changes: Changes, additions: Changes, versions: Versions}> {
 		const changes: Changes = [];
 		const additions: Changes = [];
 		const data: VersionMap = {};
 
-		await nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor });
+		await nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
 		async function getTypingsVersion(pkg: TypingsData) {
 			const isPrerelease = TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
 			const versionInfo = await fetchTypesPackageVersionInfo(pkg, isPrerelease, pkg.majorMinor);
@@ -57,7 +58,7 @@ export default class Versions {
 			addToData(pkg.name, version, latestNonPrerelease, contentHash, deprecated);
 		}
 
-		await nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor });
+		await nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor, options });
 		async function getNotNeededVersion(pkg: NotNeededPackage) {
 			const isPrerelease = false; // Not-needed packages are never prerelease.
 			// tslint:disable-next-line:prefer-const
@@ -177,7 +178,7 @@ export async function fetchLastPatchNumber(packageName: string): Promise<number>
 async function fetchVersionInfoFromNpm(
 	escapedPackageName: string, isPrerelease: boolean, newMajorAndMinor?: MajorMinor): Promise<VersionInfo | undefined> {
 
-	const uri = settings.npmRegistry + escapedPackageName;
+	const uri = npmRegistry + escapedPackageName;
 	const info = await fetchJson(uri, { retries: true });
 
 	if (info.error) {

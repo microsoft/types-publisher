@@ -1,8 +1,7 @@
-import { readFileSync } from "fs";
 import * as fsp from "fs-promise";
 
 import { readJson, writeJson } from "../util/io";
-import { joinPaths, parseJson } from "../util/util";
+import { joinPaths } from "../util/util";
 
 if (process.env.LONGJOHN) {
 	console.log("=== USING LONGJOHN ===");
@@ -11,17 +10,21 @@ if (process.env.LONGJOHN) {
 }
 
 export const home = joinPaths(__dirname, "..", "..");
-export const settings: PublishSettings = parseJson(readFileSync(joinPaths(home, "settings.json"), "utf-8"));
 
 /** Settings that may be determined dynamically. */
 export interface Options {
 	// e.g. '../DefinitelyTyped'
 	// This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
 	definitelyTypedPath: string;
+
+	// Whether to show progress bars. Good when running locally, bad when running on travis / azure.
+	progress: boolean;
 }
 export namespace Options {
+	/** Options for running locally. */
 	export const defaults: Options = {
 		definitelyTypedPath: "../DefinitelyTyped",
+		progress: true
 	};
 }
 

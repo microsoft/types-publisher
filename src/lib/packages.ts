@@ -3,7 +3,8 @@ import assert = require("assert");
 import { readJson } from "../util/io";
 import { joinPaths, mapValues } from "../util/util";
 
-import { Options, home, readDataFile, settings } from "./common";
+import { Options, home, readDataFile } from "./common";
+import { scopeName, outputPath } from "./settings";
 import { Semver } from "./versions";
 
 export class AllPackages {
@@ -157,7 +158,7 @@ export abstract class PackageBase {
 
 	/** '@types%2ffoo' for a package 'foo'. */
 	get fullEscapedNpmName() {
-		return `@${settings.scopeName}%2f${this.name}`;
+		return `@${scopeName}%2f${this.name}`;
 	}
 
 	abstract readonly major: number;
@@ -172,10 +173,10 @@ export abstract class PackageBase {
 }
 
 export function fullNpmName(packageName: string) {
-	return `@${settings.scopeName}/${packageName}`;
+	return `@${scopeName}/${packageName}`;
 }
 
-const outputDir = joinPaths(home, settings.outputPath);
+const outputDir = joinPaths(home, outputPath);
 
 interface NotNeededPackageRaw extends BaseRaw {
 	/**
@@ -384,8 +385,8 @@ export namespace TypeScriptVersion {
 	export const Lowest = "2.0";
 	export const Latest = "2.1";
 
-	export function isPrerelease(version: TypeScriptVersion): boolean {
-		return version === "2.1";
+	export function isPrerelease(_version: TypeScriptVersion): boolean {
+		return false;
 	}
 
 	/** List of NPM tags that should be changed to point to the latest version. */
@@ -398,7 +399,7 @@ export namespace TypeScriptVersion {
 			case "2.1":
 				// Eventually this will change to include "latest", too.
 				// And obviously we shouldn't advance the "2.0" tag if the package is now 2.1-specific.
-				return [tags.v2_1];
+				return [tags.latest, tags.v2_1];
 		}
 	}
 
