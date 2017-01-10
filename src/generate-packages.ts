@@ -3,10 +3,10 @@ import * as yargs from "yargs";
 import { Options } from "./lib/common";
 import { AllPackages } from "./lib/packages";
 import generateAnyPackage from "./lib/package-generator";
+import Versions, { changedPackages } from "./lib/versions";
 import { logger, moveLogs, writeLog } from "./util/logging";
 import { writeTgz } from "./util/tgz";
 import { done, nAtATime } from "./util/util";
-import Versions, { changedPackages } from "./lib/versions";
 
 if (!module.parent) {
 	const all = yargs.argv.all;
@@ -29,7 +29,7 @@ export default async function main(options: Options, all = false, tgz = false): 
 	await nAtATime(10, packages, async pkg => {
 		const logs = await generateAnyPackage(pkg, allPackages, versions, options);
 		if (tgz) {
-			await writeTgz(pkg.getOutputPath(), pkg.getOutputPath() + ".tgz");
+			await writeTgz(pkg.outputDirectory, pkg.outputDirectory + ".tgz");
 		}
 		log(` * ${pkg.libraryName}`);
 		moveLogs(log, logs, line => `   * ${line}`);
@@ -40,7 +40,7 @@ export default async function main(options: Options, all = false, tgz = false): 
 
 async function single(singleName: string, options: Options): Promise<void> {
 	const allPackages = await AllPackages.read(options);
-	const pkg = allPackages.getAnyPackage(singleName);
+	const pkg = allPackages.getLatestVersion(singleName);
 	const versions = await Versions.load();
 	const logs = await generateAnyPackage(pkg, allPackages, versions, options);
 	console.log(logs.join("\n"));

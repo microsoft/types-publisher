@@ -6,7 +6,11 @@ import { shim as shimEntries } from "object.entries";
 shimEntries();
 import { shim as shimValues } from "object.values";
 shimValues();
+import * as sourceMapSupport from "source-map-support";
+sourceMapSupport.install();
 import { inspect } from "util";
+
+import ProgressBar from "./progress";
 
 export function parseJson(text: string): any {
 	try {
@@ -23,7 +27,15 @@ export function currentTimeStamp(): string {
 
 export const numberOfOsProcesses = os.cpus().length;
 
-export async function nAtATime<T, U>(n: number, inputs: T[], use: (t: T) => Promise<U>): Promise<U[]> {
+/** Progress options needed for `nAtATime`. Other options will be inferred. */
+interface ProgressOptions<T, U> {
+	name: string;
+	flavor(input: T, output: U): string | undefined;
+}
+
+export async function nAtATime<T, U>(n: number, inputs: T[], use: (t: T) => Promise<U>, progressOptions?: ProgressOptions<T, U>): Promise<U[]> {
+	const progress = progressOptions && new ProgressBar({ name: progressOptions.name });
+
 	const results = new Array(inputs.length);
 	// We have n "threads" which each run `continuouslyWork`.
 	// They all share `nextIndex`, so each work item is done only once.
@@ -32,10 +44,24 @@ export async function nAtATime<T, U>(n: number, inputs: T[], use: (t: T) => Prom
 		while (nextIndex !== inputs.length) {
 			const index = nextIndex;
 			nextIndex++;
-			results[index] = await use(inputs[index]);
+			const input = inputs[index];
+			const output = await use(inputs[index]);
+			results[index] = output;
+			if (progress) {
+				progress!.update(index / inputs.length, progressOptions!.flavor(input, output));
+			}
 		}
 	}));
+	if (progress) {
+		progress.done();
+	}
 	return results;
+}
+
+export async function filterNAtATime<T>(
+	n: number, inputs: T[], shouldKeep: (input: T) => Promise<boolean>, progress?: ProgressOptions<T, boolean>): Promise<T[]> {
+	const shouldKeeps: boolean[] = await nAtATime(n, inputs, shouldKeep, progress);
+	return inputs.filter((_, idx) => shouldKeeps[idx]);
 }
 
 export async function filterAsyncOrdered<T>(arr: T[], shouldKeep: (t: T) => Promise<boolean>): Promise<T[]> {
@@ -82,8 +108,18 @@ function initArray<T>(length: number, makeElement: () => T): T[] {
 	return arr;
 }
 
+/** Always use "/" for consistency. (This affects package content hash.) */
+export function joinPaths(...paths: string[]) {
+	return paths.join("/");
+}
+
+/** Convert a path to use "/" instead of "\\" for consistency. (This affects content hash.) */
 export function normalizeSlashes(path: string): string {
 	return path.replace(/\\/g, "/");
+}
+
+export function hasWindowsSlashes(path: string): boolean {
+	return path.includes("\\");
 }
 
 export function hasOwnProperty(object: {}, propertyName: string): boolean {
@@ -155,13 +191,65 @@ export function computeHash(content: string): string {
 
 	const h = crypto.createHash("sha256");
 	h.update(content, "utf8");
-	return <string> h.digest("hex");
+	return h.digest("hex");
 }
 
-export function mapValues<K, V1, V2>(map: Map<K, V1>, valueMapper: (value: V1) => V2): Map<V1, V2> {
-	const out = new Map();
+export function mapValues<K, V1, V2>(map: Map<K, V1>, valueMapper: (value: V1) => V2): Map<K, V2> {
+	const out = new Map<K, V2>();
 	map.forEach((value, key) => {
 		out.set(key, valueMapper(value));
 	});
 	return out;
+}
+
+export function multiMapAdd<K, V>(map: Map<K, V[]>, key: K, value: V) {
+	const values = map.get(key);
+	if (values) {
+		values.push(value);
+	} else {
+		map.set(key, [value]);
+	}
+}
+
+export function mapDefined<T, U>(arr: Iterable<T>, mapper: (t: T) => U | undefined): U[] {
+	const out = [];
+	for (const a of arr) {
+		const res = mapper(a);
+		if (res !== undefined) {
+			out.push(res);
+		}
+	}
+	return out;
+}
+
+export function* map<T, U>(inputs: Iterable<T>, mapper: (t: T) => U): Iterable<U> {
+	for (const input of inputs) {
+		yield mapper(input);
+	}
+}
+
+export function* flatMap<T, U>(inputs: Iterable<T>, mapper: (t: T) => Iterable<U>): Iterable<U> {
+	for (const input of inputs) {
+		yield* mapper(input);
+	}
+}
+
+export function sort<T>(values: Iterable<T>, comparer?: (a: T, b: T) => number): T[] {
+	return Array.from(values).sort(comparer);
+}
+
+export function join<T>(values: Iterable<T>, joiner = ", ") {
+	let s = "";
+	for (const v of values) {
+		s += v + joiner;
+	}
+	return s.slice(0, s.length - joiner.length);
+}
+
+export function makeObject<T>(keys: Iterable<string>, getValue: (key: string) => T): { [key: string]: T } {
+	const obj = Object.create(null);
+	for (const key of keys) {
+		obj[key] = getValue(key);
+	}
+	return obj;
 }

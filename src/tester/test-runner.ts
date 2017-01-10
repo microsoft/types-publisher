@@ -1,17 +1,17 @@
 import * as fsp from "fs-promise";
-import * as path from "path";
+import * as ts from "typescript";
 import * as yargs from "yargs";
 
 import { Options } from "../lib/common";
-import { AllPackages, TypeScriptVersion, TypingsData } from "../lib/packages";
+import { AllPackages, PackageBase, TypeScriptVersion, TypingsData } from "../lib/packages";
 import { readJson } from "../util/io";
 import { LoggerWithErrors, moveLogsWithErrors, quietLoggerWithErrors } from "../util/logging";
-import { done, exec, execAndThrowErrors, nAtATime, numberOfOsProcesses } from "../util/util";
+import { done, exec, execAndThrowErrors, joinPaths, nAtATime, numberOfOsProcesses } from "../util/util";
 
 import getAffectedPackages, { allDependencies } from "./get-affected-packages";
 import { installAllTypeScriptVersions, pathToTsc } from "./ts-installer";
 
-const tslintPath = path.join(require.resolve("tslint"), "../tslint-cli.js");
+const tslintPath = joinPaths(require.resolve("tslint"), "../tslint-cli.js");
 
 if (!module.parent) {
 	const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
@@ -43,12 +43,12 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 	const allPackages = await AllPackages.read(options);
 	const typings: TypingsData[] = regexp
-		? allPackages.allTypings().filter(t => regexp.test(t.typingsPackageName))
+		? allPackages.allTypings().filter(t => regexp.test(t.name))
 		: await getAffectedPackages(allPackages, console.log, options);
 
 	nProcesses = nProcesses || numberOfOsProcesses;
 
-	console.log(`Testing ${typings.length} packages: ${typings.map(t => t.typingsPackageName)}`);
+	console.log(`Testing ${typings.length} packages: ${typings.map(t => t.desc)}`);
 	console.log(`Running with ${nProcesses} processes.`);
 
 	const allErrors: Array<{ pkg: TypingsData, err: TesterError }> = [];
@@ -57,7 +57,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 	await nAtATime(nProcesses, allDependencies(allPackages, typings), async pkg => {
 		const cwd = pkg.directoryPath(options);
-		if (await fsp.exists(path.join(cwd, "package.json"))) {
+		if (await fsp.exists(joinPaths(cwd, "package.json"))) {
 			let stdout = await execAndThrowErrors(`npm install`, cwd);
 			stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
 			if (stdout) {
@@ -71,7 +71,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 	await nAtATime(nProcesses, typings, async pkg => {
 		const [log, logResult] = quietLoggerWithErrors();
 		const err = await single(pkg, log, options);
-		console.log(`Testing ${pkg.typingsPackageName}`);
+		console.log(`Testing ${pkg.desc}`);
 		moveLogsWithErrors(console, logResult(), msg => "\t" + msg);
 		if (err) {
 			allErrors.push({ err, pkg });
@@ -79,11 +79,11 @@ export default async function main(options: Options, nProcesses?: number, regexp
 	});
 
 	if (allErrors.length) {
-		allErrors.sort(({ pkg: pkgA }, { pkg: pkgB}) => pkgA.typingsPackageName.localeCompare(pkgB.typingsPackageName));
+		allErrors.sort(({ pkg: pkgA }, { pkg: pkgB}) => PackageBase.compare(pkgA, pkgB));
 
 		console.log("\n\n=== ERRORS ===\n");
 		for (const { err, pkg } of allErrors) {
-			console.error(`\n\nError in ${pkg.typingsPackageName}`);
+			console.error(`\n\nError in ${pkg.desc}`);
 			console.error(err.message);
 		}
 
@@ -96,7 +96,7 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 	return (await tsConfig()) || (await packageJson()) || (await tsc()) || (await tslint());
 
 	async function tsConfig(): Promise<TesterError | undefined> {
-		const tsconfigPath = path.join(cwd, "tsconfig.json");
+		const tsconfigPath = joinPaths(cwd, "tsconfig.json");
 		return catchErrors(log, async () =>
 			checkTsconfig(await readJson(tsconfigPath)));
 	}
@@ -117,7 +117,7 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 		return error;
 	}
 	async function tslint(): Promise<TesterError | undefined> {
-		return (await fsp.exists(path.join(cwd, "tslint.json")))
+		return (await fsp.exists(joinPaths(cwd, "tslint.json")))
 			? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
 			: undefined;
 	}
@@ -152,7 +152,7 @@ async function runCommand(log: LoggerWithErrors, cwd: string | undefined, cmd: s
 	return error && { message: `${error.message}\n${stdout}\n${stderr}` };
 }
 
-function checkTsconfig(tsconfig: any) {
+function checkTsconfig(tsconfig: { compilerOptions: ts.CompilerOptions }) {
 	const options = tsconfig.compilerOptions;
 	const mustHave = {
 		module: "commonjs",

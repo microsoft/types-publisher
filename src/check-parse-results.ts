@@ -3,50 +3,66 @@ import { settings } from "./lib/common";
 import { AllPackages, TypingsData } from "./lib/packages";
 import { Logger, logger, writeLog } from "./util/logging";
 import { fetchJson} from "./util/io";
-import { best, done, nAtATime } from "./util/util";
+import { best, done, multiMapAdd, nAtATime } from "./util/util";
 
 if (!module.parent) {
-	done(main());
+	done(main(true));
 }
 
-export default async function main(): Promise<void> {
+export default async function main(includeNpmChecks: boolean): Promise<void> {
 	const packages = await AllPackages.readTypings();
 	const [log, logResult] = logger();
 	check(packages, info => info.libraryName, "Library Name", log);
 	check(packages, info => info.projectName, "Project Name", log);
-	await nAtATime(10, packages, pkg => checkNpm(pkg, log));
+	if (includeNpmChecks) {
+		await nAtATime(10, packages, pkg => checkNpm(pkg, log), {
+			name: "Checking for typed packages...",
+			flavor: pkg => pkg.desc
+		});
+	}
 	await writeLog("conflicts.md", logResult());
 }
 
 function check(infos: TypingsData[], func: (info: TypingsData) => string | undefined, key: string, log: Logger): void {
-	const lookup: { [libName: string]: string[] } = {};
-	infos.forEach(info => {
-		const name = func(info);
-		if (name !== undefined) {
-			(lookup[name] || (lookup[name] = [])).push(info.typingsPackageName);
+	const lookup = new Map<string, TypingsData[]>();
+	for (const info of infos) {
+		const libraryOrProjectName = func(info);
+		if (libraryOrProjectName !== undefined) {
+			multiMapAdd(lookup, libraryOrProjectName, info);
 		}
-	});
-	for (const k of Object.keys(lookup)) {
-		if (lookup[k].length > 1) {
-			log(` * Duplicate ${key} descriptions "${k}"`);
-			lookup[k].forEach(n => log(`   * ${n}`));
+	}
+
+	for (const [libName, values] of lookup) {
+		if (values.length > 1) {
+			log(` * Duplicate ${key} descriptions "${libName}"`);
+			for (const n of values) {
+				log(`   * ${n.desc}`);
+			}
 		}
 	}
 }
 
 async function checkNpm(pkg: TypingsData, log: Logger): Promise<void> {
-	const uri = settings.npmRegistry + pkg.typingsPackageName;
+	const asOfVersion = await firstPackageVersionWithTypes(pkg.name);
+	if (asOfVersion) {
+		const ourVersion = `${pkg.major}.${pkg.minor}`;
+		log(`Typings already defined for ${pkg.name} (${pkg.libraryName}) as of ${asOfVersion} (our version: ${ourVersion})`);
+	}
+}
+
+export async function packageHasTypes(packageName: string): Promise<boolean> {
+	return (await firstPackageVersionWithTypes(packageName)) !== undefined;
+}
+
+async function firstPackageVersionWithTypes(packageName: string): Promise<string | undefined> {
+	const uri = settings.npmRegistry + packageName;
 	const info = await fetchJson(uri, { retries: true });
 	// Info may be empty if the package is not on NPM
 	if (!info.versions) {
-		return;
+		return undefined;
 	}
 
-	const asOfVersion = firstVersionWithTypes(info.versions);
-	if (asOfVersion) {
-		const ourVersion = `${pkg.libraryMajorVersion}.${pkg.libraryMinorVersion}`;
-		log(`Typings already defined for ${pkg.typingsPackageName} (${pkg.libraryName}) as of ${asOfVersion} (our version: ${ourVersion})`);
-	}
+	return firstVersionWithTypes(info.versions);
 }
 
 function firstVersionWithTypes(versions: { [version: string]: any }): string | undefined {
