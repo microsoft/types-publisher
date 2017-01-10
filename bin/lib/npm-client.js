@@ -13,12 +13,11 @@ const url = require("url");
 const io_1 = require("../util/io");
 const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
-const common_1 = require("./common");
 const secrets_1 = require("./secrets");
-const registry = common_1.settings.npmRegistry;
-assert(registry.endsWith("/"));
+const settings_1 = require("./settings");
+assert(settings_1.npmRegistry.endsWith("/"));
 function packageUrl(packageName) {
-    return url.resolve(registry, packageName);
+    return url.resolve(settings_1.npmRegistry, packageName);
 }
 class NpmClient {
     constructor(client, auth) {
@@ -47,7 +46,7 @@ class NpmClient {
                     resolve();
                 }
                 else {
-                    this.client.publish(registry, params, err => {
+                    this.client.publish(settings_1.npmRegistry, params, err => {
                         if (err) {
                             reject(err);
                         }

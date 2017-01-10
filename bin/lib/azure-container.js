@@ -13,16 +13,15 @@ const https = require("https");
 const io_1 = require("../util/io");
 const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
-const common_1 = require("./common");
 const secrets_1 = require("./secrets");
-const name = common_1.settings.azureContainer;
+const settings_1 = require("./settings");
 class BlobWriter {
     constructor(service) {
         this.service = service;
     }
     static create() {
         return __awaiter(this, void 0, void 0, function* () {
-            return new BlobWriter(azure_storage_1.createBlobService(common_1.settings.azureStorageAccount, yield secrets_1.getSecret(secrets_1.Secret.AZURE_STORAGE_ACCESS_KEY)));
+            return new BlobWriter(azure_storage_1.createBlobService(settings_1.azureStorageAccount, yield secrets_1.getSecret(secrets_1.Secret.AZURE_STORAGE_ACCESS_KEY)));
         });
     }
     setCorsProperties() {
@@ -42,7 +41,7 @@ class BlobWriter {
         return promisifyErrorOrResponse(cb => this.service.setServiceProperties(properties, cb));
     }
     ensureCreated(options) {
-        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(name, options, cb));
+        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(settings_1.azureContainer, options, cb));
     }
     createBlobFromFile(blobName, fileName) {
         return this.createBlobFromStream(blobName, fs.createReadStream(fileName));
@@ -52,7 +51,7 @@ class BlobWriter {
     }
     listBlobs(prefix) {
         return __awaiter(this, void 0, void 0, function* () {
-            const once = (token) => promisifyErrorOrResult(cb => this.service.listBlobsSegmentedWithPrefix(name, prefix, token, cb));
+            const once = (token) => promisifyErrorOrResult(cb => this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb));
             const out = [];
             let token = undefined;
             do {
@@ -64,7 +63,7 @@ class BlobWriter {
         });
     }
     deleteBlob(blobName) {
-        return promisifyErrorOrResponse(cb => this.service.deleteBlob(name, blobName, cb));
+        return promisifyErrorOrResponse(cb => this.service.deleteBlob(settings_1.azureContainer, blobName, cb));
     }
     createBlobFromStream(blobName, stream) {
         const options = {
@@ -73,7 +72,7 @@ class BlobWriter {
                 contentType: "application/json; charset=utf-8"
             }
         };
-        return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(name, blobName, options)));
+        return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(settings_1.azureContainer, blobName, options)));
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -108,7 +107,7 @@ function readJsonBlob(blobName) {
 }
 exports.readJsonBlob = readJsonBlob;
 function urlOfBlob(blobName) {
-    return `https://${name}.blob.core.windows.net/${name}/${blobName}`;
+    return `https://${settings_1.azureContainer}.blob.core.windows.net/${settings_1.azureContainer}/${blobName}`;
 }
 exports.urlOfBlob = urlOfBlob;
 function promisifyErrorOrResult(callsBack) {

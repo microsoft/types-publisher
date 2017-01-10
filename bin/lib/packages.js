@@ -11,6 +11,7 @@ const assert = require("assert");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
+const settings_1 = require("./settings");
 const versions_1 = require("./versions");
 class AllPackages {
     constructor(data, notNeeded) {
@@ -128,7 +129,7 @@ class PackageBase {
     }
     /** '@types%2ffoo' for a package 'foo'. */
     get fullEscapedNpmName() {
-        return `@${common_1.settings.scopeName}%2f${this.name}`;
+        return `@${settings_1.scopeName}%2f${this.name}`;
     }
     get id() {
         return { name: this.name, majorVersion: this.major };
@@ -139,10 +140,10 @@ class PackageBase {
 }
 exports.PackageBase = PackageBase;
 function fullNpmName(packageName) {
-    return `@${common_1.settings.scopeName}/${packageName}`;
+    return `@${settings_1.scopeName}/${packageName}`;
 }
 exports.fullNpmName = fullNpmName;
-const outputDir = util_1.joinPaths(common_1.home, common_1.settings.outputPath);
+const outputDir = util_1.joinPaths(common_1.home, settings_1.outputPath);
 class NotNeededPackage extends PackageBase {
     constructor(raw) {
         super(raw);
@@ -257,8 +258,8 @@ var TypeScriptVersion;
     TypeScriptVersion.All = ["2.0", "2.1"];
     TypeScriptVersion.Lowest = "2.0";
     TypeScriptVersion.Latest = "2.1";
-    function isPrerelease(version) {
-        return version === "2.1";
+    function isPrerelease(_version) {
+        return false;
     }
     TypeScriptVersion.isPrerelease = isPrerelease;
     /** List of NPM tags that should be changed to point to the latest version. */
@@ -271,7 +272,7 @@ var TypeScriptVersion;
             case "2.1":
                 // Eventually this will change to include "latest", too.
                 // And obviously we shouldn't advance the "2.0" tag if the package is now 2.1-specific.
-                return [tags.v2_1];
+                return [tags.latest, tags.v2_1];
         }
     }
     TypeScriptVersion.tagsToUpdate = tagsToUpdate;

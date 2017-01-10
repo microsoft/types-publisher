@@ -12,6 +12,7 @@ const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
 const packages_1 = require("./packages");
+const settings_1 = require("./settings");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
 const additionsFilename = "version-additions.json";
@@ -39,12 +40,12 @@ class Versions {
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
      * `additions` is a subset of `changes`.
      */
-    static determineFromNpm(allPackages, log, forceUpdate) {
+    static determineFromNpm(allPackages, log, forceUpdate, options) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
             const additions = [];
             const data = {};
-            yield util_1.nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor });
+            yield util_1.nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
             function getTypingsVersion(pkg) {
                 return __awaiter(this, void 0, void 0, function* () {
                     const isPrerelease = packages_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
@@ -65,7 +66,7 @@ class Versions {
                     addToData(pkg.name, version, latestNonPrerelease, contentHash, deprecated);
                 });
             }
-            yield util_1.nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor });
+            yield util_1.nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor, options });
             function getNotNeededVersion(pkg) {
                 return __awaiter(this, void 0, void 0, function* () {
                     const isPrerelease = false; // Not-needed packages are never prerelease.
@@ -181,7 +182,7 @@ function fetchLastPatchNumber(packageName) {
 exports.fetchLastPatchNumber = fetchLastPatchNumber;
 function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = common_1.settings.npmRegistry + escapedPackageName;
+        const uri = settings_1.npmRegistry + escapedPackageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         if (info.error) {
             throw new Error(`Error getting version at ${uri}: ${info.error}`);

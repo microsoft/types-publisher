@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fsp = require("fs-promise");
 const nodegit_1 = require("nodegit");
 const common_1 = require("./lib/common");
+const settings_1 = require("./lib/settings");
 const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main(common_1.Options.defaults));
@@ -28,25 +29,25 @@ function getRepo(options) {
         if (yield fsp.exists(options.definitelyTypedPath)) {
             const repo = yield nodegit_1.Repository.open(options.definitelyTypedPath);
             const currentBranch = (yield repo.getCurrentBranch()).name();
-            const correctBranch = `refs/heads/${common_1.settings.sourceBranch}`;
+            const correctBranch = `refs/heads/${settings_1.sourceBranch}`;
             if (currentBranch !== correctBranch) {
                 throw new Error(`Need to checkout ${correctBranch}, currently on ${currentBranch}`);
             }
             return repo;
         }
         else {
-            const repo = yield nodegit_1.Clone(common_1.settings.sourceRepository, options.definitelyTypedPath);
-            yield repo.checkoutBranch(common_1.settings.sourceBranch);
+            const repo = yield nodegit_1.Clone(settings_1.sourceRepository, options.definitelyTypedPath);
+            yield repo.checkoutBranch(settings_1.sourceBranch);
             return repo;
         }
     });
 }
 function pull(repo, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        log(`Fetching changes from ${common_1.settings.sourceBranch}`);
+        log(`Fetching changes from ${settings_1.sourceBranch}`);
         yield repo.fetchAll();
         log(`Merging changes`);
-        yield repo.mergeBranches(common_1.settings.sourceBranch, `origin/${common_1.settings.sourceBranch}`);
+        yield repo.mergeBranches(settings_1.sourceBranch, `origin/${settings_1.sourceBranch}`);
     });
 }
 function checkStatus(repo) {

@@ -11,6 +11,7 @@ const fsp = require("fs-promise");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
+const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
@@ -51,7 +52,7 @@ function doAll() {
 function doValidate(packageNames) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.loggerWithErrors();
-        yield validatePackages(packageNames, common_1.settings.validateOutputPath, log);
+        yield validatePackages(packageNames, settings_1.validateOutputPath, log);
         const { infos, errors } = logResult();
         yield Promise.all([
             logging_1.writeLog("validate.md", infos),

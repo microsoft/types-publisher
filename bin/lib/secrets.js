@@ -1,7 +1,7 @@
 "use strict";
 const azure_keyvault_1 = require("azure-keyvault");
 const adal_node_1 = require("adal-node");
-const common_1 = require("./common");
+const settings_1 = require("./settings");
 var Secret;
 (function (Secret) {
     /**
@@ -45,7 +45,7 @@ function azureSecretName(secret) {
 }
 function getSecret(secret) {
     const client = getClient();
-    const secretUrl = `${common_1.settings.azureKeyvault}/secrets/${azureSecretName(secret)}`;
+    const secretUrl = `${settings_1.azureKeyvault}/secrets/${azureSecretName(secret)}`;
     return new Promise((resolve, reject) => {
         client.getSecret(secretUrl, (error, bundle) => {
             if (error) {

@@ -36,7 +36,7 @@ function main(options) {
         const packageNames = yield filterPaths(yield fsp.readdir(options.definitelyTypedPath), options);
         summaryLog(`Found ${packageNames.length} typings folders in ${options.definitelyTypedPath}`);
         const typings = {};
-        yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name });
+        yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name, options });
         function use(packageName) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { data, logs } = yield parser.getTypingInfo(packageName, options);

@@ -20,14 +20,14 @@ if (!module.parent) {
     }
     else {
         const full = yargs.argv.full;
-        util_1.done(main(skipDownloads, full));
+        util_1.done(main(skipDownloads, full, common_1.Options.defaults));
     }
 }
-function main(skipDownloads, full) {
+function main(skipDownloads, full, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         console.log(`Generating search index...`);
-        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads), { name: "Indexing...", flavor: pkg => pkg.desc });
+        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads), { name: "Indexing...", flavor: pkg => pkg.desc, options });
         // Most downloads first
         records.sort((a, b) => b.d - a.d);
         console.log(`Done generating search index`);

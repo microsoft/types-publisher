@@ -11,6 +11,7 @@ const path = require("path");
 const common_1 = require("../lib/common");
 const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
+const settings_1 = require("../lib/settings");
 const util_1 = require("../util/util");
 if (!module.parent) {
     util_1.done(main(common_1.Options.defaults));
@@ -110,16 +111,16 @@ If editing this code, be sure to test on both full and shallow clones.
 function gitDiff(log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield run(`git rev-parse --verify ${common_1.settings.sourceBranch}`);
+            yield run(`git rev-parse --verify ${settings_1.sourceBranch}`);
         }
         catch (_) {
             // This is a shallow clone.
-            yield run(`git fetch origin ${common_1.settings.sourceBranch}`);
-            yield run(`git branch ${common_1.settings.sourceBranch} FETCH_HEAD`);
+            yield run(`git fetch origin ${settings_1.sourceBranch}`);
+            yield run(`git branch ${settings_1.sourceBranch} FETCH_HEAD`);
         }
         // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
         // Source: https://git-scm.com/docs/git-diff
-        const diff = yield run(`git diff ${common_1.settings.sourceBranch}...HEAD --name-only`);
+        const diff = yield run(`git diff ${settings_1.sourceBranch}...HEAD --name-only`);
         return diff.trim().split("\n");
         function run(cmd) {
             return __awaiter(this, void 0, void 0, function* () {

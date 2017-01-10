@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const node_fetch_1 = require("node-fetch");
 const yargs = require("yargs");
-const common_1 = require("./lib/common");
 const secrets_1 = require("./lib/secrets");
+const settings_1 = require("./lib/settings");
 const webhook_server_1 = require("./lib/webhook-server");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -28,7 +28,7 @@ if (!module.parent) {
 function main(url) {
     return __awaiter(this, void 0, void 0, function* () {
         const key = yield secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);
-        const body = JSON.stringify({ ref: `refs/heads/${common_1.settings.sourceBranch}` });
+        const body = JSON.stringify({ ref: `refs/heads/${settings_1.sourceBranch}` });
         const headers = { "x-hub-signature": webhook_server_1.expectedSignature(key, body) };
         const resp = yield node_fetch_1.default(url, { method: "POST", body, headers });
         console.log(yield resp.text());

@@ -21,7 +21,7 @@ function main(options, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
         yield parse_definitions_1.default(options);
-        yield check_parse_results_1.default(/*includeNpmChecks*/ false);
+        yield check_parse_results_1.default(/*includeNpmChecks*/ false, options);
         yield test_runner_1.default(options, nProcesses);
     });
 }

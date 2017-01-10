@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const fs_1 = require("fs");
 const fsp = require("fs-promise");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
@@ -17,11 +16,12 @@ if (process.env.LONGJOHN) {
     longjohn.async_trace_limit = -1; // unlimited
 }
 exports.home = util_1.joinPaths(__dirname, "..", "..");
-exports.settings = util_1.parseJson(fs_1.readFileSync(util_1.joinPaths(exports.home, "settings.json"), "utf-8"));
 var Options;
 (function (Options) {
+    /** Options for running locally. */
     Options.defaults = {
         definitelyTypedPath: "../DefinitelyTyped",
+        progress: true
     };
 })(Options = exports.Options || (exports.Options = {}));
 function readDataFile(generatedBy, fileName) {

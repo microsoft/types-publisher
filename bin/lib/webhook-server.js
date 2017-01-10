@@ -14,9 +14,9 @@ const logging_1 = require("../util/logging");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const rolling_logs_1 = require("./rolling-logs");
-const common_1 = require("./common");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
+const settings_1 = require("./settings");
 function server(key, githubAccessToken, dry, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
@@ -98,7 +98,7 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
                     return;
                 }
                 log.info(`Message from github: ${data}`);
-                const expectedRef = `refs/heads/${common_1.settings.sourceBranch}`;
+                const expectedRef = `refs/heads/${settings_1.sourceBranch}`;
                 const actualRef = util_1.parseJson(data).ref;
                 if (actualRef === expectedRef) {
                     respond("Thanks for the update! Running full.");

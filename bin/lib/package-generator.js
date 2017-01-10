@@ -12,8 +12,8 @@ const path = require("path");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-const common_1 = require("./common");
 const packages_1 = require("./packages");
+const settings_1 = require("./settings");
 /** Generates the package to disk */
 function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
@@ -170,7 +170,7 @@ function createReadme(typing) {
     }
     lines.push("");
     lines.push("# Details");
-    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${common_1.settings.sourceBranch}/${typing.subDirectoryPath}`);
+    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${settings_1.sourceBranch}/${typing.subDirectoryPath}`);
     lines.push("");
     lines.push(`Additional Details`);
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);

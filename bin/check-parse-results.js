@@ -10,13 +10,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const semver = require("semver");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
+const settings_1 = require("./lib/settings");
 const logging_1 = require("./util/logging");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main(true));
+    util_1.done(main(true, common_1.Options.defaults));
 }
-function main(includeNpmChecks) {
+function main(includeNpmChecks, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         const [log, logResult] = logging_1.logger();
@@ -25,7 +26,8 @@ function main(includeNpmChecks) {
         if (includeNpmChecks) {
             yield util_1.nAtATime(10, packages, pkg => checkNpm(pkg, log), {
                 name: "Checking for typed packages...",
-                flavor: pkg => pkg.desc
+                flavor: pkg => pkg.desc,
+                options
             });
         }
         yield logging_1.writeLog("conflicts.md", logResult());
@@ -67,7 +69,7 @@ function packageHasTypes(packageName) {
 exports.packageHasTypes = packageHasTypes;
 function firstPackageVersionWithTypes(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = common_1.settings.npmRegistry + packageName;
+        const uri = settings_1.npmRegistry + packageName;
         const info = yield io_1.fetchJson(uri, { retries: true });
         // Info may be empty if the package is not on NPM
         if (!info.versions) {

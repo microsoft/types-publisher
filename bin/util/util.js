@@ -35,7 +35,7 @@ exports.currentTimeStamp = currentTimeStamp;
 exports.numberOfOsProcesses = os.cpus().length;
 function nAtATime(n, inputs, use, progressOptions) {
     return __awaiter(this, void 0, void 0, function* () {
-        const progress = progressOptions && new progress_1.default({ name: progressOptions.name });
+        const progress = progressOptions && progressOptions.options.progress ? new progress_1.default({ name: progressOptions.name }) : undefined;
         const results = new Array(inputs.length);
         // We have n "threads" which each run `continuouslyWork`.
         // They all share `nextIndex`, so each work item is done only once.
