@@ -55,6 +55,14 @@ class AllPackages {
     hasTypingFor(dep) {
         return this.tryGetTypingsData(dep) !== undefined;
     }
+    /** Gets the latest version of a package. E.g. getLatest(node v6) = node v7. */
+    getLatest(pkg) {
+        return pkg.isNotNeeded ? pkg : this.getLatestVersion(pkg.name);
+    }
+    /** Use only with `--single` tasks. */
+    getSingle(packageName) {
+        return this.getLatestVersion(packageName);
+    }
     getLatestVersion(packageName) {
         const latest = this.tryGetLatestVersion(packageName);
         if (!latest) {

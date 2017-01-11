@@ -47,7 +47,7 @@ exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
-        const pkg = allPackages.getLatestVersion(singleName);
+        const pkg = allPackages.getSingle(singleName);
         const versions = yield versions_1.default.load();
         const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
         console.log(logs.join("\n"));

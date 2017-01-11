@@ -79,8 +79,7 @@ function single(client, name, options, dry) {
     });
 }
 function publish(pkg, client, allPackages, versions, dry) {
-    const latest = allPackages.getLatestVersion(pkg.name);
-    return package_publisher_1.default(client, pkg, versions, latest, dry);
+    return package_publisher_1.default(client, pkg, versions, allPackages.getLatest(pkg), dry);
 }
 function unpublish(dry) {
     return __awaiter(this, void 0, void 0, function* () {
