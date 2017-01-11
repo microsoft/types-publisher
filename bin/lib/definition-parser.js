@@ -216,22 +216,24 @@ function readFile(directory, fileName) {
     });
 }
 exports.readFile = readFile;
+const unusedFilesName = "UNUSED_FILES.txt";
 function checkAllFilesUsed(directory, ls, usedFiles) {
     return __awaiter(this, void 0, void 0, function* () {
-        const unusedFilesName = "UNUSED_FILES.txt";
-        if (ls.includes(unusedFilesName)) {
-            const lsMinusUnusedFiles = new Set(ls);
-            lsMinusUnusedFiles.delete(unusedFilesName);
-            const unusedFiles = (yield fsp.readFile(util_1.joinPaths(directory, unusedFilesName), "utf-8")).split(/\r?\n/g);
-            for (const unusedFile of unusedFiles) {
-                if (!lsMinusUnusedFiles.delete(unusedFile)) {
-                    throw new Error(`In ${directory}: file ${unusedFile} listed in ${unusedFilesName} does not exist.`);
-                }
-            }
-            ls = Array.from(lsMinusUnusedFiles);
-        }
+        const lsSet = new Set(ls);
+        const unusedFiles = lsSet.delete(unusedFilesName)
+            ? new Set((yield fsp.readFile(util_1.joinPaths(directory, unusedFilesName), "utf-8")).split(/\r?\n/g))
+            : new Set();
+        yield checkAllUsedRecur(directory, lsSet, usedFiles, unusedFiles);
+    });
+}
+function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
+    return __awaiter(this, void 0, void 0, function* () {
         for (const lsEntry of ls) {
             if (usedFiles.has(lsEntry)) {
+                continue;
+            }
+            if (unusedFiles.has(lsEntry)) {
+                unusedFiles.delete(lsEntry);
                 continue;
             }
             const stat = yield fsp.stat(util_1.joinPaths(directory, lsEntry));
@@ -245,14 +247,27 @@ function checkAllFilesUsed(directory, ls, usedFiles) {
                 if (lssubdir.length === 0) {
                     throw new Error(`Empty directory ${subdir} (${util_1.join(usedFiles)})`);
                 }
-                const usedInSubdir = util_1.mapDefined(usedFiles, u => withoutStart(u, lsEntry + "/"));
-                yield checkAllFilesUsed(subdir, lssubdir, new Set(usedInSubdir));
+                function takeSubdirectoryOutOfSet(originalSet) {
+                    const subdirSet = new Set();
+                    for (const file of originalSet) {
+                        const sub = withoutStart(file, lsEntry + "/");
+                        if (sub !== undefined) {
+                            originalSet.delete(file);
+                            subdirSet.add(sub);
+                        }
+                    }
+                    return subdirSet;
+                }
+                yield checkAllUsedRecur(subdir, lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles));
             }
             else {
                 if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
                     throw new Error(`Directory ${directory} has unused file ${lsEntry}`);
                 }
             }
+        }
+        for (const unusedFile of unusedFiles) {
+            throw new Error(`In ${directory}: file ${unusedFile} listed in ${unusedFilesName} does not exist.`);
         }
     });
 }

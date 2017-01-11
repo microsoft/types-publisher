@@ -27,14 +27,22 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
             // A file is a proper module if it is an external module *and* it has at least one export.
             // A module with only imports is not a proper module; it likely just augments some other module.
             let hasAnyExport = false;
+            function addDependency(dependency) {
+                if (dependency !== packageName) {
+                    dependencies.add(dependency);
+                }
+                // TODO: else throw new Error(`Package ${packageName} references itself. (via ${src.fileName})`);
+            }
             for (const ref of imports(src)) {
                 if (!ref.startsWith(".")) {
                     const importedModule = rootName(ref);
-                    dependencies.add(importedModule);
+                    addDependency(importedModule);
                     log(`Found import declaration from \`"${importedModule}"\``);
                 }
             }
-            src.typeReferenceDirectives.forEach(ref => dependencies.add(ref.fileName));
+            for (const ref of src.typeReferenceDirectives) {
+                addDependency(ref.fileName);
+            }
             for (const node of src.statements) {
                 switch (node.kind) {
                     case ts.SyntaxKind.NamespaceExportDeclaration:
@@ -129,8 +137,6 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                 declaredModules.push(properModuleName(packageName, src.fileName));
             }
         }
-        // Some files may reference the main module, but don't include that as a real dependency.
-        dependencies.delete(packageName);
         return {
             declFiles: util_1.sort(all.keys()),
             dependencies,
@@ -166,58 +172,76 @@ function withoutExtension(str, ext) {
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
 function allReferencedFiles(directory, entryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
+        const seenReferences = new Set();
         const all = new Map();
-        function recur(referencedFrom, filename) {
+        function recur(referencedFrom, { text, exact }) {
             return __awaiter(this, void 0, void 0, function* () {
-                if (all.has(filename)) {
+                if (seenReferences.has(text)) {
                     return;
                 }
-                // Placeholder so no other thread will pick up this filename
-                all.set(filename, undefined);
-                log(`Parse ${filename}`);
-                let content;
-                try {
-                    content = yield definition_parser_1.readFile(directory, filename);
-                }
-                catch (err) {
-                    console.error(`In ${directory}, ${referencedFrom} references ${filename}, which can't be read.`);
-                    throw err;
-                }
-                const src = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
-                all.set(filename, src);
-                const refs = referencedFiles(src, path.dirname(filename), directory);
-                yield Promise.all(refs.map(ref => recur(filename, ref)));
+                seenReferences.add(text);
+                const { resolvedFilename, content } = exact
+                    ? { resolvedFilename: text, content: yield readFileAndReportErrors(referencedFrom, directory, text, text) }
+                    : yield resolveModule(referencedFrom, directory, text);
+                log(`Parse ${resolvedFilename}`);
+                const src = ts.createSourceFile(resolvedFilename, content, ts.ScriptTarget.Latest, true);
+                all.set(resolvedFilename, src);
+                const refs = referencedFiles(src, path.dirname(resolvedFilename), directory);
+                yield Promise.all(Array.from(refs).map(ref => recur(resolvedFilename, ref)));
             });
         }
-        yield Promise.all(entryFilenames.map(filename => recur("", filename)));
+        yield Promise.all(entryFilenames.map(filename => recur("tsconfig.json", { text: filename, exact: true })));
         return all;
+    });
+}
+function resolveModule(referencedFrom, directory, filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const dts = filename + ".d.ts";
+            return { resolvedFilename: dts, content: yield definition_parser_1.readFile(directory, dts) };
+        }
+        catch (_) {
+            const index = util_1.joinPaths(filename, "index.d.ts");
+            return { resolvedFilename: index, content: yield readFileAndReportErrors(referencedFrom, directory, filename, index) };
+        }
+    });
+}
+function readFileAndReportErrors(referencedFrom, directory, referenceText, filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            return yield definition_parser_1.readFile(directory, filename);
+        }
+        catch (err) {
+            console.error(`In ${directory}, ${referencedFrom} references ${referenceText}, which can't be read.`);
+            throw err;
+        }
     });
 }
 /**
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function referencedFiles(src, subDirectory, directory) {
+function* referencedFiles(src, subDirectory, directory) {
     const out = [];
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
-        addReference(ref.fileName);
+        yield addReference({ text: ref.fileName, exact: true });
     }
     for (const ref of imports(src)) {
         if (ref.startsWith(".")) {
-            addReference(`${ref}.d.ts`);
+            yield addReference({ text: ref, exact: false });
         }
     }
     return out;
-    function addReference(ref) {
-        noWindowsSlashes(src.fileName, ref);
-        let full = path.normalize(util_1.joinPaths(subDirectory, ref));
+    function addReference({ exact, text }) {
+        noWindowsSlashes(src.fileName, text);
+        let full = path.normalize(util_1.joinPaths(subDirectory, text));
         // `path.normalize` may add windows slashes
         full = util_1.normalizeSlashes(full);
         if (full.startsWith(".")) {
-            throw new Error(`In ${directory} ${src.fileName}: Definitions must use global references, not local references. (Based on reference '${ref}')`);
+            throw new Error(`In ${directory} ${src.fileName}: Definitions must use global references, not parent references. (Based on reference '${text}')`);
         }
-        out.push(full);
+        return { exact, text: full };
     }
 }
 /**
