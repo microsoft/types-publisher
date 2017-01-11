@@ -19,12 +19,14 @@ if (!module.parent) {
 }
 function main(includeNpmChecks, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const packages = yield packages_1.AllPackages.readTypings();
+        const allPackages = yield packages_1.AllPackages.read(options);
         const [log, logResult] = logging_1.logger();
-        check(packages, info => info.libraryName, "Library Name", log);
-        check(packages, info => info.projectName, "Project Name", log);
+        checkPathMappings(allPackages);
+        const packages = allPackages.allPackages();
+        checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
+        checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
         if (includeNpmChecks) {
-            yield util_1.nAtATime(10, packages, pkg => checkNpm(pkg, log), {
+            yield util_1.nAtATime(10, allPackages.allTypings(), pkg => checkNpm(pkg, log), {
                 name: "Checking for typed packages...",
                 flavor: pkg => pkg.desc,
                 options
@@ -35,9 +37,9 @@ function main(includeNpmChecks, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function check(infos, func, key, log) {
+function checkForDuplicates(packages, func, key, log) {
     const lookup = new Map();
-    for (const info of infos) {
+    for (const info of packages) {
         const libraryOrProjectName = func(info);
         if (libraryOrProjectName !== undefined) {
             util_1.multiMapAdd(lookup, libraryOrProjectName, info);
@@ -49,6 +51,25 @@ function check(infos, func, key, log) {
             for (const n of values) {
                 log(`   * ${n.desc}`);
             }
+        }
+    }
+}
+function checkPathMappings(allPackages) {
+    for (const pkg of allPackages.allTypings()) {
+        const pathMappings = new Map(pkg.pathMappings);
+        const unusedPathMappings = new Set(pathMappings.keys());
+        // If A depends on B, and B has path mappings, A must have the same mappings.
+        for (const dependency of allPackages.dependencyTypings(pkg)) {
+            for (const [name, dependencyMappingVersion] of dependency.pathMappings) {
+                if (pathMappings.get(name) !== dependencyMappingVersion) {
+                    throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${name} v${dependencyMappingVersion}. ${pkg.desc} must have the same path mappings as its dependencies.`);
+                }
+                unusedPathMappings.delete(name);
+            }
+            unusedPathMappings.delete(dependency.name);
+        }
+        for (const unusedPathMapping of unusedPathMappings) {
+            throw new Error(`${pkg.desc} has unused path mapping for ${unusedPathMapping}`);
         }
     }
 }

@@ -253,12 +253,4 @@ function join(values, joiner = ", ") {
     return s.slice(0, s.length - joiner.length);
 }
 exports.join = join;
-function makeObject(keys, getValue) {
-    const obj = Object.create(null);
-    for (const key of keys) {
-        obj[key] = getValue(key);
-    }
-    return obj;
-}
-exports.makeObject = makeObject;
 //# sourceMappingURL=util.js.map

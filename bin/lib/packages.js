@@ -225,6 +225,9 @@ class TypingsData extends PackageBase {
     get declaredModules() { return this.data.declaredModules; }
     get projectName() { return this.data.projectName; }
     get globals() { return this.data.globals; }
+    get pathMappings() {
+        return Object.entries(this.data.pathMappings);
+    }
     get isPrerelease() {
         return TypeScriptVersion.isPrerelease(this.typeScriptVersion);
     }

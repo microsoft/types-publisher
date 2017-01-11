@@ -85,7 +85,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { authors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(yield readFile(directory, mainFilename), packageName);
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
-        const dependencies = yield calculateDependencies(packageName, directory, dependenciesSet, oldMajorVersion);
+        const { dependencies, pathMappings } = yield calculateDependencies(packageName, directory, dependenciesSet, oldMajorVersion);
         const hasPackageJson = yield fsp.exists(util_1.joinPaths(directory, "package.json"));
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
@@ -100,6 +100,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const data = {
             authors: authors.map(a => `${a.name} <${a.url}>`).join(", "),
             dependencies,
+            pathMappings,
             libraryMajorVersion,
             libraryMinorVersion,
             typeScriptVersion,
@@ -150,28 +151,49 @@ function entryFilesFromTsConfig(packageName, directory) {
     });
 }
 /** In addition to dependencies found oun source code, also get dependencies from tsconfig. */
-function calculateDependencies(packageName, directory, dependencies, oldMajorVersion) {
+function calculateDependencies(packageName, directory, dependencyNames, oldMajorVersion) {
     return __awaiter(this, void 0, void 0, function* () {
         const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { paths } = tsconfig.compilerOptions;
-        for (const key in paths) {
-            if (key !== packageName && !dependencies.has(key)) {
-                throw new Error(`In ${packageName}: path mapping for '${key}' is not used.`);
+        const dependencies = {};
+        const pathMappings = {};
+        for (const dependencyName in paths) {
+            // Might have a path mapping for "foo/*" to support subdirectories
+            const rootDirectory = withoutEnd(dependencyName, "/*");
+            if (rootDirectory !== undefined) {
+                if (!(rootDirectory in paths)) {
+                    throw new Error(`In ${packageName}: found path mapping for ${dependencyName} but not for ${rootDirectory}`);
+                }
+                continue;
+            }
+            const pathMapping = paths[dependencyName];
+            const version = parseDependencyVersionFromPath(dependencyName, dependencyName, pathMapping);
+            if (dependencyName === packageName) {
+                if (oldMajorVersion === undefined) {
+                    throw new Error(`In ${packageName}: Latest version of a package should not have a path mapping for itself.`);
+                }
+                else if (version !== oldMajorVersion) {
+                    const correctPathMapping = [`${dependencyName}/v${oldMajorVersion}`];
+                    throw new Error(`In ${packageName}: Must have a "paths" entry of "${dependencyName}": ${JSON.stringify(correctPathMapping)}`);
+                }
+            }
+            else {
+                if (dependencyNames.has(dependencyName)) {
+                    dependencies[dependencyName] = version;
+                }
+                // Else, the path mapping may be necessary if it is for a dependency-of-a-dependency. We will check this in check-parse-results.
+                pathMappings[dependencyName] = version;
             }
         }
-        if (oldMajorVersion !== undefined) {
-            const selfPath = paths && paths[packageName];
-            const version = selfPath === undefined ? undefined : parseDependencyVersionFromPath(packageName, packageName, selfPath);
-            if (version !== oldMajorVersion) {
-                console.log(version, oldMajorVersion);
-                const correctPathMapping = `${packageName}/v${oldMajorVersion}`;
-                throw new Error(`${packageName}: Must have a "paths" entry of "${packageName}": ${JSON.stringify([correctPathMapping])}`);
+        if (oldMajorVersion !== undefined && !(paths && packageName in paths)) {
+            throw new Error(`${packageName}: Older version ${oldMajorVersion} must have a path mapping for itself.`);
+        }
+        for (const dependency of dependencyNames) {
+            if (!(dependency in dependencies)) {
+                dependencies[dependency] = "*";
             }
         }
-        return util_1.makeObject(dependencies, dependency => {
-            const path = paths && paths[dependency];
-            return path === undefined ? "*" : parseDependencyVersionFromPath(packageName, dependency, path);
-        });
+        return { dependencies, pathMappings };
     });
 }
 // e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
@@ -190,6 +212,12 @@ function parseDependencyVersionFromPath(packageName, dependencyName, dependencyP
 function withoutStart(s, start) {
     if (s.startsWith(start)) {
         return s.slice(start.length);
+    }
+    return undefined;
+}
+function withoutEnd(s, end) {
+    if (s.endsWith(end)) {
+        return s.slice(0, s.length - end.length);
     }
     return undefined;
 }
