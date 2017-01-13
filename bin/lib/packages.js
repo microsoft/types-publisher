@@ -57,7 +57,7 @@ class AllPackages {
     }
     /** Gets the latest version of a package. E.g. getLatest(node v6) = node v7. */
     getLatest(pkg) {
-        return pkg.isNotNeeded ? pkg : this.getLatestVersion(pkg.name);
+        return pkg.isNotNeeded() ? pkg : this.getLatestVersion(pkg.name);
     }
     /** Use only with `--single` tasks. */
     getSingle(packageName) {

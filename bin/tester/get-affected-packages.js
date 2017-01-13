@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const path = require("path");
 const common_1 = require("../lib/common");
 const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
@@ -139,7 +138,7 @@ function gitDiff(log, options) {
  * For "a", returns undefined.
  */
 function getDependencyFromFile(fileName) {
-    const parts = fileName.split(path.sep);
+    const parts = fileName.split("/");
     if (parts.length === 1) {
         // It's not in a typings directory at all.
         return undefined;
