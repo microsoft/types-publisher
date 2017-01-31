@@ -1,13 +1,14 @@
 import { clearOutputPath } from "./lib/package-generator";
 import * as yargs from "yargs";
 
-import { AllPackages, TypingsData } from "./lib/packages";
+import { Options } from "./lib/common";
+import { AllPackages, TypeScriptVersion, TypingsData } from "./lib/packages";
 import NpmClient from "./lib/npm-client";
-import { outputPath } from "./lib/settings";
+import { npmRegistry, outputPath } from "./lib/settings";
 import { fetchLastPatchNumber, readAdditions } from "./lib/versions";
-import { writeJson } from "./util/io";
+import { fetchJson, writeJson } from "./util/io";
 import { Logger, logger, writeLog } from "./util/logging";
-import { done, joinPaths } from "./util/util";
+import { done, joinPaths, nAtATime } from "./util/util";
 
 const packageName = "types-registry";
 const registryOutputPath = joinPaths(outputPath, packageName);
@@ -28,7 +29,7 @@ export default async function main(dry = false) {
 	const added = await readAdditions();
 	if (added.length) {
 		log(`New packages have been added: ${JSON.stringify(added)}, so publishing a new registry`);
-		await generateAndPublishRegistry(log, dry);
+		await generateAndPublishRegistry(log, Options.defaults, dry);
 	} else {
 		log("No new packages published, so no need to publish new registry.");
 	}
@@ -36,21 +37,21 @@ export default async function main(dry = false) {
 	await writeLog("publish-registry.md", logResult());
 }
 
-async function generateAndPublishRegistry(log: Logger, dry: boolean) {
+async function generateAndPublishRegistry(log: Logger, options: Options, dry: boolean) {
 	// Don't include not-needed packages in the registry.
 	const typings = await AllPackages.readTypings();
 
 	const last = await fetchLastPatchNumber(packageName);
 	const packageJson = generatePackageJson(last + 1);
 
-	await generate(typings, packageJson, log);
+	await generate(typings, packageJson, log, options);
 	await publish(packageJson, dry);
 }
 
-async function generate(typings: TypingsData[], packageJson: {}, log: Logger): Promise<void> {
+async function generate(typings: TypingsData[], packageJson: {}, log: Logger, options: Options): Promise<void> {
 	await clearOutputPath(registryOutputPath, log);
 	await writeOutputFile("package.json", packageJson);
-	await writeOutputFile("index.json", generateRegistry(typings));
+	await writeOutputFile("index.json", await generateRegistry(typings, options));
 	await writeOutputFile("README.md", readme);
 
 	function writeOutputFile(filename: string, content: {}): Promise<void> {
@@ -84,10 +85,38 @@ function generatePackageJson(patch: number): {} {
 	};
 }
 
-function generateRegistry(typings: TypingsData[]): {} {
-	const entries: { [packageName: string]: 1 } = {};
-	for (const { name } of typings) {
-		entries[name] = 1;
-	}
+interface Registry {
+	entries: Entries
+}
+interface Entries {
+	[key: string]: Versions;
+}
+type Versions = Partial<Record<TypeScriptVersion.VersionTag, string>>;
+
+async function generateRegistry(typings: TypingsData[], options: Options): Promise<Registry> {
+	const entries: Entries = {};
+	await nAtATime(25, typings, addEntry, { name: "Generating registry...", flavor: t => t.name, options });
 	return { entries };
+
+	async function addEntry(typing: TypingsData): Promise<void> {
+		const versions = await getVersions(typing.fullEscapedNpmName);
+		entries[typing.name] = versions;
+	}
+}
+
+async function getVersions(escapedPackageName: string): Promise<Versions> {
+	const uri = npmRegistry + escapedPackageName;
+	const info = await fetchJson(uri, { retries: true });
+	const tags = info["dist-tags"];
+
+	let prev: string | undefined;
+	const versions: Versions = {};
+	for (const tag of TypeScriptVersion.allVersionTags) {
+		const value = tags[tag];
+		if (value !== prev) { // If "2.1" stores the same value as "2.0", don't bother storing it
+			versions[tag] = value;
+			prev = value;
+		}
+	}
+	return versions;
 }
