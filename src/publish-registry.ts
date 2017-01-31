@@ -108,15 +108,15 @@ async function getVersions(escapedPackageName: string): Promise<Versions> {
 	const uri = npmRegistry + escapedPackageName;
 	const info = await fetchJson(uri, { retries: true });
 	const tags = info["dist-tags"];
+	return pick(tags, TypeScriptVersion.allVersionTags);
+}
 
-	let prev: string | undefined;
-	const versions: Versions = {};
-	for (const tag of TypeScriptVersion.allVersionTags) {
-		const value = tags[tag];
-		if (value !== prev) { // If "2.1" stores the same value as "2.0", don't bother storing it
-			versions[tag] = value;
-			prev = value;
+function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+	const out = {} as Pick<T, K>;
+	for (const key in obj) {
+		if (keys.includes(key as K)) {
+			out[key] = obj[key];
 		}
 	}
-	return versions;
+	return out;
 }
