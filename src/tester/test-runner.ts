@@ -12,6 +12,7 @@ import getAffectedPackages, { allDependencies } from "./get-affected-packages";
 import { installAllTypeScriptVersions, pathToTsc } from "./ts-installer";
 
 const tslintPath = joinPaths(require.resolve("tslint"), "../tslint-cli.js");
+const typingsCheckerPath = require.resolve("typings-checker");
 
 if (!module.parent) {
 	const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
@@ -93,7 +94,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options): Promise<TesterError | undefined> {
 	const cwd = pkg.directoryPath(options);
-	return (await tsConfig()) || (await packageJson()) || (await tsc()) || (await tslint());
+	return (await tsConfig()) || (await packageJson()) || (await tsc()) || (await typingsChecker()) || (await tslint());
 
 	async function tsConfig(): Promise<TesterError | undefined> {
 		const tsconfigPath = joinPaths(cwd, "tsconfig.json");
@@ -104,6 +105,9 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 		return catchErrors(log, () => checkPackageJson(pkg, options));
 	}
 	async function tsc(): Promise<TesterError | undefined> {
+		const prefersChecker = await fsp.exists(joinPaths(cwd, "use-typings-checker"));
+		if (prefersChecker) return;
+
 		const error = await runCommand(log, cwd, pathToTsc(pkg.typeScriptVersion));
 		if (error && pkg.typeScriptVersion !== TypeScriptVersion.Latest) {
 			const newError = await runCommand(log, cwd, pathToTsc(TypeScriptVersion.Latest));
@@ -115,6 +119,12 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 			}
 		}
 		return error;
+	}
+	async function typingsChecker(): Promise<TesterError | undefined> {
+		const prefersChecker = await fsp.exists(joinPaths(cwd, "use-typings-checker"));
+		if (!prefersChecker) return;
+
+		return await runCommand(log, cwd, typingsCheckerPath);
 	}
 	async function tslint(): Promise<TesterError | undefined> {
 		return (await fsp.exists(joinPaths(cwd, "tslint.json")))

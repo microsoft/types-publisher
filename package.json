@@ -25,6 +25,7 @@
     "tar": "^2.2.1",
     "tslint": "^4.2.0",
     "typescript": "next",
+    "typings-checker": "^1.1.1",
     "yargs": "^6.2.0"
   },
   "devDependencies": {
