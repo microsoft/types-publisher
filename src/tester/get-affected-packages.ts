@@ -130,7 +130,7 @@ async function gitDiff(log: Logger, options: Options): Promise<string[]> {
 		// We are probably already on master, so compare to the last commit.
 		diff = (await run(`git diff ${sourceBranch}~1...HEAD --name-only`)).trim();
 	}
-	return diff.split("\n").map((fileName) => fs.existsSync(fileName));
+	return diff.split("\n").filter((fileName) => fs.existsSync(fileName));
 
 	async function run(cmd: string): Promise<string> {
 		log("Running: " + cmd);
