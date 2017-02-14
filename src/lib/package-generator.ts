@@ -22,7 +22,7 @@ async function generatePackage(typing: TypingsData, packages: AllPackages, versi
 	await clearOutputPath(outputPath, log);
 
 	log("Generate package.json, metadata.json, and README.md");
-	const packageJson = await createPackageJSON(typing, versions.getVersion(typing.id), packages, options);
+	const packageJson = await createPackageJSON(typing, versions.getVersion(typing), packages, options);
 	const metadataJson = createMetadataJSON(typing);
 	const readme = createReadme(typing);
 
@@ -60,7 +60,7 @@ async function generateNotNeededPackage(pkg: NotNeededPackage, versions: Version
 	await clearOutputPath(outputPath, log);
 
 	log("Generate package.json and README.md");
-	const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg.id));
+	const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
 	const readme = pkg.readme();
 
 	log("Write metadata files to disk");
@@ -117,8 +117,7 @@ async function createPackageJSON(typing: TypingsData, version: Semver, packages:
 		// homepage,
 		// bugs,
 		license: "MIT",
-		author: typing.authors,
-		// contributors
+		contributors: typing.contributors,
 		main: "",
 		repository: {
 			type: "git",
@@ -197,11 +196,10 @@ function createReadme(typing: TypingsData) {
 	lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
 	lines.push("");
 
-	if (typing.authors) {
-		lines.push("# Credits");
-		lines.push(`These definitions were written by ${typing.authors}.`);
-		lines.push("");
-	}
+	lines.push("# Credits");
+	const contributors = typing.contributors.map(({ name, url }) => `${name} <${url}>`).join(", ");
+	lines.push(`These definitions were written by ${contributors}.`);
+	lines.push("");
 
 	return lines.join("\r\n");
 }

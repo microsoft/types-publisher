@@ -3,7 +3,6 @@ import * as path from "path";
 import * as ts from "typescript";
 
 import { Logger } from "../util/logging";
-import { isExternalModule } from "../util/ts";
 import { hasWindowsSlashes, joinPaths, normalizeSlashes, stripQuotes, sort } from "../util/util";
 
 import { readFile } from "./definition-parser";
@@ -20,7 +19,7 @@ export default async function getModuleInfo(packageName: string, directory: stri
 	const all = await allReferencedFiles(directory, allEntryFilenames, log);
 
 	for (const src of all.values()) {
-		const isExternal = isExternalModule(src);
+		const isExternal = ts.isExternalModule(src);
 		// A file is a proper module if it is an external module *and* it has at least one export.
 		// A module with only imports is not a proper module; it likely just augments some other module.
 		let hasAnyExport = false;
@@ -64,7 +63,7 @@ export default async function getModuleInfo(packageName: string, directory: stri
 						const nameKind = (node as ts.ModuleDeclaration).name.kind;
 						if (nameKind === ts.SyntaxKind.StringLiteral) {
 							// If we're in an external module, this is an augmentation, not a declaration.
-							if (!isExternalModule(src)) {
+							if (!ts.isExternalModule(src)) {
 								const name = stripQuotes((node as ts.ModuleDeclaration).name.getText());
 								noWindowsSlashes(packageName, name);
 
