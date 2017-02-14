@@ -53,7 +53,7 @@ class BlobWriter {
         return __awaiter(this, void 0, void 0, function* () {
             const once = (token) => promisifyErrorOrResult(cb => this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb));
             const out = [];
-            let token = undefined;
+            let token;
             do {
                 const { entries, continuationToken } = yield once(token);
                 out.push(...entries);
@@ -72,7 +72,8 @@ class BlobWriter {
                 contentType: "application/json; charset=utf-8"
             }
         };
-        return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(settings_1.azureContainer, blobName, options)));
+        // Remove `undefined!` once https://github.com/Azure/azure-storage-node/pull/267 is in
+        return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(settings_1.azureContainer, blobName, options, undefined)));
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
+const child_process_1 = require("child_process");
 const path_1 = require("path");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
@@ -20,23 +21,29 @@ function main(options) {
         const dtPath = options.definitelyTypedPath;
         if (yield fsp.exists(options.definitelyTypedPath)) {
             console.log(`Fetching changes from ${settings_1.sourceBranch}`);
-            const actualBranch = yield util_1.execAndThrowErrors(`git rev-parse --abbrev-ref HEAD`, dtPath);
+            const actualBranch = exec(`git rev-parse --abbrev-ref HEAD`, dtPath);
             if (actualBranch !== settings_1.sourceBranch) {
                 throw new Error(`Please checkout branch '${settings_1.sourceBranch}`);
             }
-            const diff = yield util_1.execAndThrowErrors(`git diff --name-only`, dtPath);
+            const diff = exec(`git diff --name-only`, dtPath);
             if (diff) {
                 throw new Error(`'git diff' should be empty. Following files changed:\n${diff}`);
             }
-            yield util_1.execAndThrowErrors(`git pull`, dtPath);
+            exec(`git pull`, dtPath);
         }
         else {
             console.log(`Cloning ${settings_1.sourceRepository} to ${dtPath}`);
-            yield util_1.execAndThrowErrors(`git clone ${settings_1.sourceRepository}`, path_1.dirname(dtPath));
-            yield util_1.execAndThrowErrors(`git checkout ${settings_1.sourceBranch}`, dtPath);
+            exec(`git clone ${settings_1.sourceRepository}`, path_1.dirname(dtPath));
+            exec(`git checkout ${settings_1.sourceBranch}`, dtPath);
         }
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
+function exec(cmd, cwd) {
+    console.log(`Exec${cwd ? " at " + cwd : ""}: ${cmd}`);
+    const result = child_process_1.execSync(cmd, { cwd, encoding: "utf8" }).trim();
+    console.log(result);
+    return result.trim();
+}
 //# sourceMappingURL=get-definitely-typed.js.map

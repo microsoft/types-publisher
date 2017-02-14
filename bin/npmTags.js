@@ -25,13 +25,13 @@ function tagAll(dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const versions = yield versions_1.default.load();
         const client = yield npm_client_1.default.create();
-        for (const pkg of yield packages_1.AllPackages.readTypings()) {
+        yield util_1.nAtATime(10, yield packages_1.AllPackages.readTypings(), (pkg) => __awaiter(this, void 0, void 0, function* () {
             // Only update tags for the latest version of the package.
             if (pkg.isLatest) {
                 const version = versions.getVersion(pkg).versionString;
                 yield addNpmTagsForPackage(pkg, versions, version, client, console.log, dry);
             }
-        }
+        }));
         // Don't tag notNeeded packages
     });
 }
