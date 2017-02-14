@@ -6,6 +6,7 @@
 	"rules": {
 		// Custom rules
 		"dt-header": true,
+		"expect-type": true,
 		"export-just-namespace": true,
 		"forbidden-types": true,
 		"no-dead-reference": true,
