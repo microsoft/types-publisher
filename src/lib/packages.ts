@@ -448,4 +448,7 @@ export namespace TypeScriptVersion {
 		export const v2_1 = "ts2.1";
 		export const v2_2 = "ts2.2";
 	}
+
+	export type VersionTag = "ts2.0" | "ts2.1" | "ts2.2";
+	export const allVersionTags: VersionTag[] = [tags.v2_0, tags.v2_1, tags.v2_2];
 }
