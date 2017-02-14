@@ -74,6 +74,7 @@ export default class BlobWriter {
 				contentType: "application/json; charset=utf-8"
 			}
 		};
+		// Remove `undefined!` once https://github.com/Azure/azure-storage-node/pull/267 is in
 		return streamDone(gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(azureContainer, blobName, options, undefined!)));
 	}
 }
