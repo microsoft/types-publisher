@@ -120,8 +120,12 @@ function gitDiff(log, options) {
         }
         // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
         // Source: https://git-scm.com/docs/git-diff
-        const diff = yield run(`git diff ${settings_1.sourceBranch}...HEAD --name-only`);
-        return diff.trim().split("\n");
+        let diff = (yield run(`git diff ${settings_1.sourceBranch}...HEAD --name-only`)).trim();
+        if (diff === "") {
+            // We are probably already on master, so compare to the last commit.
+            diff = (yield run(`git diff ${settings_1.sourceBranch}~1...HEAD --name-only`)).trim();
+        }
+        return diff.split("\n");
         function run(cmd) {
             return __awaiter(this, void 0, void 0, function* () {
                 log("Running: " + cmd);

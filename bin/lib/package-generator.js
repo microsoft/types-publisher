@@ -26,7 +26,7 @@ function generatePackage(typing, packages, versions, options) {
         const outputPath = typing.outputDirectory;
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
-        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing.id), packages, options);
+        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages, options);
         const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
@@ -64,7 +64,7 @@ function generateNotNeededPackage(pkg, versions) {
         const outputPath = pkg.outputDirectory;
         yield clearOutputPath(outputPath, log);
         log("Generate package.json and README.md");
-        const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg.id));
+        const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
         const readme = pkg.readme();
         log("Write metadata files to disk");
         yield writeOutputFile("package.json", packageJson);
@@ -107,8 +107,7 @@ function createPackageJSON(typing, version, packages, options) {
             // homepage,
             // bugs,
             license: "MIT",
-            author: typing.authors,
-            // contributors
+            contributors: typing.contributors,
             main: "",
             repository: {
                 type: "git",
@@ -178,11 +177,10 @@ function createReadme(typing) {
     lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");
-    if (typing.authors) {
-        lines.push("# Credits");
-        lines.push(`These definitions were written by ${typing.authors}.`);
-        lines.push("");
-    }
+    lines.push("# Credits");
+    const contributors = typing.contributors.map(({ name, url }) => `${name} <${url}>`).join(", ");
+    lines.push(`These definitions were written by ${contributors}.`);
+    lines.push("");
     return lines.join("\r\n");
 }
 //# sourceMappingURL=package-generator.js.map

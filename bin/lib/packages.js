@@ -83,10 +83,7 @@ class AllPackages {
     }
     tryGetTypingsData({ name, majorVersion }) {
         const versions = this.data.get(name);
-        if (!versions) {
-            return undefined;
-        }
-        return versions.get(majorVersion);
+        return versions && versions.tryGet(majorVersion);
     }
     allPackages() {
         return this.allTypings().concat(this.allNotNeeded());
@@ -168,6 +165,7 @@ class NotNeededPackage extends PackageBase {
         this.version = versions_1.Semver.parse(raw.asOfVersion, /*isPrerelease*/ false);
     }
     get major() { return this.version.major; }
+    get minor() { return this.version.minor; }
     // A not-needed package has no other versions. (TODO: allow that?)
     get isLatest() { return true; }
     get isPrerelease() { return false; }
@@ -197,15 +195,21 @@ class TypingsVersions {
     get(majorVersion) {
         return majorVersion === "*" ? this.getLatest() : this.getExact(majorVersion);
     }
+    tryGet(majorVersion) {
+        return majorVersion === "*" ? this.getLatest() : this.tryGetExact(majorVersion);
+    }
     getLatest() {
         return this.getExact(this.latest);
     }
     getExact(majorVersion) {
-        const data = this.map.get(majorVersion);
+        const data = this.tryGetExact(majorVersion);
         if (!data) {
             throw new Error(`Could not find version ${majorVersion}`);
         }
         return data;
+    }
+    tryGetExact(majorVersion) {
+        return this.map.get(majorVersion);
     }
 }
 class TypingsData extends PackageBase {
@@ -214,7 +218,7 @@ class TypingsData extends PackageBase {
         this.data = data;
         this.isLatest = isLatest;
     }
-    get authors() { return this.data.authors; }
+    get contributors() { return this.data.contributors; }
     get major() { return this.data.libraryMajorVersion; }
     get minor() { return this.data.libraryMinorVersion; }
     get majorMinor() { return { major: this.major, minor: this.minor }; }
@@ -272,7 +276,9 @@ var TypeScriptVersion;
 (function (TypeScriptVersion) {
     TypeScriptVersion.All = ["2.0", "2.1"];
     TypeScriptVersion.Lowest = "2.0";
+    /** Latest version that may be specified in a `// TypeScript Version:` header. */
     TypeScriptVersion.Latest = "2.1";
+    /** True if a package with the given typescript version should be published as prerelease. */
     function isPrerelease(_version) {
         return false;
     }
@@ -283,11 +289,9 @@ var TypeScriptVersion;
             case "2.0":
                 // A 2.0-compatible package is assumed compatible with TypeScript 2.1
                 // We want the "2.1" tag to always exist.
-                return [tags.latest, tags.v2_0, tags.v2_1];
+                return [tags.latest, tags.v2_0, tags.v2_1, tags.v2_2, tags.v2_3];
             case "2.1":
-                // Eventually this will change to include "latest", too.
-                // And obviously we shouldn't advance the "2.0" tag if the package is now 2.1-specific.
-                return [tags.latest, tags.v2_1];
+                return [tags.latest, tags.v2_1, tags.v2_2, tags.v2_3];
         }
     }
     TypeScriptVersion.tagsToUpdate = tagsToUpdate;
@@ -296,6 +300,8 @@ var TypeScriptVersion;
         tags.latest = "latest";
         tags.v2_0 = "ts2.0";
         tags.v2_1 = "ts2.1";
+        tags.v2_2 = "ts2.2";
+        tags.v2_3 = "ts2.3";
     })(tags || (tags = {}));
 })(TypeScriptVersion = exports.TypeScriptVersion || (exports.TypeScriptVersion = {}));
 //# sourceMappingURL=packages.js.map

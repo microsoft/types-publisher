@@ -28,7 +28,7 @@ function tagAll(dry) {
         for (const pkg of yield packages_1.AllPackages.readTypings()) {
             // Only update tags for the latest version of the package.
             if (pkg.isLatest) {
-                const version = versions.getVersion(pkg.id).versionString;
+                const version = versions.getVersion(pkg).versionString;
                 yield addNpmTagsForPackage(pkg, versions, version, client, console.log, dry);
             }
         }
@@ -45,7 +45,7 @@ function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
             }
         }
         // Prerelease packages should never be tagged latest
-        const latestNonPrerelease = versions.latestNonPrerelease(pkg.id);
+        const latestNonPrerelease = versions.latestNonPrerelease(pkg);
         if (latestNonPrerelease) {
             log(`	but tag ${pkg.fullNpmName}@${latestNonPrerelease.versionString} as "latest"`);
             if (!dry) {

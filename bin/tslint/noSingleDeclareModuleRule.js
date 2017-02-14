@@ -1,11 +1,10 @@
 "use strict";
 const Lint = require("tslint");
 const ts = require("typescript");
-const ts_1 = require("../util/ts");
 class Rule extends Lint.Rules.AbstractRule {
     apply(sourceFile) {
         // If it's an external module, any module declarations inside are augmentations.
-        if (ts_1.isExternalModule(sourceFile)) {
+        if (ts.isExternalModule(sourceFile)) {
             return [];
         }
         if (hasSoleModuleDeclaration(sourceFile)) {

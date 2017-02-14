@@ -27,17 +27,14 @@ function isParseError(x) {
 /** @param strict If true, we allow fewer things to be parsed. Turned on by linting. */
 function parseHeader(text, strict) {
     const res = headerParser(strict).parse(text);
-    if (res.status) {
-        const { label: { name, major, minor }, projects, authors, typeScriptVersion } = res.value;
-        return { libraryName: name, libraryMajorVersion: major, libraryMinorVersion: minor, projects, authors, typeScriptVersion };
-    }
-    // parsimmon types are wrong: expected is actually string[]
-    return { index: res.index.offset, line: res.index.line, column: res.index.column, expected: res.expected };
+    return res.status ? res.value : { index: res.index.offset, line: res.index.line, column: res.index.column, expected: res.expected };
 }
 function headerParser(strict) {
-    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), authorsParser(strict), parseDefinitions, parseTypeScriptVersion, pm.all, // Don't care about the rest of the file
+    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), contributorsParser(strict), parseDefinitions, parseTypeScriptVersion, pm.all, // Don't care about the rest of the file
     // tslint:disable-next-line:variable-name
-    (_str, label, _project, projects, _defsBy, authors, _definitions, typeScriptVersion) => ({ label, projects, authors, typeScriptVersion }));
+    (_str, label, _project, projects, _defsBy, contributors, _definitions, typeScriptVersion) => ({
+        libraryName: label.name, libraryMajorVersion: label.major, libraryMinorVersion: label.minor, projects, contributors, typeScriptVersion
+    }));
 }
 /*
 Allow any of the following:
@@ -54,14 +51,14 @@ Use `\s\s+` to ensure at least 2 spaces, to  disambiguate from the next line bei
 */
 const separator = pm.regexp(/(, )|(,?\r?\n\/\/\s\s+)/);
 const projectParser = pm.sepBy1(pm.regexp(/[^,\r\n]+/), separator);
-function authorsParser(strict) {
-    const author = pm.seqMap(pm.regexp(/([^<]+) /, 1), pm.regexp(/<([^>]+)>/, 1), (name, url) => ({ name, url }));
-    const authors = pm.sepBy1(author, separator);
+function contributorsParser(strict) {
+    const contributor = pm.seqMap(pm.regexp(/([^<]+) /, 1), pm.regexp(/<([^>]+)>/, 1), (name, url) => ({ name, url }));
+    const contributors = pm.sepBy1(contributor, separator);
     if (!strict) {
         // Allow trailing whitespace.
-        return pm.seqMap(authors, pm.regexp(/ */), a => a);
+        return pm.seqMap(contributors, pm.regexp(/ */), a => a);
     }
-    return authors;
+    return contributors;
 }
 ;
 // TODO: Should we do something with the URL?

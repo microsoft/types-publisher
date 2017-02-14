@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const assert = require("assert");
 const path = require("path");
 const ts = require("typescript");
-const ts_1 = require("../util/ts");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
 function getModuleInfo(packageName, directory, allEntryFilenames, log) {
@@ -23,7 +22,7 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
         const globals = new Set();
         const all = yield allReferencedFiles(directory, allEntryFilenames, log);
         for (const src of all.values()) {
-            const isExternal = ts_1.isExternalModule(src);
+            const isExternal = ts.isExternalModule(src);
             // A file is a proper module if it is an external module *and* it has at least one export.
             // A module with only imports is not a proper module; it likely just augments some other module.
             let hasAnyExport = false;
@@ -63,7 +62,7 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                             const nameKind = node.name.kind;
                             if (nameKind === ts.SyntaxKind.StringLiteral) {
                                 // If we're in an external module, this is an augmentation, not a declaration.
-                                if (!ts_1.isExternalModule(src)) {
+                                if (!ts.isExternalModule(src)) {
                                     const name = util_1.stripQuotes(node.name.getText());
                                     noWindowsSlashes(packageName, name);
                                     declaredModules.push(name);

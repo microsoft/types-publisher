@@ -82,7 +82,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         // There is a *single* main file, containing metadata comments.
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
-        const { authors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(yield readFile(directory, mainFilename), packageName);
+        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(yield readFile(directory, mainFilename), packageName);
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, directory, dependenciesSet, oldMajorVersion);
@@ -98,7 +98,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         }
         const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
         const data = {
-            authors: authors.map(a => `${a.name} <${a.url}>`).join(", "),
+            contributors,
             dependencies,
             pathMappings,
             libraryMajorVersion,

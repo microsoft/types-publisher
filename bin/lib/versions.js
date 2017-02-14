@@ -27,7 +27,6 @@ class Versions {
                 const majorVersions = raw[packageName];
                 for (const majorVersion in majorVersions) {
                     const info = majorVersions[majorVersion];
-                    info.version = Semver.fromRaw(info.version);
                     if (info.latestNonPrerelease) {
                         info.latestNonPrerelease = Semver.fromRaw(info.latestNonPrerelease);
                     }
@@ -61,9 +60,8 @@ class Versions {
                         log(`Changed: ${pkg.desc}`);
                         changes.push(pkg.id);
                         version = version.update(pkg.majorMinor, isPrerelease);
-                        contentHash = pkg.contentHash;
                     }
-                    addToData(pkg.name, version, latestNonPrerelease, contentHash, deprecated);
+                    addToData(pkg.name, version, latestNonPrerelease);
                 });
             }
             yield util_1.nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor, options });
@@ -71,13 +69,13 @@ class Versions {
                 return __awaiter(this, void 0, void 0, function* () {
                     const isPrerelease = false; // Not-needed packages are never prerelease.
                     // tslint:disable-next-line:prefer-const
-                    let { version, contentHash, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, isPrerelease)) || defaultVersionInfo(isPrerelease);
+                    let { version, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, isPrerelease)) || defaultVersionInfo(isPrerelease);
                     if (!deprecated) {
                         log(`Now deprecated: ${pkg.name}`);
                         changes.push({ name: pkg.name, majorVersion: version.major });
                         version = pkg.version;
                     }
-                    addToData(pkg.name, version, /*latestNonPrerelease*/ undefined, contentHash, deprecated);
+                    addToData(pkg.name, version);
                 });
             }
             function flavor(pkg) { return pkg.desc; }
@@ -86,28 +84,24 @@ class Versions {
             function defaultVersionInfo(isPrerelease) {
                 return { version: new Semver(-1, -1, -1, isPrerelease), latestNonPrerelease: undefined, contentHash: "", deprecated: false };
             }
-            function addToData(packageName, version, latestNonPrerelease, contentHash, deprecated) {
-                const info = { version, contentHash, deprecated };
-                if (latestNonPrerelease) {
-                    info.latestNonPrerelease = latestNonPrerelease;
-                }
+            function addToData(packageName, { major, patch }, latestNonPrerelease) {
                 let majorVersions = data[packageName];
                 if (!majorVersions) {
                     majorVersions = data[packageName] = {};
                 }
-                assert(!majorVersions[version.major]);
-                majorVersions[version.major] = info;
+                assert(!majorVersions[major]);
+                majorVersions[major] = latestNonPrerelease ? { patch, latestNonPrerelease } : { patch };
             }
         });
     }
     save() {
         return common_1.writeDataFile(versionsFilename, this.data);
     }
-    getVersion(id) {
-        return this.info(id).version;
+    getVersion(pkg) {
+        return new Semver(pkg.major, pkg.minor, this.info(pkg.id).patch, pkg.isPrerelease);
     }
-    latestNonPrerelease(id) {
-        return this.info(id).latestNonPrerelease;
+    latestNonPrerelease(pkg) {
+        return this.info(pkg.id).latestNonPrerelease;
     }
     info({ name, majorVersion }) {
         const info = this.data[name][majorVersion];

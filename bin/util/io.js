@@ -34,7 +34,7 @@ function writeFile(path, content) {
 }
 exports.writeFile = writeFile;
 function writeJson(path, content, formatted = true) {
-    return fsp.writeJson(path, content, formatted ? { spaces: 4 } : undefined);
+    return fsp.writeJson(path, content, { spaces: formatted ? 4 : 0 });
 }
 exports.writeJson = writeJson;
 function streamOfString(text) {

@@ -62,7 +62,8 @@ function checkPathMappings(allPackages) {
         for (const dependency of allPackages.dependencyTypings(pkg)) {
             for (const [name, dependencyMappingVersion] of dependency.pathMappings) {
                 if (pathMappings.get(name) !== dependencyMappingVersion) {
-                    throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${name} v${dependencyMappingVersion}. ${pkg.desc} must have the same path mappings as its dependencies.`);
+                    throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${name} v${dependencyMappingVersion}. ` +
+                        `${pkg.desc} must have the same path mappings as its dependencies.`);
                 }
                 unusedPathMappings.delete(name);
             }

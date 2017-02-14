@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const fsp = require("fs-promise");
-const nodegit_1 = require("nodegit");
+const path_1 = require("path");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const util_1 = require("./util/util");
@@ -17,46 +17,26 @@ if (!module.parent) {
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const repo = yield getRepo(options);
-        yield pull(repo, console.log);
-        yield checkStatus(repo);
+        const dtPath = options.definitelyTypedPath;
+        if (yield fsp.exists(options.definitelyTypedPath)) {
+            console.log(`Fetching changes from ${settings_1.sourceBranch}`);
+            const actualBranch = yield util_1.execAndThrowErrors(`git rev-parse --abbrev-ref HEAD`, dtPath);
+            if (actualBranch !== settings_1.sourceBranch) {
+                throw new Error(`Please checkout branch '${settings_1.sourceBranch}`);
+            }
+            const diff = yield util_1.execAndThrowErrors(`git diff --name-only`, dtPath);
+            if (diff) {
+                throw new Error(`'git diff' should be empty. Following files changed:\n${diff}`);
+            }
+            yield util_1.execAndThrowErrors(`git pull`, dtPath);
+        }
+        else {
+            console.log(`Cloning ${settings_1.sourceRepository} to ${dtPath}`);
+            yield util_1.execAndThrowErrors(`git clone ${settings_1.sourceRepository}`, path_1.dirname(dtPath));
+            yield util_1.execAndThrowErrors(`git checkout ${settings_1.sourceBranch}`, dtPath);
+        }
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-function getRepo(options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (yield fsp.exists(options.definitelyTypedPath)) {
-            const repo = yield nodegit_1.Repository.open(options.definitelyTypedPath);
-            const currentBranch = (yield repo.getCurrentBranch()).name();
-            const correctBranch = `refs/heads/${settings_1.sourceBranch}`;
-            if (currentBranch !== correctBranch) {
-                throw new Error(`Need to checkout ${correctBranch}, currently on ${currentBranch}`);
-            }
-            return repo;
-        }
-        else {
-            const repo = yield nodegit_1.Clone(settings_1.sourceRepository, options.definitelyTypedPath);
-            yield repo.checkoutBranch(settings_1.sourceBranch);
-            return repo;
-        }
-    });
-}
-function pull(repo, log) {
-    return __awaiter(this, void 0, void 0, function* () {
-        log(`Fetching changes from ${settings_1.sourceBranch}`);
-        yield repo.fetchAll();
-        log(`Merging changes`);
-        yield repo.mergeBranches(settings_1.sourceBranch, `origin/${settings_1.sourceBranch}`);
-    });
-}
-function checkStatus(repo) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const statuses = yield repo.getStatus();
-        const changedFiles = statuses.map(s => s.path()).filter(path => !nodegit_1.Ignore.pathIsIgnored(repo, path));
-        if (changedFiles.length) {
-            throw new Error(`The following files are dirty: ${changedFiles}`);
-        }
-    });
-}
 //# sourceMappingURL=get-definitely-typed.js.map

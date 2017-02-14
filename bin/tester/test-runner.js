@@ -165,6 +165,9 @@ function checkTsconfig(tsconfig) {
             throw new Error(`Expected compilerOptions[${JSON.stringify(key)}] === ${value}`);
         }
     }
+    if (!("lib" in options)) {
+        throw new Error('Must specify "lib", usually to `"lib": ["es6"]` or `"lib": ["es6", "dom"]`.');
+    }
     for (const key of ["noImplicitAny", "noImplicitThis", "strictNullChecks"]) {
         if (!(key in options)) {
             throw new Error(`Expected \`"${key}": true\` or \`"${key}": false\`.`);
