@@ -22,17 +22,35 @@ export class Rule extends Lint.Rules.TypedRule {
 	static FAILURE_STRING_ASSERTION_MISSING_NODE = "Can not match a node to this assertion.";
 
 	applyWithProgram(sourceFile: ts.SourceFile, langSvc: ts.LanguageService): Lint.RuleFailure[] {
-		// Perf: skip this file if it has no assertions. Definition files cannot have assertions.
-		if (sourceFile.isDeclarationFile || !sourceFile.text.includes("$ExpectType")) {
-			return [];
-		}
 		return this.applyWithWalker(new Walker(sourceFile, this.getOptions(), langSvc.getProgram()));
 	}
 }
 
 class Walker extends Lint.ProgramAwareRuleWalker {
-	visitSourceFile(sourceFile: ts.SourceFile) {
-		this.addFailures(sourceFile, this.parseExpectedTypes(sourceFile));
+	visitSourceFile(sourceFile: ts.SourceFile): void {
+		//this.addDiagnosticFailures(sourceFile);
+		this.addExpectTypeFailures(sourceFile);
+	}
+
+	//not necessary -- tslint does that for us.
+	/*private addDiagnosticFailures(sourceFile: ts.SourceFile): void {
+		const diagnostics = ts.getPreEmitDiagnostics(this.getProgram(), sourceFile);
+		// Don't care about emit diagnostics
+		for (const d of diagnostics) {
+			if (d.file === sourceFile) {
+				this.addFailureAt(d.start, d.length, ts.flattenDiagnosticMessageText(d.messageText, "\n"));
+			}
+			else {
+				this.addFailureAt(0, 0, `${d.file}: ${d.messageText}`);
+			}
+		}
+	}*/
+
+	private addExpectTypeFailures(sourceFile: ts.SourceFile): void {
+		// Perf: skip this file if it has no assertions. Definition files cannot have assertions.
+		if (!sourceFile.isDeclarationFile && sourceFile.text.includes("$ExpectType")) {
+			this.addFailures(sourceFile, this.parseExpectedTypes(sourceFile));
+		}
 	}
 
 	// Returns a map from a line number to the expected type at that line.

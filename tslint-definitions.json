@@ -11,11 +11,15 @@
 		"jsdoc-format": false,
 		"max-line-length": false, // TODO
 		"no-consecutive-blank-lines": false,
-		"no-reference": false, // TODO: forbid "../" reference, but not "./" reference
+		"no-empty": false,
+		"no-reference": false, // But see src/tslint/noParentReferencesRule.ts
 		"no-shadowed-variable": false,
 		"no-string-literal": false,
+		"no-unused-expression": false,
 		"no-var-keyword": false,
+		"object-literal-shorthand": false, // TODO
 		"quotemark": false,
+		"space-before-function-paren": false, // TODO
 		"variable-name": false,
 		"whitespace": [
 			"check-branch",

@@ -87,13 +87,15 @@ export default async function main(options: Options, nProcesses?: number, regexp
 			console.error(err.message);
 		}
 
+		console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.name).join(", ")}`);
+
 		throw new Error("There was a test failure.");
 	}
 }
 
 async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options): Promise<TesterError | undefined> {
 	const cwd = pkg.directoryPath(options);
-	return (await tsConfig()) || (await packageJson()) || (await tsc()) || (await tslint());
+	return (await tsConfig()) || (await packageJson()) || /*(await tsc()) ||*/ (await tslint());
 
 	async function tsConfig(): Promise<TesterError | undefined> {
 		const tsconfigPath = joinPaths(cwd, "tsconfig.json");
@@ -103,7 +105,7 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 	async function packageJson(): Promise<TesterError | undefined> {
 		return catchErrors(log, () => checkPackageJson(pkg, options));
 	}
-	async function tsc(): Promise<TesterError | undefined> {
+	/*async function tsc(): Promise<TesterError | undefined> {
 		const error = await runCommand(log, cwd, pathToTsc(pkg.typeScriptVersion));
 		if (error && pkg.typeScriptVersion !== TypeScriptVersion.Latest) {
 			const newError = await runCommand(log, cwd, pathToTsc(TypeScriptVersion.Latest));
@@ -115,10 +117,12 @@ async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options)
 			}
 		}
 		return error;
-	}
+	}*/
+	//TODO: tslint must use a particular TS install...
 	async function tslint(): Promise<TesterError | undefined> {
+		const tslintOptions = "--format stylish --project tsconfig.json --type-check";
 		return (await fsp.exists(joinPaths(cwd, "tslint.json")))
-			? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
+			? runCommand(log, cwd, tslintPath, tslintOptions, ...pkg.files, ...pkg.testFiles) //does this include test files????
 			: undefined;
 	}
 }
@@ -141,15 +145,19 @@ interface TesterError {
 async function runCommand(log: LoggerWithErrors, cwd: string | undefined, cmd: string, ...args: string[]): Promise<TesterError | undefined> {
 	const nodeCmd = `node ${cmd} ${args.join(" ")}`;
 	log.info(`Running: ${nodeCmd}`);
-	const { error, stdout, stderr } = await exec(nodeCmd, cwd);
-	if (stdout) {
-		log.info(stdout);
-	}
-	if (stderr) {
-		log.error(stderr);
-	}
+	try {
+		const { error, stdout, stderr } = await exec(nodeCmd, cwd);
+		if (stdout) {
+			log.info(stdout);
+		}
+		if (stderr) {
+			log.error(stderr);
+		}
 
-	return error && { message: `${error.message}\n${stdout}\n${stderr}` };
+		return error && { message: `${error.message}\n${stdout}\n${stderr}` };
+	} catch (e) {
+		return e;
+	}
 }
 
 function checkTsconfig(tsconfig: { compilerOptions: ts.CompilerOptions }) {
