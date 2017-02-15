@@ -10,6 +10,7 @@ import { done, exec, execAndThrowErrors, joinPaths, nAtATime, numberOfOsProcesse
 
 import getAffectedPackages, { allDependencies } from "./get-affected-packages";
 import { installAllTypeScriptVersions, pathToTsc } from "./ts-installer";
+import nulint from "./nulint";
 
 const tslintPath = joinPaths(require.resolve("tslint"), "../tslint-cli.js");
 

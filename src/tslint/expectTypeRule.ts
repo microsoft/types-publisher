@@ -1,3 +1,4 @@
+import assert = require("assert");
 import * as Lint from "tslint";
 import * as ts from "typescript";
 
@@ -20,6 +21,7 @@ export class Rule extends Lint.Rules.TypedRule {
 
 	static FAILURE_STRING_DUPLICATE_ASSERTION = "This line has 2 $ExpectType assertions.";
 	static FAILURE_STRING_ASSERTION_MISSING_NODE = "Can not match a node to this assertion.";
+	static FAILURE_STRING_EXPECTED_ERROR = "Expected an error on this line, but found none.";
 
 	applyWithProgram(sourceFile: ts.SourceFile, langSvc: ts.LanguageService): Lint.RuleFailure[] {
 		return this.applyWithWalker(new Walker(sourceFile, this.getOptions(), langSvc.getProgram()));
@@ -28,54 +30,67 @@ export class Rule extends Lint.Rules.TypedRule {
 
 class Walker extends Lint.ProgramAwareRuleWalker {
 	visitSourceFile(sourceFile: ts.SourceFile): void {
-		//this.addDiagnosticFailures(sourceFile);
-		this.addExpectTypeFailures(sourceFile);
+		// Don't care about emit errors.
+		const program = this.getProgram();
+		sourceFile = program.getSourceFile(sourceFile.fileName); // https://github.com/palantir/tslint/issues/1969
+		const diagnostics = ts.getPreEmitDiagnostics(this.getProgram(), sourceFile);
+
+		if (sourceFile.isDeclarationFile || !sourceFile.text.includes("$ExpectType")) {
+			// Normal file.
+			for (const diagnostic of diagnostics) {
+				this.addDiagnosticFailure(sourceFile, diagnostic);
+			}
+		} else {
+			this.failAtEverything(sourceFile, diagnostics);
+		}
 	}
 
-	//not necessary -- tslint does that for us.
-	/*private addDiagnosticFailures(sourceFile: ts.SourceFile): void {
-		const diagnostics = ts.getPreEmitDiagnostics(this.getProgram(), sourceFile);
-		// Don't care about emit diagnostics
-		for (const d of diagnostics) {
-			if (d.file === sourceFile) {
-				this.addFailureAt(d.start, d.length, ts.flattenDiagnosticMessageText(d.messageText, "\n"));
-			}
-			else {
-				this.addFailureAt(0, 0, `${d.file}: ${d.messageText}`);
+	private addDiagnosticFailure(sourceFile: ts.SourceFile, diagnostic: ts.Diagnostic) {
+		if (diagnostic.file === sourceFile) {
+			this.addFailureAt(diagnostic.start, diagnostic.length, ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+		}
+		else {
+			this.addFailureAt(0, 0, `${diagnostic.file}: ${diagnostic.messageText}`);
+		}
+	}
+
+	private failAtEverything(sourceFile: ts.SourceFile, diagnostics: ts.Diagnostic[]): void {
+		const { errors, types }= this.parseAssertions(sourceFile);
+		this.handleExpectError(sourceFile, errors, diagnostics);
+		this.addExpectTypeFailures(sourceFile, types);
+	}
+
+	private handleExpectError(sourceFile: ts.SourceFile, errorLines: Set<number>, diagnostics: ts.Diagnostic[]): void {
+		for (const diagnostic of diagnostics) {
+			const line = this.lineOfPosition(diagnostic.start);
+			if (!errorLines.delete(line)) {
+				this.addDiagnosticFailure(sourceFile, diagnostic);
 			}
 		}
-	}*/
 
-	private addExpectTypeFailures(sourceFile: ts.SourceFile): void {
-		// Perf: skip this file if it has no assertions. Definition files cannot have assertions.
-		if (!sourceFile.isDeclarationFile && sourceFile.text.includes("$ExpectType")) {
-			this.addFailures(sourceFile, this.parseExpectedTypes(sourceFile));
+		for (const line of errorLines) {
+			this.addFailureAtLine(line, Rule.FAILURE_STRING_EXPECTED_ERROR);
 		}
 	}
 
 	// Returns a map from a line number to the expected type at that line.
-	private parseExpectedTypes(source: ts.SourceFile): Map<number, string> {
+	private parseAssertions(source: ts.SourceFile): { errors: Set<number>, types: Map<number, string> } {
 		const scanner = ts.createScanner(ts.ScriptTarget.Latest, /*skipTrivia*/false, ts.LanguageVariant.Standard, source.text);
-		const assertions = new Map<number, string>();
+		const errors = new Set<number>();
+		const types = new Map<number, string>();
 
 		let prevTokenPos = -1;
 		const lineStarts = source.getLineStarts();
 		let curLine = 0;
 
-		const addAssertion = (expectedType: string, pos: number): void => {
+		const getLine = (pos: number) => {
 			//advance curLine to be the line preceding 'pos'
 			while (lineStarts[curLine + 1] <= pos) {
 				curLine++;
 			}
-
 			const isFirstTokenOnLine = lineStarts[curLine] > prevTokenPos;
 			// If this is the first token on the line, it applies to the next line. Otherwise, it applies to the text to the left of it.
-			const line = isFirstTokenOnLine ? curLine + 1 : curLine;
-			//assertions.push({ expectedType, line });
-			if (assertions.has(line)) {
-				this.addFailureAtLine(line, Rule.FAILURE_STRING_DUPLICATE_ASSERTION);
-			}
-			assertions.set(line, expectedType);
+			return isFirstTokenOnLine ? curLine + 1 : curLine;
 		}
 
 		loop: while (true) {
@@ -90,9 +105,23 @@ class Walker extends Lint.ProgramAwareRuleWalker {
 
 				case ts.SyntaxKind.SingleLineCommentTrivia:
 					const commentText = scanner.getTokenText();
-					const match = commentText.match(/^\/\/ \$ExpectType (.*)/);
+					const match = commentText.match(/^\/\/ \$Expect((Type (.*))|Error)/);
 					if (match) {
-						addAssertion(match[1], pos);
+						const line = getLine(pos);
+						console.log(match[1]);
+						if (match[1] === "Error") {
+							if (errors.has(line)) {
+								this.addFailureAtLine(line, Rule.FAILURE_STRING_DUPLICATE_ASSERTION);
+							}
+							errors.add(line);
+						} else {
+							assert(match[2].startsWith("Type")); //kill
+							const expectedType = match[3];
+							if (types.has(line)) {
+								this.addFailureAtLine(line, Rule.FAILURE_STRING_DUPLICATE_ASSERTION);
+							}
+							types.set(line, expectedType);
+						}
 					}
 					break;
 
@@ -102,16 +131,15 @@ class Walker extends Lint.ProgramAwareRuleWalker {
 			}
 		}
 
-		return assertions;
+		return { errors, types };
 	}
 
-	private addFailures(source: ts.SourceFile, assertions: Map<number, string>): void {
+	private addExpectTypeFailures(source: ts.SourceFile, assertions: Map<number, string>): void {
 		const checker = this.getTypeChecker();
 
 		// Match assertions to the first node that appears on the line they apply to.
 		const iterate = (node: ts.Node): void => {
-			const pos = node.getStart();
-			const { line } = source.getLineAndCharacterOfPosition(pos);
+			const line = this.lineOfPosition(node.getStart());
 			const expectedType = assertions.get(line);
 			if (expectedType !== undefined) {
 				// https://github.com/Microsoft/TypeScript/issues/14077
@@ -135,6 +163,10 @@ class Walker extends Lint.ProgramAwareRuleWalker {
 		for (const line of assertions.keys()) {
 			this.addFailureAtLine(line, Rule.FAILURE_STRING_ASSERTION_MISSING_NODE);
 		}
+	}
+
+	private lineOfPosition(pos: number): number {
+		return this.getSourceFile().getLineAndCharacterOfPosition(pos).line;
 	}
 
 	private addFailureAtLine(line: number, failure: string) {

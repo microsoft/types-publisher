@@ -1,3 +1,4 @@
+import { dirname, basename } from "path";
 import * as Lint from "tslint";
 import * as ts from "typescript";
 
@@ -39,6 +40,6 @@ class Walker extends Lint.RuleWalker {
 }
 
 function isMainFile(fileName: string) {
-	// Linter must be run with cwd of the package. We want `index.d.ts` but not `submodule/index.d.ts` to match.
-	return fileName === "index.d.ts";
+	// Linter may be run with cwd of the package. We want `index.d.ts` but not `submodule/index.d.ts` to match.
+	return fileName === "index.d.ts" || basename(fileName) === "index.d.ts" && basename(dirname(dirname(fileName))) === "DefinitelyTyped";
 }
