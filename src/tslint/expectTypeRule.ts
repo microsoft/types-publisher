@@ -108,7 +108,6 @@ class Walker extends Lint.ProgramAwareRuleWalker {
 					const match = commentText.match(/^\/\/ \$Expect((Type (.*))|Error)/);
 					if (match) {
 						const line = getLine(pos);
-						console.log(match[1]);
 						if (match[1] === "Error") {
 							if (errors.has(line)) {
 								this.addFailureAtLine(line, Rule.FAILURE_STRING_DUPLICATE_ASSERTION);

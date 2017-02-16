@@ -15,9 +15,17 @@ if (!module.parent) {
 //Difference with tslint:
 //* We don't crash on compile error.
 //* We don't skip declaration files.
-async function main(name: string, options: Options) {
-    const pkg = await AllPackages.readSingle(name);
-    const program = Linter.createProgram(pkg.filePath("tsconfig.json", options)); //optional project directory?
+async function main(name: string, options: Options): Promise<void> {
+    const pkg = await AllPackages.readSingle(name); //kill
+    await f(pkg.directoryPath(options));
+}
+
+async function f(dirPath: string): Promise<void> {
+    function pathTo(filename: string) {
+        return joinPaths(dirPath, filename);
+    }
+
+    const program = Linter.createProgram(pathTo("tsconfig.json")); //optional project directory?
 
     const lintOptions: ILinterOptions = {
         fix: false,
@@ -25,13 +33,12 @@ async function main(name: string, options: Options) {
         rulesDirectory: joinPaths(__dirname, "..", "tslint")
     }
     const linter = new Linter(lintOptions, program);
-    const config = Lint.Configuration.findConfiguration(pkg.filePath("tslint.json", options), "").results; //Second param doesn't matter, since config path is provided.
+    const config = Lint.Configuration.findConfiguration(pathTo("tslint.json"), "").results; //Second param doesn't matter, since config path is provided.
     //tslint's `getFileNames` refuses to lint declaration files.
 
-    for (const file of pkg.files.concat(pkg.testFiles)) {
-        const f = pkg.filePath(file, options)
-        const contents = await fsp.readFile(f, "utf-8");
-        linter.lint(f, contents, config);
+    for (const filename of program.getRootFileNames()) {
+        const contents = await fsp.readFile(filename, "utf-8");
+        linter.lint(filename, contents, config);
     }
 
     const result = linter.getResult();
