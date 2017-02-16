@@ -2,6 +2,12 @@
   "name": "types-publisher",
   "version": "0.0.0",
   "dependencies": {
+    "@types/charm": {
+      "version": "1.0.0",
+      "from": "@types/charm@>=1.0.0 <2.0.0",
+      "resolved": "https://registry.npmjs.org/@types/charm/-/charm-1.0.0.tgz",
+      "dev": true
+    },
     "@types/fs-extra": {
       "version": "0.0.37",
       "from": "@types/fs-extra@0.0.37",
@@ -16,6 +22,48 @@
       "version": "7.0.5",
       "from": "@types/node@*",
       "resolved": "https://registry.npmjs.org/@types/node/-/node-7.0.5.tgz"
+    },
+    "@types/node-fetch": {
+      "version": "1.6.7",
+      "from": "@types/node-fetch@>=1.6.7 <2.0.0",
+      "resolved": "https://registry.npmjs.org/@types/node-fetch/-/node-fetch-1.6.7.tgz",
+      "dev": true
+    },
+    "@types/oboe": {
+      "version": "2.0.28",
+      "from": "@types/oboe@>=2.0.28 <3.0.0",
+      "resolved": "https://registry.npmjs.org/@types/oboe/-/oboe-2.0.28.tgz",
+      "dev": true
+    },
+    "@types/parsimmon": {
+      "version": "1.0.1",
+      "from": "@types/parsimmon@>=1.0.1 <2.0.0",
+      "resolved": "https://registry.npmjs.org/@types/parsimmon/-/parsimmon-1.0.1.tgz",
+      "dev": true
+    },
+    "@types/semver": {
+      "version": "5.3.30",
+      "from": "@types/semver@>=5.3.30 <6.0.0",
+      "resolved": "https://registry.npmjs.org/@types/semver/-/semver-5.3.30.tgz",
+      "dev": true
+    },
+    "@types/source-map-support": {
+      "version": "0.2.28",
+      "from": "@types/source-map-support@>=0.2.27 <0.3.0",
+      "resolved": "https://registry.npmjs.org/@types/source-map-support/-/source-map-support-0.2.28.tgz",
+      "dev": true
+    },
+    "@types/tar": {
+      "version": "1.0.29",
+      "from": "@types/tar@>=1.0.27 <2.0.0",
+      "resolved": "https://registry.npmjs.org/@types/tar/-/tar-1.0.29.tgz",
+      "dev": true
+    },
+    "@types/yargs": {
+      "version": "6.6.0",
+      "from": "@types/yargs@>=6.3.1 <7.0.0",
+      "resolved": "https://registry.npmjs.org/@types/yargs/-/yargs-6.6.0.tgz",
+      "dev": true
     },
     "adal-node": {
       "version": "0.1.22",
@@ -2791,9 +2839,9 @@
       "resolved": "https://registry.npmjs.org/typedarray/-/typedarray-0.0.6.tgz"
     },
     "typescript": {
-      "version": "2.1.6",
-      "from": "typescript@>=2.1.5 <3.0.0",
-      "resolved": "https://registry.npmjs.org/typescript/-/typescript-2.1.6.tgz"
+      "version": "2.2.0",
+      "from": "typescript@>=2.2.0 <2.3.0",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-2.2.0.tgz"
     },
     "underscore": {
       "version": "1.8.3",

@@ -1,9 +1,9 @@
-import { Options, isTypingDirectory } from "../lib/common";
+import { isTypingDirectory, Options } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
 import { AllPackages, PackageBase, TypingsData } from "../lib/packages";
 import { sourceBranch } from "../lib/settings";
 import { Logger } from "../util/logging";
-import { done, execAndThrowErrors, flatMap, map, mapDefined, join, sort } from "../util/util";
+import { done, execAndThrowErrors, flatMap, join, map, mapDefined, sort } from "../util/util";
 
 if (!module.parent) {
 	done(main(Options.defaults));

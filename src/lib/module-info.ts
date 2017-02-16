@@ -3,7 +3,7 @@ import * as path from "path";
 import * as ts from "typescript";
 
 import { Logger } from "../util/logging";
-import { hasWindowsSlashes, joinPaths, normalizeSlashes, stripQuotes, sort } from "../util/util";
+import { hasWindowsSlashes, joinPaths, normalizeSlashes, sort, stripQuotes } from "../util/util";
 
 import { readFile } from "./definition-parser";
 

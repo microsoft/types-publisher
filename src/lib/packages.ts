@@ -3,8 +3,8 @@ import assert = require("assert");
 import { readJson } from "../util/io";
 import { joinPaths, mapValues } from "../util/util";
 
-import { Options, home, readDataFile } from "./common";
-import { scopeName, outputPath } from "./settings";
+import { home, Options, readDataFile } from "./common";
+import { outputPath, scopeName } from "./settings";
 import { Semver } from "./versions";
 
 export class AllPackages {

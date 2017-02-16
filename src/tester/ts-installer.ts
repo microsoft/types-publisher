@@ -19,7 +19,15 @@ export async function installAllTypeScriptVersions(): Promise<void> {
 }
 
 export function pathToTsc(version: TypeScriptVersion): string {
-	return joinPaths(installDir(version), "node_modules", "typescript", "lib", "tsc.js");
+	return pathTo(version, "typescript", "lib", "tsc.js");
+}
+
+export function pathToDtslint(version: TypeScriptVersion): string {
+	return pathTo(version, "dtslint");
+}
+
+function pathTo(version: TypeScriptVersion, ...args: string[]) {
+	return joinPaths(installDir(version), "node_modules", ...args);
 }
 
 function installDir(version: TypeScriptVersion) {
@@ -31,7 +39,8 @@ function packageJson(version: TypeScriptVersion): {} {
 		name: "ts-install",
 		version: "0.0.0",
 		dependencies: {
-			typescript: `${version}.x`
+			typescript: `${version}.x`,
+			dtslint: "andy-ms/dtslint#production"
 		}
 	};
 }

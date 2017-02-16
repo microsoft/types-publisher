@@ -1,18 +1,13 @@
 import * as fsp from "fs-promise";
-import * as ts from "typescript";
 import * as yargs from "yargs";
 
 import { Options } from "../lib/common";
 import { AllPackages, PackageBase, TypeScriptVersion, TypingsData } from "../lib/packages";
-import { readJson } from "../util/io";
 import { LoggerWithErrors, moveLogsWithErrors, quietLoggerWithErrors } from "../util/logging";
 import { done, exec, execAndThrowErrors, joinPaths, nAtATime, numberOfOsProcesses } from "../util/util";
 
 import getAffectedPackages, { allDependencies } from "./get-affected-packages";
-import { installAllTypeScriptVersions, pathToTsc } from "./ts-installer";
-import nulint from "./nulint";
-
-const tslintPath = joinPaths(require.resolve("tslint"), "../tslint-cli.js");
+import { installAllTypeScriptVersions, pathToDtslint, pathToTsc } from "./ts-installer";
 
 if (!module.parent) {
 	const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
@@ -40,7 +35,7 @@ export function testerOptions(runFromDefinitelyTyped: boolean): Options {
 }
 
 export default async function main(options: Options, nProcesses?: number, regexp?: RegExp): Promise<void> {
-	await installAllTypeScriptVersions();
+	//await installAllTypeScriptVersions();
 
 	const allPackages = await AllPackages.read(options);
 	const typings: TypingsData[] = regexp
@@ -96,47 +91,25 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options): Promise<TesterError | undefined> {
 	const cwd = pkg.directoryPath(options);
-	return (await tsConfig()) || (await packageJson()) || /*(await tsc()) ||*/ (await tslint());
-
-	async function tsConfig(): Promise<TesterError | undefined> {
-		const tsconfigPath = joinPaths(cwd, "tsconfig.json");
-		return catchErrors(log, async () =>
-			checkTsconfig(await readJson(tsconfigPath)));
-	}
-	async function packageJson(): Promise<TesterError | undefined> {
-		return catchErrors(log, () => checkPackageJson(pkg, options));
-	}
-	/*async function tsc(): Promise<TesterError | undefined> {
-		const error = await runCommand(log, cwd, pathToTsc(pkg.typeScriptVersion));
-		if (error && pkg.typeScriptVersion !== TypeScriptVersion.Latest) {
-			const newError = await runCommand(log, cwd, pathToTsc(TypeScriptVersion.Latest));
-			if (!newError) {
-				const message = `${error.message}\n` +
-					`Package compiles in TypeScript ${TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
-					`You can add a line '// TypeScript Version: ${TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
-				return { message };
-			}
+	const error = await test(pkg.typeScriptVersion);
+	if (error && pkg.typeScriptVersion !== TypeScriptVersion.Latest) {
+		const newError = await test(TypeScriptVersion.Latest);
+		if (!newError) {
+			const message = `${error.message}\n` +
+				`Package compiles in TypeScript ${TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
+				`You can add a line '// TypeScript Version: ${TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
+			return { message };
 		}
-		return error;
-	}*/
-	//TODO: tslint must use a particular TS install...
-	async function tslint(): Promise<TesterError | undefined> {
-		const tslintOptions = "--format stylish --project tsconfig.json --type-check";
-		return (await fsp.exists(joinPaths(cwd, "tslint.json")))
-			? runCommand(log, cwd, tslintPath, tslintOptions, ...pkg.files, ...pkg.testFiles) //does this include test files????
-			: undefined;
 	}
-}
+	return error;
 
-async function catchErrors(log: LoggerWithErrors, action: () => Promise<void>): Promise<TesterError | undefined> {
-	try {
-		await action();
+	async function test(version: TypeScriptVersion): Promise<TesterError | undefined> {
+		if (await fsp.exists(joinPaths(cwd, "tslint.json"))) {
+			return runCommand(log, cwd, pathToDtslint(version), "--dt");
+		} else {
+			return runCommand(log, cwd, pathToTsc(version));
+		}
 	}
-	catch (error) {
-		log.error(error.message);
-		return { message: error.message };
-	}
-	return undefined;
 }
 
 interface TesterError {
@@ -158,54 +131,5 @@ async function runCommand(log: LoggerWithErrors, cwd: string | undefined, cmd: s
 		return error && { message: `${error.message}\n${stdout}\n${stderr}` };
 	} catch (e) {
 		return e;
-	}
-}
-
-function checkTsconfig(tsconfig: { compilerOptions: ts.CompilerOptions }) {
-	const options = tsconfig.compilerOptions;
-	const mustHave = {
-		module: "commonjs",
-		// target: "es6", // Some libraries use an ES5 target, such as es6-shim
-		noEmit: true,
-		forceConsistentCasingInFileNames: true
-	};
-	for (const [key, value] of Object.entries(mustHave)) {
-		if (options[key] !== value) {
-			throw new Error(`Expected compilerOptions[${JSON.stringify(key)}] === ${value}`);
-		}
-	}
-
-	if (!("lib" in options)) {
-		throw new Error('Must specify "lib", usually to `"lib": ["es6"]` or `"lib": ["es6", "dom"]`.');
-	}
-
-	for (const key of ["noImplicitAny", "noImplicitThis", "strictNullChecks"]) {
-		if (!(key in options)) {
-			throw new Error(`Expected \`"${key}": true\` or \`"${key}": false\`.`);
-		}
-	}
-
-	if (("typeRoots" in options) && !("types" in options)) {
-		throw new Error('If the "typeRoots" option is specified in your tsconfig, you must include `"types": []` to prevent very long compile times.');
-	}
-
-	// baseUrl / typeRoots / types may be missing.
-	if (options.types && options.types.length) {
-		throw new Error(
-			'Use `/// <reference types="..." />` directives in source files and ensure that the "types" field in your tsconfig is an empty array.');
-	}
-}
-
-async function checkPackageJson(typing: TypingsData, options: Options): Promise<void> {
-	if (!typing.hasPackageJson) {
-		return;
-	}
-
-	const pkgJsonPath = typing.filePath("package.json", options);
-	const pkgJson = await readJson(pkgJsonPath);
-
-	const ignoredField = Object.keys(pkgJson).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
-	if (ignoredField) {
-		throw new Error(`Ignored field in ${pkgJsonPath}: ${ignoredField}`);
 	}
 }
