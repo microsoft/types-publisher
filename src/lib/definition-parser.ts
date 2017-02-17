@@ -1,3 +1,4 @@
+import { parseHeaderOrFail } from "dt-header";
 import * as fsp from "fs-promise";
 import * as ts from "typescript";
 
@@ -6,9 +7,8 @@ import { Log, moveLogs, quietLogger } from "../util/logging";
 import { computeHash, hasWindowsSlashes, join, joinPaths, mapAsyncOrdered } from "../util/util";
 
 import { Options } from "./common";
-import { parseHeaderOrFail } from "./header";
 import getModuleInfo from "./module-info";
-import { DependenciesRaw, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw, packageRootPath } from "./packages";
+import { DependenciesRaw, packageRootPath, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
 
 export async function getTypingInfo(packageName: string, options: Options): Promise<{ data: TypingsVersionsRaw, logs: Log }> {
 	if (packageName !== packageName.toLowerCase()) {
