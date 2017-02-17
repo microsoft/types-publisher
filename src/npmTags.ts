@@ -1,6 +1,7 @@
+import { TypeScriptVersion } from "dt-header";
 import * as yargs from "yargs";
 
-import { AnyPackage, AllPackages, TypeScriptVersion } from "./lib/packages";
+import { AnyPackage, AllPackages } from "./lib/packages";
 import NpmClient from "./lib/npm-client";
 import Versions from "./lib/versions";
 

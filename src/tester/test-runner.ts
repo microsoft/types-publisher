@@ -2,17 +2,18 @@ import * as fsp from "fs-promise";
 import * as yargs from "yargs";
 
 import { Options } from "../lib/common";
-import { AllPackages, PackageBase, TypeScriptVersion, TypingsData } from "../lib/packages";
+import { AllPackages, PackageBase, TypingsData } from "../lib/packages";
 import { LoggerWithErrors, moveLogsWithErrors, quietLoggerWithErrors } from "../util/logging";
 import { done, exec, execAndThrowErrors, joinPaths, nAtATime, numberOfOsProcesses } from "../util/util";
 
 import getAffectedPackages, { allDependencies } from "./get-affected-packages";
-import { installAllTypeScriptVersions, pathToDtslint, pathToTsc } from "./ts-installer";
 
 if (!module.parent) {
 	const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
 	done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
 }
+
+const pathToDtsLint = joinPaths(__dirname, "..", "..", "node_modules", "dtslint", "bin", "index.js");
 
 export function parseNProcesses(): number | undefined {
 	const str = yargs.argv.nProcesses;
@@ -35,8 +36,6 @@ export function testerOptions(runFromDefinitelyTyped: boolean): Options {
 }
 
 export default async function main(options: Options, nProcesses?: number, regexp?: RegExp): Promise<void> {
-	//await installAllTypeScriptVersions();
-
 	const allPackages = await AllPackages.read(options);
 	const typings: TypingsData[] = regexp
 		? allPackages.allTypings().filter(t => regexp.test(t.name))
@@ -49,7 +48,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 	const allErrors: Array<{ pkg: TypingsData, err: TesterError }> = [];
 
-	console.log("Installing dependencies...");
+	console.log("Installing NPM dependencies...");
 
 	await nAtATime(nProcesses, allDependencies(allPackages, typings), async pkg => {
 		const cwd = pkg.directoryPath(options);
@@ -91,25 +90,8 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 async function single(pkg: TypingsData, log: LoggerWithErrors, options: Options): Promise<TesterError | undefined> {
 	const cwd = pkg.directoryPath(options);
-	const error = await test(pkg.typeScriptVersion);
-	if (error && pkg.typeScriptVersion !== TypeScriptVersion.Latest) {
-		const newError = await test(TypeScriptVersion.Latest);
-		if (!newError) {
-			const message = `${error.message}\n` +
-				`Package compiles in TypeScript ${TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
-				`You can add a line '// TypeScript Version: ${TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
-			return { message };
-		}
-	}
-	return error;
-
-	async function test(version: TypeScriptVersion): Promise<TesterError | undefined> {
-		if (await fsp.exists(joinPaths(cwd, "tslint.json"))) {
-			return runCommand(log, cwd, pathToDtslint(version), "--dt");
-		} else {
-			return runCommand(log, cwd, pathToTsc(version));
-		}
-	}
+	const shouldLint = await fsp.exists(joinPaths(cwd, "tslint.json"));
+	return runCommand(log, cwd, pathToDtsLint, "--dt", ...(shouldLint ? [] : ["--noLint"]));
 }
 
 interface TesterError {
