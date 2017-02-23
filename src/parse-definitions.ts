@@ -1,9 +1,9 @@
 import * as yargs from "yargs";
 
+import { isTypingDirectory, Options, writeDataFile } from "./lib/common";
 import * as parser from "./lib/definition-parser";
-import { Options, isTypingDirectory, writeDataFile } from "./lib/common";
-import { TypingsVersionsRaw, packageRootPath, typesDataFilename } from "./lib/packages";
-import { logger, quietLogger, moveLogs, writeLog } from "./util/logging";
+import { packageRootPath, typesDataFilename, TypingsVersionsRaw } from "./lib/packages";
+import { logger,  moveLogs, quietLogger, writeLog } from "./util/logging";
 import { done, filterAsyncOrdered, nAtATime } from "./util/util";
 
 import fsp = require("fs-promise");
