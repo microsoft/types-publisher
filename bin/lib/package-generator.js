@@ -27,12 +27,10 @@ function generatePackage(typing, packages, versions, options) {
         yield clearOutputPath(outputPath, log);
         log("Generate package.json, metadata.json, and README.md");
         const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages, options);
-        const metadataJson = createMetadataJSON(typing);
         const readme = createReadme(typing);
         log("Write metadata files to disk");
         const outputs = [
             writeOutputFile("package.json", packageJson),
-            writeOutputFile("types-metadata.json", metadataJson),
             writeOutputFile("README.md", readme)
         ];
         outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
@@ -85,10 +83,6 @@ function clearOutputPath(outputPath, log) {
     });
 }
 exports.clearOutputPath = clearOutputPath;
-function createMetadataJSON(typing) {
-    const replacer = (key, value) => key === "root" ? undefined : value;
-    return JSON.stringify(typing, replacer, 4);
-}
 function createPackageJSON(typing, version, packages, options) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete

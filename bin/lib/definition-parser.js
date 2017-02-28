@@ -83,9 +83,10 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
         const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(yield readFile(directory, mainFilename), packageName);
-        const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory);
+        const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
+        const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
-        const { dependencies, pathMappings } = yield calculateDependencies(packageName, directory, dependenciesSet, oldMajorVersion);
+        const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const hasPackageJson = yield fsp.exists(util_1.joinPaths(directory, "package.json"));
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
@@ -111,16 +112,16 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
             globals,
             declaredModules,
             files: declFiles,
+            testFiles,
             hasPackageJson,
-            contentHash: yield hash(directory, allContentHashFiles)
+            contentHash: yield hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
         };
         return { data, logs: logResult() };
     });
 }
-function entryFilesFromTsConfig(packageName, directory) {
+function entryFilesFromTsConfig(packageName, directory, tsconfig) {
     return __awaiter(this, void 0, void 0, function* () {
         const tsconfigPath = util_1.joinPaths(directory, "tsconfig.json");
-        const tsconfig = yield fsp.readJson(tsconfigPath);
         if (tsconfig.include) {
             throw new Error(`${tsconfigPath}: Don't use "include", must use "files"`);
         }
@@ -151,9 +152,8 @@ function entryFilesFromTsConfig(packageName, directory) {
     });
 }
 /** In addition to dependencies found oun source code, also get dependencies from tsconfig. */
-function calculateDependencies(packageName, directory, dependencyNames, oldMajorVersion) {
+function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorVersion) {
     return __awaiter(this, void 0, void 0, function* () {
-        const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { paths } = tsconfig.compilerOptions;
         const dependencies = {};
         const pathMappings = {};
@@ -221,10 +221,13 @@ function withoutEnd(s, end) {
     }
     return undefined;
 }
-function hash(directory, files) {
+function hash(directory, files, tsconfigPaths) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return f + "**" + (yield readFile(directory, f)); }));
-        const allContent = fileContents.join("||");
+        let allContent = fileContents.join("||");
+        if (tsconfigPaths) {
+            allContent += JSON.stringify(tsconfigPaths);
+        }
         return util_1.computeHash(allContent);
     });
 }

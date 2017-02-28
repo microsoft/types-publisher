@@ -120,7 +120,7 @@ function single(pkg, log, options) {
         function tslint() {
             return __awaiter(this, void 0, void 0, function* () {
                 return (yield fsp.exists(util_1.joinPaths(cwd, "tslint.json")))
-                    ? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files)
+                    ? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files, ...pkg.testFiles)
                     : undefined;
             });
         }

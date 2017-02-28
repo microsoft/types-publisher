@@ -224,6 +224,7 @@ class TypingsData extends PackageBase {
     get majorMinor() { return { major: this.major, minor: this.minor }; }
     get typeScriptVersion() { return this.data.typeScriptVersion; }
     get files() { return this.data.files; }
+    get testFiles() { return this.data.testFiles; }
     get hasPackageJson() { return this.data.hasPackageJson; }
     get contentHash() { return this.data.contentHash; }
     get declaredModules() { return this.data.declaredModules; }

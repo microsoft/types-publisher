@@ -26,7 +26,15 @@ class Walker extends Lint.RuleWalker {
     }
 }
 function mayContainVoid({ kind }) {
-    return kind === ts.SyntaxKind.TypeReference || kind === ts.SyntaxKind.ExpressionWithTypeArguments || kind === ts.SyntaxKind.NewExpression;
+    switch (kind) {
+        case ts.SyntaxKind.TypeReference:
+        case ts.SyntaxKind.ExpressionWithTypeArguments:
+        case ts.SyntaxKind.NewExpression:
+        case ts.SyntaxKind.CallExpression:
+            return true;
+        default:
+            return false;
+    }
 }
 function isReturnType(node) {
     let parent = node.parent;
@@ -40,6 +48,7 @@ function isSignatureDeclaration(node) {
         case ts.SyntaxKind.ArrowFunction:
         case ts.SyntaxKind.CallSignature:
         case ts.SyntaxKind.FunctionDeclaration:
+        case ts.SyntaxKind.FunctionExpression:
         case ts.SyntaxKind.FunctionType:
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.MethodSignature:
