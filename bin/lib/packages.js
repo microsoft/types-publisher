@@ -103,6 +103,16 @@ class AllPackages {
             }
         }
     }
+    /** Like 'dependencyTypings', but includes test dependencies. */
+    *allDependencyTypings(pkg) {
+        yield* this.dependencyTypings(pkg);
+        for (const name of pkg.testDependencies) {
+            const versions = this.data.get(name);
+            if (versions) {
+                yield versions.getLatest();
+            }
+        }
+    }
 }
 exports.AllPackages = AllPackages;
 exports.typesDataFilename = "definitions.json";
@@ -218,6 +228,7 @@ class TypingsData extends PackageBase {
         this.data = data;
         this.isLatest = isLatest;
     }
+    get testDependencies() { return this.data.testDependencies; }
     get contributors() { return this.data.contributors; }
     get major() { return this.data.libraryMajorVersion; }
     get minor() { return this.data.libraryMinorVersion; }
@@ -275,10 +286,15 @@ function packageRootPath(packageName, options) {
 exports.packageRootPath = packageRootPath;
 var TypeScriptVersion;
 (function (TypeScriptVersion) {
-    TypeScriptVersion.All = ["2.0", "2.1"];
+    TypeScriptVersion.All = ["2.0", "2.1", "2.2"];
     TypeScriptVersion.Lowest = "2.0";
     /** Latest version that may be specified in a `// TypeScript Version:` header. */
-    TypeScriptVersion.Latest = "2.1";
+    TypeScriptVersion.Latest = "2.2";
+    for (const v of TypeScriptVersion.All) {
+        if (v > TypeScriptVersion.Latest) {
+            throw new Error("'Latest' not properly set.");
+        }
+    }
     /** True if a package with the given typescript version should be published as prerelease. */
     function isPrerelease(_version) {
         return false;
@@ -293,6 +309,8 @@ var TypeScriptVersion;
                 return [tags.latest, tags.v2_0, tags.v2_1, tags.v2_2, tags.v2_3];
             case "2.1":
                 return [tags.latest, tags.v2_1, tags.v2_2, tags.v2_3];
+            case "2.2":
+                return [tags.latest, tags.v2_2, tags.v2_3];
         }
     }
     TypeScriptVersion.tagsToUpdate = tagsToUpdate;

@@ -87,15 +87,6 @@ function indent(str) {
     return "\t" + str.replace(/\n/g, "\n\t");
 }
 exports.indent = indent;
-function stripQuotes(s) {
-    if (s[0] === '"' || s[0] === "'") {
-        return s.substr(1, s.length - 2);
-    }
-    else {
-        throw new Error(`${s} is not quoted`);
-    }
-}
-exports.stripQuotes = stripQuotes;
 function unique(arr) {
     return [...new Set(arr)];
 }

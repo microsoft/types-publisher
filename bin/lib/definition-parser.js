@@ -86,6 +86,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
+        const testDependencies = yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet);
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const hasPackageJson = yield fsp.exists(util_1.joinPaths(directory, "package.json"));
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
@@ -101,6 +102,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const data = {
             contributors,
             dependencies,
+            testDependencies,
             pathMappings,
             libraryMajorVersion,
             libraryMinorVersion,

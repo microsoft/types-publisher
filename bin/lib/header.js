@@ -30,7 +30,7 @@ function parseHeader(text, strict) {
     return res.status ? res.value : { index: res.index.offset, line: res.index.line, column: res.index.column, expected: res.expected };
 }
 function headerParser(strict) {
-    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), contributorsParser(strict), parseDefinitions, parseTypeScriptVersion, pm.all, // Don't care about the rest of the file
+    return pm.seqMap(pm.string("// Type definitions for "), parseLabel(strict), pm.string("// Project: "), projectParser, pm.regexp(/\r?\n\/\/ Definitions by: /), contributorsParser(strict), parseDefinitions, typeScriptVersionParser, pm.all, // Don't care about the rest of the file
     // tslint:disable-next-line:variable-name
     (_str, label, _project, projects, _defsBy, contributors, _definitions, typeScriptVersion) => ({
         libraryName: label.name, libraryMajorVersion: label.major, libraryMinorVersion: label.minor, projects, contributors, typeScriptVersion
@@ -118,8 +118,18 @@ function parseLabel(strict) {
         }
     });
 }
-const parseTypeScriptVersion = pm.regexp(/\r?\n\/\/ TypeScript Version: 2.1/)
-    .result("2.1")
+const typeScriptVersionLineParser = pm.regexp(/\/\/ TypeScript Version: 2.(\d)/, 1).chain(d => {
+    switch (d) {
+        case "1":
+            return pm.succeed("2.1");
+        case "2":
+            return pm.succeed("2.2");
+        default:
+            return pm.fail(`TypeScript 2.${d} is not yet supported.`);
+    }
+});
+const typeScriptVersionParser = pm.regexp(/\r?\n/)
+    .then(typeScriptVersionLineParser)
     .fallback("2.0");
 function reverse(s) {
     let out = "";
