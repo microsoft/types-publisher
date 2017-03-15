@@ -33,11 +33,6 @@ function getAffectedPackages(allPackages, log, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
-/** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
-function allDependencies(allPackages, packages) {
-    return sortPackages(transitiveClosure(packages, pkg => allPackages.dependencyTypings(pkg)));
-}
-exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
 function collectDependers(changedPackages, reverseDependencies) {
     return sortPackages(transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []));
@@ -120,10 +115,10 @@ function gitDiff(log, options) {
         }
         // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
         // Source: https://git-scm.com/docs/git-diff
-        let diff = (yield run(`git diff ${settings_1.sourceBranch}...HEAD --name-only`)).trim();
+        let diff = (yield run(`git diff ${settings_1.sourceBranch} --name-only`)).trim();
         if (diff === "") {
             // We are probably already on master, so compare to the last commit.
-            diff = (yield run(`git diff ${settings_1.sourceBranch}~1...HEAD --name-only`)).trim();
+            diff = (yield run(`git diff ${settings_1.sourceBranch}~1 --name-only`)).trim();
         }
         return diff.split("\n");
         function run(cmd) {

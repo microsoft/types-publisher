@@ -59,7 +59,7 @@ function checkPathMappings(allPackages) {
         const pathMappings = new Map(pkg.pathMappings);
         const unusedPathMappings = new Set(pathMappings.keys());
         // If A depends on B, and B has path mappings, A must have the same mappings.
-        for (const dependency of allPackages.dependencyTypings(pkg)) {
+        for (const dependency of allPackages.allDependencyTypings(pkg)) {
             for (const [name, dependencyMappingVersion] of dependency.pathMappings) {
                 if (pathMappings.get(name) !== dependencyMappingVersion) {
                     throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${name} v${dependencyMappingVersion}. ` +

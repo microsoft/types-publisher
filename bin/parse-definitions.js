@@ -60,7 +60,7 @@ function single(singleName, options) {
         const result = yield parser.getTypingInfo(singleName, options);
         const typings = { [singleName]: result.data };
         yield common_1.writeDataFile(packages_1.typesDataFilename, typings);
-        console.log(result);
+        console.log(JSON.stringify(result, undefined, 4));
     });
 }
 //# sourceMappingURL=parse-definitions.js.map

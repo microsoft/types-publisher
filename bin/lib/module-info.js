@@ -327,7 +327,8 @@ function getTestDependencies(pkgName, directory, testFiles, dependencies) {
         const testDependencies = new Set();
         for (const filename of testFiles) {
             const content = yield definition_parser_1.readFile(directory, filename);
-            const { fileName, imports, referencedFiles, typeReferenceDirectives } = createSourceFile(filename, content);
+            const sourceFile = createSourceFile(filename, content);
+            const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
             const filePath = () => path.join(pkgName, fileName);
             for (const { fileName: ref } of referencedFiles) {
                 throw new Error(`Test files should not use '<reference path="" />'. '${filePath()}' references '${ref}'.`);
@@ -341,11 +342,9 @@ function getTestDependencies(pkgName, directory, testFiles, dependencies) {
                 }
                 testDependencies.add(referencedPackage);
             }
-            if (imports) {
-                for (const { text } of imports) {
-                    if (!dependencies.has(text)) {
-                        testDependencies.add(text);
-                    }
+            for (const imported of imports(sourceFile)) {
+                if (!imported.startsWith(".") && !dependencies.has(imported)) {
+                    testDependencies.add(imported);
                 }
             }
         }
