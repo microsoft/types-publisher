@@ -48,6 +48,7 @@ export default async function main(options: Options, nProcesses?: number, regexp
 
 	const allErrors: Array<{ pkg: TypingsData, err: TesterError }> = [];
 
+	/*
 	console.log("Installing NPM dependencies...");
 
 	await nAtATime(nProcesses, typings, async pkg => {
@@ -61,7 +62,11 @@ export default async function main(options: Options, nProcesses?: number, regexp
 		}
 	});
 
+	// "npm install" isn't parallel-safe, so run `dtslint` once to install everything.
+	await runCommand(console, undefined, pathToDtsLint, "--installAll");
+
 	console.log("Testing...");
+	*/
 
 	await nAtATime(nProcesses, typings, async pkg => {
 		const [log, logResult] = quietLoggerWithErrors();
