@@ -33,6 +33,11 @@ function getAffectedPackages(allPackages, log, options) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
+/** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
+function allDependencies(allPackages, packages) {
+    return sortPackages(transitiveClosure(packages, pkg => allPackages.allDependencyTypings(pkg)));
+}
+exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
 function collectDependers(changedPackages, reverseDependencies) {
     return sortPackages(transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []));

@@ -54,7 +54,8 @@ function main(options, nProcesses, regexp) {
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing dependencies...");
-        yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
+        // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
             if (yield fsp.exists(util_1.joinPaths(cwd, "package.json"))) {
                 let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
