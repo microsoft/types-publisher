@@ -261,7 +261,7 @@ class TypingsData extends PackageBase {
         return this.isLatest ? this.name : `${this.name}/v${this.data.libraryMajorVersion}`;
     }
     directoryPath(options) {
-        return util_1.joinPaths(options.definitelyTypedPath, this.subDirectoryPath);
+        return util_1.joinPaths(options.typesPath, this.subDirectoryPath);
     }
     filePath(fileName, options) {
         return util_1.joinPaths(this.directoryPath(options), fileName);
@@ -281,7 +281,7 @@ function readNotNeededPackages(options) {
 }
 /** Path to the *root* for a given package. Path to a particular version may differ. */
 function packageRootPath(packageName, options) {
-    return util_1.joinPaths(options.definitelyTypedPath, packageName);
+    return util_1.joinPaths(options.typesPath, packageName);
 }
 exports.packageRootPath = packageRootPath;
 var TypeScriptVersion;

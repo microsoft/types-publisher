@@ -137,22 +137,23 @@ function gitDiff(log, options) {
     });
 }
 /**
- * For "a/b/c", returns { name: "a", version: "latest" }.
- * For "a/v3/c", returns { name: "a", version: 3 }.
- * For "a", returns undefined.
+ * For "types/a/b/c", returns { name: "a", version: "latest" }.
+ * For "types/a/v3/c", returns { name: "a", version: 3 }.
+ * For "x", returns undefined.
  */
 function getDependencyFromFile(fileName) {
     const parts = fileName.split("/");
-    if (parts.length === 1) {
+    if (parts.length <= 2) {
         // It's not in a typings directory at all.
         return undefined;
     }
-    const name = parts[0];
-    if (!common_1.isTypingDirectory(name)) {
+    const [typesDirName, name, subDirName] = parts; // Ignore any other parts
+    if (typesDirName !== settings_1.typesDirectoryName) {
         return undefined;
     }
-    if (parts.length > 2) {
-        const majorVersion = definition_parser_1.parseMajorVersionFromDirectoryName(parts[1]);
+    if (subDirName) {
+        // Looks like "types/a/v3/c"
+        const majorVersion = definition_parser_1.parseMajorVersionFromDirectoryName(subDirName);
         if (majorVersion !== undefined) {
             return { name, majorVersion };
         }

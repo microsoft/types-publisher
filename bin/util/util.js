@@ -66,13 +66,6 @@ function filterNAtATime(n, inputs, shouldKeep, progress) {
     });
 }
 exports.filterNAtATime = filterNAtATime;
-function filterAsyncOrdered(arr, shouldKeep) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const shouldKeeps = yield Promise.all(arr.map(shouldKeep));
-        return arr.filter((_, idx) => shouldKeeps[idx]);
-    });
-}
-exports.filterAsyncOrdered = filterAsyncOrdered;
 function mapAsyncOrdered(arr, mapper) {
     return __awaiter(this, void 0, void 0, function* () {
         const out = new Array(arr.length);

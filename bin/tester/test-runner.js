@@ -35,7 +35,7 @@ function parseNProcesses() {
 exports.parseNProcesses = parseNProcesses;
 function testerOptions(runFromDefinitelyTyped) {
     if (runFromDefinitelyTyped) {
-        return { definitelyTypedPath: process.cwd(), progress: false };
+        return new common_1.Options(process.cwd(), false);
     }
     else {
         return common_1.Options.defaults;

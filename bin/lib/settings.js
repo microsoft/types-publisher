@@ -17,4 +17,5 @@ exports.azureContainer = "typespublisher";
 exports.azureKeyvault = "https://types-publisher-keys.vault.azure.net";
 /** Issue in types-publisher that we will use to report webhook errors. */
 exports.errorsIssue = "Microsoft/types-publisher/issues/40";
+exports.typesDirectoryName = "types";
 //# sourceMappingURL=settings.js.map

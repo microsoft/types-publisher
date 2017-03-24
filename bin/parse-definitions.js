@@ -18,23 +18,14 @@ if (!module.parent) {
     const singleName = yargs.argv.single;
     util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults)));
 }
-function filterPaths(paths, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const fullPaths = paths
-            .filter(s => s[0] !== "." && s[0] !== "_" && common_1.isTypingDirectory(s))
-            .sort();
-        // Remove non-folders
-        return util_1.filterAsyncOrdered(fullPaths, (s) => __awaiter(this, void 0, void 0, function* () { return (yield fsp.stat(packages_1.packageRootPath(s, options))).isDirectory(); }));
-    });
-}
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [summaryLog, summaryLogResult] = logging_1.logger();
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const packageNames = yield filterPaths(yield fsp.readdir(options.definitelyTypedPath), options);
-        summaryLog(`Found ${packageNames.length} typings folders in ${options.definitelyTypedPath}`);
+        const packageNames = yield fsp.readdir(options.typesPath);
+        summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
         const typings = {};
         yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name, options });
         function use(packageName) {

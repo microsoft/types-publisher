@@ -10,24 +10,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fsp = require("fs-promise");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
+const settings_1 = require("../lib/settings");
 if (process.env.LONGJOHN) {
     console.log("=== USING LONGJOHN ===");
     const longjohn = require("longjohn");
     longjohn.async_trace_limit = -1; // unlimited
 }
 exports.home = util_1.joinPaths(__dirname, "..", "..");
-var Options;
-(function (Options) {
-    /** Options for running locally. */
-    Options.defaults = {
-        definitelyTypedPath: "../DefinitelyTyped",
-        progress: true
-    };
-    Options.azure = {
-        definitelyTypedPath: "../DefinitelyTyped",
-        progress: false
-    };
-})(Options = exports.Options || (exports.Options = {}));
+/** Settings that may be determined dynamically. */
+class Options {
+    constructor(
+        /** e.g. '../DefinitelyTyped'
+         * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
+         */
+        definitelyTypedPath, 
+        /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
+        progress) {
+        this.definitelyTypedPath = definitelyTypedPath;
+        this.progress = progress;
+        this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
+    }
+}
+/** Options for running locally. */
+Options.defaults = new Options("../DefinitelyTyped", true);
+Options.azure = new Options("../DefinitelyTyped", false);
+exports.Options = Options;
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));
 }
@@ -56,8 +63,4 @@ const dataDir = util_1.joinPaths(exports.home, "data");
 function dataFilePath(filename) {
     return util_1.joinPaths(dataDir, filename);
 }
-function isTypingDirectory(directoryName) {
-    return directoryName !== "node_modules" && directoryName !== "scripts";
-}
-exports.isTypingDirectory = isTypingDirectory;
 //# sourceMappingURL=common.js.map
