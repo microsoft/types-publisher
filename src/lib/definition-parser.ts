@@ -1,14 +1,16 @@
+import { parseHeaderOrFail } from "definitelytyped-header-parser";
 import * as fsp from "fs-promise";
 import * as ts from "typescript";
 
-import { readFile as readFileText } from "../util/io";
+import { readFile as readFileText, readJson } from "../util/io";
 import { Log, moveLogs, quietLogger } from "../util/logging";
 import { computeHash, hasWindowsSlashes, join, joinPaths, mapAsyncOrdered } from "../util/util";
 
 import { Options } from "./common";
-import { parseHeaderOrFail } from "./header";
 import getModuleInfo, { getTestDependencies } from "./module-info";
-import { DependenciesRaw, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw, packageRootPath } from "./packages";
+
+import { PartialPackageJson } from "./package-generator";
+import { DependenciesRaw, packageRootPath, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
 
 export async function getTypingInfo(packageName: string, options: Options): Promise<{ data: TypingsVersionsRaw, logs: Log }> {
 	if (packageName !== packageName.toLowerCase()) {
@@ -86,7 +88,7 @@ async function getTypingData(packageName: string, directory: string, ls: string[
 	const mainFilename = "index.d.ts";
 
 	const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } =
-		parseHeaderOrFail(await readFile(directory, mainFilename), packageName);
+		parseHeaderOrFail(await readFile(directory, mainFilename));
 
 	const tsconfig: TsConfig = await fsp.readJSON(joinPaths(directory, "tsconfig.json"));
 	const { typeFiles, testFiles } = await entryFilesFromTsConfig(packageName, directory, tsconfig);
@@ -94,7 +96,12 @@ async function getTypingData(packageName: string, directory: string, ls: string[
 	const testDependencies = await getTestDependencies(packageName, directory, testFiles, dependenciesSet);
 	const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
 
-	const hasPackageJson = await fsp.exists(joinPaths(directory, "package.json"));
+	const packageJsonPath = joinPaths(directory, "package.json");
+	const hasPackageJson = await fsp.exists(packageJsonPath);
+	if (hasPackageJson) {
+		checkPackageJson(await readJson(packageJsonPath), packageJsonPath);
+	}
+
 	const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
 
 	const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
@@ -129,6 +136,24 @@ async function getTypingData(packageName: string, directory: string, ls: string[
 		contentHash: await hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
 	};
 	return { data, logs: logResult() };
+}
+
+function checkPackageJson(pkg: PartialPackageJson, path: string): void {
+	for (const key in pkg) {
+		if (key !== "dependencies" && key !== "peerDependencies") {
+			throw new Error(`${path} should not specify ${key}`);
+		}
+	}
+
+	for (const key in pkg) {
+		const dependencies = (pkg as any)[key];
+		for (const dependencyName in dependencies) {
+			// TODO: don't specially allow @types/vue, it should use the real vue typings.
+			if (dependencyName.startsWith("@types/") && dependencyName !== "@types/vue") {
+				throw new Error(`In ${path}: Don't use a 'package.json' for @types dependencies.`);
+			}
+		}
+	}
 }
 
 async function entryFilesFromTsConfig(packageName: string, directory: string, tsconfig: TsConfig
