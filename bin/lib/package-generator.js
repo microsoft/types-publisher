@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
 const path = require("path");
 const io_1 = require("../util/io");
@@ -18,7 +19,6 @@ const settings_1 = require("./settings");
 function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = generateAnyPackage;
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -91,7 +91,7 @@ function createPackageJSON(typing, version, packages, options) {
         const dependencies = pkg.dependencies || {};
         const peerDependencies = pkg.peerDependencies || {};
         addInferredDependencies(dependencies, peerDependencies, typing, packages);
-        const description = pkg.description || `TypeScript definitions for ${typing.libraryName}`;
+        const description = `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
             name: typing.fullNpmName,

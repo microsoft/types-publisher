@@ -7,11 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const webhook_server_1 = require("./lib/webhook-server");
 const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
+const webhook_server_1 = require("./lib/webhook-server");
 const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main());
@@ -34,6 +35,5 @@ function main() {
         }
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 //# sourceMappingURL=webhook.js.map

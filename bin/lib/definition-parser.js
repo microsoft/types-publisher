@@ -7,11 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const fsp = require("fs-promise");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-const header_1 = require("./header");
 const module_info_1 = require("./module-info");
 const packages_1 = require("./packages");
 function getTypingInfo(packageName, options) {
@@ -82,13 +83,17 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         // There is a *single* main file, containing metadata comments.
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
-        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = header_1.parseHeaderOrFail(yield readFile(directory, mainFilename), packageName);
+        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFile(directory, mainFilename));
         const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
         const testDependencies = yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet);
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
-        const hasPackageJson = yield fsp.exists(util_1.joinPaths(directory, "package.json"));
+        const packageJsonPath = util_1.joinPaths(directory, "package.json");
+        const hasPackageJson = yield fsp.exists(packageJsonPath);
+        if (hasPackageJson) {
+            checkPackageJson(yield io_1.readJson(packageJsonPath), packageJsonPath);
+        }
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
         yield checkAllFilesUsed(directory, ls, allFiles);
@@ -120,6 +125,22 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         };
         return { data, logs: logResult() };
     });
+}
+function checkPackageJson(pkg, path) {
+    for (const key in pkg) {
+        if (key !== "dependencies" && key !== "peerDependencies") {
+            throw new Error(`${path} should not specify ${key}`);
+        }
+    }
+    for (const key in pkg) {
+        const dependencies = pkg[key];
+        for (const dependencyName in dependencies) {
+            // TODO: don't specially allow @types/vue, it should use the real vue typings.
+            if (dependencyName.startsWith("@types/") && dependencyName !== "@types/vue") {
+                throw new Error(`In ${path}: Don't use a 'package.json' for @types dependencies.`);
+            }
+        }
+    }
 }
 function entryFilesFromTsConfig(packageName, directory, tsconfig) {
     return __awaiter(this, void 0, void 0, function* () {

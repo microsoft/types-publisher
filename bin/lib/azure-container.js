@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
 const https = require("https");
@@ -76,7 +77,6 @@ class BlobWriter {
         return io_1.streamDone(tgz_1.gzip(stream).pipe(this.service.createWriteStreamToBlockBlob(settings_1.azureContainer, blobName, options, undefined)));
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = BlobWriter;
 function readBlob(blobName) {
     return __awaiter(this, void 0, void 0, function* () {

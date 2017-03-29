@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /** URL of the NPM registry to upload to. */
 exports.npmRegistry = "https://registry.npmjs.org/";
 /** Note: this is 'types' and not '@types' */

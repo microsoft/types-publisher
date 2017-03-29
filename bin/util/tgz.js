@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = require("fs");
 const fstream_1 = require("fstream");
 const tar_1 = require("tar");

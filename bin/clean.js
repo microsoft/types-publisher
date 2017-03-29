@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
 if (!module.parent) {
     main();
@@ -9,6 +10,5 @@ function main() {
         fsp.remove(dir);
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 //# sourceMappingURL=clean.js.map

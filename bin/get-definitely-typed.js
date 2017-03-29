@@ -7,8 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const fsp = require("fs-promise");
+Object.defineProperty(exports, "__esModule", { value: true });
 const child_process_1 = require("child_process");
+const fsp = require("fs-promise");
 const path_1 = require("path");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
@@ -38,7 +39,6 @@ function main(options) {
         }
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function exec(cmd, cwd) {
     console.log(`Exec${cwd ? " at " + cwd : ""}: ${cmd}`);

@@ -7,9 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const yargs = require("yargs");
-const packages_1 = require("./lib/packages");
 const npm_client_1 = require("./lib/npm-client");
+const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -37,7 +39,7 @@ function tagAll(dry) {
 }
 function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
     return __awaiter(this, void 0, void 0, function* () {
-        const tags = packages_1.TypeScriptVersion.tagsToUpdate(pkg.typeScriptVersion);
+        const tags = definitelytyped_header_parser_1.TypeScriptVersion.tagsToUpdate(pkg.typeScriptVersion);
         log(`Tag ${pkg.fullNpmName}@${version} as ${JSON.stringify(tags)}`);
         if (!dry) {
             for (const tag of tags) {

@@ -7,10 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
-const packages_1 = require("./lib/packages");
 const package_generator_1 = require("./lib/package-generator");
+const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const tgz_1 = require("./util/tgz");
@@ -42,7 +43,6 @@ function main(options, all = false, tgz = false) {
         yield logging_1.writeLog("package-generator.md", logResult());
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {

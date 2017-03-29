@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const charm = require("charm");
 class ProgressBar {
     constructor(options) {
@@ -43,7 +44,6 @@ class ProgressBar {
         this.console.end();
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ProgressBar;
 /** A mutable line of text on the console. */
 class UpdatableConsole {
@@ -61,7 +61,8 @@ class UpdatableConsole {
         this.charm.end();
     }
 }
-const firstLetter = "a".charCodeAt(0), lastLetter = "z".charCodeAt(0);
+const firstLetter = "a".charCodeAt(0);
+const lastLetter = "z".charCodeAt(0);
 const charWidth = lastLetter - firstLetter;
 const strProgressTotal = charWidth * charWidth; // 2 characters
 /** Tracks a string's progress through the alphabet. */

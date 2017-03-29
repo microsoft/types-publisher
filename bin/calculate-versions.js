@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
@@ -25,6 +26,5 @@ function main(forceUpdate, options) {
         yield versions.save();
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 //# sourceMappingURL=calculate-versions.js.map

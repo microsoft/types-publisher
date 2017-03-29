@@ -7,20 +7,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
-const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
-const ts_installer_1 = require("./ts-installer");
-const tslintPath = util_1.joinPaths(require.resolve("tslint"), "../tslint-cli.js");
 if (!module.parent) {
     const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
     util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
 }
+const pathToDtsLint = util_1.joinPaths(__dirname, "..", "..", "node_modules", "dtslint", "bin", "index.js");
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
     if (!str) {
@@ -44,7 +43,6 @@ function testerOptions(runFromDefinitelyTyped) {
 exports.testerOptions = testerOptions;
 function main(options, nProcesses, regexp) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield ts_installer_1.installAllTypeScriptVersions();
         const allPackages = yield packages_1.AllPackages.read(options);
         const typings = regexp
             ? allPackages.allTypings().filter(t => regexp.test(t.name))
@@ -53,7 +51,7 @@ function main(options, nProcesses, regexp) {
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
-        console.log("Installing dependencies...");
+        console.log("Installing NPM dependencies...");
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
@@ -65,6 +63,7 @@ function main(options, nProcesses, regexp) {
                 }
             }
         }));
+        yield runCommand(console, undefined, pathToDtsLint, "--installAll");
         console.log("Testing...");
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
@@ -82,116 +81,35 @@ function main(options, nProcesses, regexp) {
                 console.error(`\n\nError in ${pkg.desc}`);
                 console.error(err.message);
             }
+            console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.name).join(", ")}`);
             throw new Error("There was a test failure.");
         }
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = pkg.directoryPath(options);
-        return (yield tsConfig()) || (yield packageJson()) || (yield tsc()) || (yield tslint());
-        function tsConfig() {
-            return __awaiter(this, void 0, void 0, function* () {
-                const tsconfigPath = util_1.joinPaths(cwd, "tsconfig.json");
-                return catchErrors(log, () => __awaiter(this, void 0, void 0, function* () { return checkTsconfig(yield io_1.readJson(tsconfigPath)); }));
-            });
-        }
-        function packageJson() {
-            return __awaiter(this, void 0, void 0, function* () {
-                return catchErrors(log, () => checkPackageJson(pkg, options));
-            });
-        }
-        function tsc() {
-            return __awaiter(this, void 0, void 0, function* () {
-                const error = yield runCommand(log, cwd, ts_installer_1.pathToTsc(pkg.typeScriptVersion));
-                if (error && pkg.typeScriptVersion !== packages_1.TypeScriptVersion.Latest) {
-                    const newError = yield runCommand(log, cwd, ts_installer_1.pathToTsc(packages_1.TypeScriptVersion.Latest));
-                    if (!newError) {
-                        const message = `${error.message}\n` +
-                            `Package compiles in TypeScript ${packages_1.TypeScriptVersion.Latest} but not in ${pkg.typeScriptVersion}.\n` +
-                            `You can add a line '// TypeScript Version: ${packages_1.TypeScriptVersion.Latest}' to the end of the header to specify a new compiler version.`;
-                        return { message };
-                    }
-                }
-                return error;
-            });
-        }
-        function tslint() {
-            return __awaiter(this, void 0, void 0, function* () {
-                return (yield fsp.exists(util_1.joinPaths(cwd, "tslint.json")))
-                    ? runCommand(log, cwd, tslintPath, "--format stylish", ...pkg.files, ...pkg.testFiles)
-                    : undefined;
-            });
-        }
-    });
-}
-function catchErrors(log, action) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield action();
-        }
-        catch (error) {
-            log.error(error.message);
-            return { message: error.message };
-        }
-        return undefined;
+        const shouldLint = yield fsp.exists(util_1.joinPaths(cwd, "tslint.json"));
+        return runCommand(log, cwd, pathToDtsLint, "--dt", ...(shouldLint ? [] : ["--noLint"]));
     });
 }
 function runCommand(log, cwd, cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
         const nodeCmd = `node ${cmd} ${args.join(" ")}`;
         log.info(`Running: ${nodeCmd}`);
-        const { error, stdout, stderr } = yield util_1.exec(nodeCmd, cwd);
-        if (stdout) {
-            log.info(stdout);
+        try {
+            const { error, stdout, stderr } = yield util_1.exec(nodeCmd, cwd);
+            if (stdout) {
+                log.info(stdout);
+            }
+            if (stderr) {
+                log.error(stderr);
+            }
+            return error && { message: `${error.message}\n${stdout}\n${stderr}` };
         }
-        if (stderr) {
-            log.error(stderr);
-        }
-        return error && { message: `${error.message}\n${stdout}\n${stderr}` };
-    });
-}
-function checkTsconfig(tsconfig) {
-    const options = tsconfig.compilerOptions;
-    const mustHave = {
-        module: "commonjs",
-        // target: "es6", // Some libraries use an ES5 target, such as es6-shim
-        noEmit: true,
-        forceConsistentCasingInFileNames: true
-    };
-    for (const [key, value] of Object.entries(mustHave)) {
-        if (options[key] !== value) {
-            throw new Error(`Expected compilerOptions[${JSON.stringify(key)}] === ${value}`);
-        }
-    }
-    if (!("lib" in options)) {
-        throw new Error('Must specify "lib", usually to `"lib": ["es6"]` or `"lib": ["es6", "dom"]`.');
-    }
-    for (const key of ["noImplicitAny", "noImplicitThis", "strictNullChecks"]) {
-        if (!(key in options)) {
-            throw new Error(`Expected \`"${key}": true\` or \`"${key}": false\`.`);
-        }
-    }
-    if (("typeRoots" in options) && !("types" in options)) {
-        throw new Error('If the "typeRoots" option is specified in your tsconfig, you must include `"types": []` to prevent very long compile times.');
-    }
-    // baseUrl / typeRoots / types may be missing.
-    if (options.types && options.types.length) {
-        throw new Error('Use `/// <reference types="..." />` directives in source files and ensure that the "types" field in your tsconfig is an empty array.');
-    }
-}
-function checkPackageJson(typing, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!typing.hasPackageJson) {
-            return;
-        }
-        const pkgJsonPath = typing.filePath("package.json", options);
-        const pkgJson = yield io_1.readJson(pkgJsonPath);
-        const ignoredField = Object.keys(pkgJson).find(field => !["dependencies", "peerDependencies", "description"].includes(field));
-        if (ignoredField) {
-            throw new Error(`Ignored field in ${pkgJsonPath}: ${ignoredField}`);
+        catch (e) {
+            return e;
         }
     });
 }

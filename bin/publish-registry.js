@@ -7,10 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const package_generator_1 = require("./lib/package-generator");
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
-const packages_1 = require("./lib/packages");
 const npm_client_1 = require("./lib/npm-client");
+const package_generator_1 = require("./lib/package-generator");
+const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
 const versions_1 = require("./lib/versions");
 const io_1 = require("./util/io");
@@ -40,7 +41,6 @@ function main(dry = false) {
         yield logging_1.writeLog("publish-registry.md", logResult());
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function generateAndPublishRegistry(log, dry) {
     return __awaiter(this, void 0, void 0, function* () {

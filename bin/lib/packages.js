@@ -7,7 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
@@ -182,7 +184,7 @@ class NotNeededPackage extends PackageBase {
     get projectName() { return this.sourceRepoURL; }
     get declaredModules() { return []; }
     get globals() { return this.globals; }
-    get typeScriptVersion() { return TypeScriptVersion.Lowest; }
+    get typeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.Lowest; }
     readme(useNewline = true) {
         const { libraryName, sourceRepoURL, name } = this;
         const lines = [
@@ -245,7 +247,7 @@ class TypingsData extends PackageBase {
         return Object.entries(this.data.pathMappings);
     }
     get isPrerelease() {
-        return TypeScriptVersion.isPrerelease(this.typeScriptVersion);
+        return definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(this.typeScriptVersion);
     }
     get dependencies() {
         return this.deps();
@@ -284,43 +286,4 @@ function packageRootPath(packageName, options) {
     return util_1.joinPaths(options.typesPath, packageName);
 }
 exports.packageRootPath = packageRootPath;
-var TypeScriptVersion;
-(function (TypeScriptVersion) {
-    TypeScriptVersion.All = ["2.0", "2.1", "2.2"];
-    TypeScriptVersion.Lowest = "2.0";
-    /** Latest version that may be specified in a `// TypeScript Version:` header. */
-    TypeScriptVersion.Latest = "2.2";
-    for (const v of TypeScriptVersion.All) {
-        if (v > TypeScriptVersion.Latest) {
-            throw new Error("'Latest' not properly set.");
-        }
-    }
-    /** True if a package with the given typescript version should be published as prerelease. */
-    function isPrerelease(_version) {
-        return false;
-    }
-    TypeScriptVersion.isPrerelease = isPrerelease;
-    /** List of NPM tags that should be changed to point to the latest version. */
-    function tagsToUpdate(typeScriptVersion) {
-        switch (typeScriptVersion) {
-            case "2.0":
-                // A 2.0-compatible package is assumed compatible with TypeScript 2.1
-                // We want the "2.1" tag to always exist.
-                return [tags.latest, tags.v2_0, tags.v2_1, tags.v2_2, tags.v2_3];
-            case "2.1":
-                return [tags.latest, tags.v2_1, tags.v2_2, tags.v2_3];
-            case "2.2":
-                return [tags.latest, tags.v2_2, tags.v2_3];
-        }
-    }
-    TypeScriptVersion.tagsToUpdate = tagsToUpdate;
-    var tags;
-    (function (tags) {
-        tags.latest = "latest";
-        tags.v2_0 = "ts2.0";
-        tags.v2_1 = "ts2.1";
-        tags.v2_2 = "ts2.2";
-        tags.v2_3 = "ts2.3";
-    })(tags || (tags = {}));
-})(TypeScriptVersion = exports.TypeScriptVersion || (exports.TypeScriptVersion = {}));
 //# sourceMappingURL=packages.js.map

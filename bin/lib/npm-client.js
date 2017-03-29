@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const RegClient = require("npm-registry-client");
 const url = require("url");
@@ -76,7 +77,6 @@ class NpmClient {
         return promisifyVoid(cb => this.client.deprecate(url, params, cb));
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = NpmClient;
 function promisifyVoid(callsBack) {
     return new Promise((resolve, reject) => {

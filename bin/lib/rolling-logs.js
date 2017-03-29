@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const azure_container_1 = require("./azure-container");
 class RollingLogs {
     constructor(name, maxLines, container) {
@@ -40,6 +41,5 @@ class RollingLogs {
         });
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = RollingLogs;
 //# sourceMappingURL=rolling-logs.js.map

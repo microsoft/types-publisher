@@ -7,8 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const node_fetch_1 = require("node-fetch");
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
+const node_fetch_1 = require("node-fetch");
 const stream = require("stream");
 const util_1 = require("./util");
 function readFile(path) {

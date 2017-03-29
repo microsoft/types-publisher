@@ -7,15 +7,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
 const full_1 = require("../full");
-const logging_1 = require("../util/logging");
 const io_1 = require("../util/io");
+const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-const rolling_logs_1 = require("./rolling-logs");
 const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
+const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 function server(key, githubAccessToken, dry, options) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -30,7 +31,6 @@ function server(key, githubAccessToken, dry, options) {
         })));
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = server;
 function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));

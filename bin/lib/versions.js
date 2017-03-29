@@ -7,11 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
-const packages_1 = require("./packages");
 const settings_1 = require("./settings");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
@@ -47,7 +48,7 @@ class Versions {
             yield util_1.nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
             function getTypingsVersion(pkg) {
                 return __awaiter(this, void 0, void 0, function* () {
-                    const isPrerelease = packages_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
+                    const isPrerelease = definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
                     const versionInfo = yield fetchTypesPackageVersionInfo(pkg, isPrerelease, pkg.majorMinor);
                     if (!versionInfo) {
                         log(`Added: ${pkg.desc}`);
@@ -111,7 +112,6 @@ class Versions {
         return info;
     }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Versions;
 function changedPackages(allPackages) {
     return __awaiter(this, void 0, void 0, function* () {

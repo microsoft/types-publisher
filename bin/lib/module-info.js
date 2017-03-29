@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const path = require("path");
 const ts = require("typescript");
@@ -147,7 +148,6 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
         };
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getModuleInfo;
 /**
  * Given a file name, get the name of the module it declares.

@@ -7,14 +7,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const child_process = require("child_process");
 const crypto = require("crypto");
 const moment = require("moment");
-const os = require("os");
 const object_entries_1 = require("object.entries");
 object_entries_1.shim();
 const object_values_1 = require("object.values");
 object_values_1.shim();
+const os = require("os");
 const sourceMapSupport = require("source-map-support");
 sourceMapSupport.install();
 const util_1 = require("util");

@@ -7,15 +7,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
+const versions_1 = require("./lib/versions");
 const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
-const versions_1 = require("./lib/versions");
 if (!module.parent) {
     const all = !!yargs.argv.all;
     const packageNames = yargs.argv._;
@@ -40,7 +41,6 @@ function main(options) {
         yield doValidate(changed.map(c => c.name));
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function doAll() {
     return __awaiter(this, void 0, void 0, function* () {

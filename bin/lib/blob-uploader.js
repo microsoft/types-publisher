@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const fsp = require("fs-promise");
 const path = require("path");
@@ -23,7 +24,6 @@ function uploadBlobsAndUpdateIssue(timeStamp) {
         yield uploadIndex(container, timeStamp, dataUrls, logUrls);
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = uploadBlobsAndUpdateIssue;
 ;
 // View uploaded files at: https://ms.portal.azure.com under "typespublisher"

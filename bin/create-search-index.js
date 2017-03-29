@@ -7,11 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
-const util_1 = require("./util/util");
 const search_index_generator_1 = require("./lib/search-index-generator");
+const util_1 = require("./util/util");
 if (!module.parent) {
     const skipDownloads = yargs.argv.skipDownloads;
     const single = yargs.argv.single;
@@ -42,7 +43,6 @@ function main(skipDownloads, full, options) {
         }
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function doSingle(name, skipDownloads) {
     return __awaiter(this, void 0, void 0, function* () {

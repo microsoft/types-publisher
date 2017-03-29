@@ -7,10 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
+const settings_1 = require("../lib/settings");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
-const settings_1 = require("../lib/settings");
 if (process.env.LONGJOHN) {
     console.log("=== USING LONGJOHN ===");
     const longjohn = require("longjohn");

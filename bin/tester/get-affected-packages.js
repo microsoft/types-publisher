@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("../lib/common");
 const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
@@ -31,7 +32,6 @@ function getAffectedPackages(allPackages, log, options) {
         return collectDependers(changedPackages, dependedOn);
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
 function allDependencies(allPackages, packages) {
@@ -112,6 +112,7 @@ function gitDiff(log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield run(`git rev-parse --verify ${settings_1.sourceBranch}`);
+            // If this succeeds, we got the full clone.
         }
         catch (_) {
             // This is a shallow clone.

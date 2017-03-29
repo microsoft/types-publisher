@@ -7,12 +7,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const semver = require("semver");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
-const logging_1 = require("./util/logging");
 const io_1 = require("./util/io");
+const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main(true, common_1.Options.defaults));
@@ -35,7 +36,6 @@ function main(includeNpmChecks, options) {
         yield logging_1.writeLog("conflicts.md", logResult());
     });
 }
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
 function checkForDuplicates(packages, func, key, log) {
     const lookup = new Map();

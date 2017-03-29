@@ -1,6 +1,7 @@
 "use strict";
-const azure_keyvault_1 = require("azure-keyvault");
+Object.defineProperty(exports, "__esModule", { value: true });
 const adal_node_1 = require("adal-node");
+const azure_keyvault_1 = require("azure-keyvault");
 const settings_1 = require("./settings");
 var Secret;
 (function (Secret) {

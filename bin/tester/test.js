@@ -7,10 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
+const check_parse_results_1 = require("../check-parse-results");
 const clean_1 = require("../clean");
 const parse_definitions_1 = require("../parse-definitions");
-const check_parse_results_1 = require("../check-parse-results");
 const util_1 = require("../util/util");
 const test_runner_1 = require("./test-runner");
 if (!module.parent) {
