@@ -163,7 +163,7 @@ function createReadme(typing) {
     }
     lines.push("");
     lines.push("# Details");
-    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${settings_1.sourceBranch}/${typing.subDirectoryPath}`);
+    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}`);
     lines.push("");
     lines.push(`Additional Details`);
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
