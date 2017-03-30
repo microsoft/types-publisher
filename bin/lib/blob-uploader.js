@@ -25,7 +25,6 @@ function uploadBlobsAndUpdateIssue(timeStamp) {
     });
 }
 exports.default = uploadBlobsAndUpdateIssue;
-;
 // View uploaded files at: https://ms.portal.azure.com under "typespublisher"
 function uploadBlobs(container, timeStamp) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -41,7 +40,6 @@ function uploadBlobs(container, timeStamp) {
         return [dataUrls, logUrls];
     });
 }
-;
 const logsDirectoryName = "logs";
 const logsPrefix = logsDirectoryName + "/";
 function logsUploadedLocation(timeStamp) {
