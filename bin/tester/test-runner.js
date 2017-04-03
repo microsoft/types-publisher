@@ -56,7 +56,9 @@ function main(options, nProcesses, regexp) {
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
             if (yield fsp.exists(util_1.joinPaths(cwd, "package.json"))) {
-                let stdout = yield util_1.execAndThrowErrors(`npm install`, cwd);
+                // Scripts may try to compile native code.
+                // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
+                let stdout = yield util_1.execAndThrowErrors(`npm install --ignore-scripts`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
                 if (stdout) {
                     console.log(stdout);
