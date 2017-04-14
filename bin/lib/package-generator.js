@@ -20,58 +20,52 @@ function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
 }
 exports.default = generateAnyPackage;
+const license = fsp.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = typing.outputDirectory;
-        yield clearOutputPath(outputPath, log);
-        log("Generate package.json, metadata.json, and README.md");
         const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages, options);
-        const readme = createReadme(typing);
         log("Write metadata files to disk");
-        const outputs = [
-            writeOutputFile("package.json", packageJson),
-            writeOutputFile("README.md", readme)
-        ];
-        outputs.push(...typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
+        yield writeCommonOutputs(typing, packageJson, createReadme(typing), log);
+        yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy ${file}`);
-            yield fsp.copy(typing.filePath(file, options), yield outputFilePath(file));
+            yield fsp.copy(typing.filePath(file, options), yield outputFilePath(typing, file));
         })));
-        yield Promise.all(outputs);
         return logResult();
-        function writeOutputFile(filename, content) {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield io_1.writeFile(yield outputFilePath(filename), content);
-            });
-        }
-        function outputFilePath(filename) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const full = util_1.joinPaths(outputPath, filename);
-                const dir = path.dirname(full);
-                if (dir !== outputPath) {
-                    yield fsp.mkdirp(dir);
-                }
-                return full;
-            });
-        }
     });
 }
 function generateNotNeededPackage(pkg, versions) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const outputPath = pkg.outputDirectory;
-        yield clearOutputPath(outputPath, log);
-        log("Generate package.json and README.md");
         const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
-        const readme = pkg.readme();
         log("Write metadata files to disk");
-        yield writeOutputFile("package.json", packageJson);
-        yield writeOutputFile("README.md", readme);
-        // Not-needed packages never change version
+        yield writeCommonOutputs(pkg, packageJson, pkg.readme(), log);
         return logResult();
+    });
+}
+function writeCommonOutputs(pkg, packageJson, readme, log) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield clearOutputPath(pkg.outputDirectory, log);
+        yield Promise.all([
+            writeOutputFile("package.json", packageJson),
+            writeOutputFile("README.md", readme),
+            writeOutputFile("LICENSE", license),
+        ]);
         function writeOutputFile(filename, content) {
-            return io_1.writeFile(util_1.joinPaths(outputPath, filename), content);
+            return __awaiter(this, void 0, void 0, function* () {
+                yield io_1.writeFile(yield outputFilePath(pkg, filename), content);
+            });
         }
+    });
+}
+function outputFilePath(pkg, filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const full = util_1.joinPaths(pkg.outputDirectory, filename);
+        const dir = path.dirname(full);
+        if (dir !== pkg.outputDirectory) {
+            yield fsp.mkdirp(dir);
+        }
+        return full;
     });
 }
 function clearOutputPath(outputPath, log) {

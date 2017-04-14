@@ -31,9 +31,6 @@ function main(options) {
         yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name, options });
         function use(packageName) {
             return __awaiter(this, void 0, void 0, function* () {
-                if (packageName === "tslint.json") {
-                    return;
-                }
                 const { data, logs } = yield parser.getTypingInfo(packageName, options);
                 typings[packageName] = data;
                 // Flush detailed log

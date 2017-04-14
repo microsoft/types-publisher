@@ -83,7 +83,7 @@ function main(options, nProcesses, regexp) {
                 console.error(`\n\nError in ${pkg.desc}`);
                 console.error(err.message);
             }
-            console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.name).join(", ")}`);
+            console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.desc).join(", ")}`);
             throw new Error("There was a test failure.");
         }
     });
@@ -93,7 +93,7 @@ function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = pkg.directoryPath(options);
         const shouldLint = yield fsp.exists(util_1.joinPaths(cwd, "tslint.json"));
-        return runCommand(log, cwd, pathToDtsLint, "--dt", ...(shouldLint ? [] : ["--noLint"]));
+        return runCommand(log, cwd, pathToDtsLint, ...(shouldLint ? [] : ["--noLint"]));
     });
 }
 function runCommand(log, cwd, cmd, ...args) {

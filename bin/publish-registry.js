@@ -86,7 +86,7 @@ function generatePackageJson(patch) {
             "packages"
         ],
         author: "Microsoft Corp.",
-        license: "Apache-2.0"
+        license: "MIT"
     };
 }
 function generateRegistry(typings) {
