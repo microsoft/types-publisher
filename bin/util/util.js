@@ -15,6 +15,9 @@ const os = require("os");
 const sourceMapSupport = require("source-map-support");
 sourceMapSupport.install();
 const util_1 = require("util");
+if (!Object.entries) {
+    Object.entries = (obj) => Object.getOwnPropertyNames(obj).map(key => [key, obj[key]]);
+}
 const progress_1 = require("./progress");
 function parseJson(text) {
     try {

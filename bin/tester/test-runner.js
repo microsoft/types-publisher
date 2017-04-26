@@ -16,14 +16,15 @@ const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
-    const regexp = yargs.argv.all ? new RegExp("") : yargs.argv._[0] && new RegExp(yargs.argv._[0]);
-    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), regexp));
+    const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
+    const tsNext = !!yargs.argv.tsNext;
+    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), selection, tsNext));
 }
 const pathToDtsLint = util_1.joinPaths(__dirname, "..", "..", "node_modules", "dtslint", "bin", "index.js");
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
     if (!str) {
-        return undefined;
+        return util_1.numberOfOsProcesses;
     }
     const nProcesses = Number.parseInt(yargs.argv.nProcesses, 10);
     if (Number.isNaN(nProcesses)) {
@@ -41,13 +42,14 @@ function testerOptions(runFromDefinitelyTyped) {
     }
 }
 exports.testerOptions = testerOptions;
-function main(options, nProcesses, regexp) {
+function main(options, nProcesses, selection, tsNext) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
-        const typings = regexp
-            ? allPackages.allTypings().filter(t => regexp.test(t.name))
-            : yield get_affected_packages_1.default(allPackages, console.log, options);
-        nProcesses = nProcesses || util_1.numberOfOsProcesses;
+        const typings = selection === "all"
+            ? allPackages.allTypings()
+            : selection === "affected"
+                ? yield get_affected_packages_1.default(allPackages, console.log, options)
+                : allPackages.allTypings().filter(t => selection.test(t.name));
         console.log(`Testing ${typings.length} packages: ${typings.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
@@ -69,7 +71,7 @@ function main(options, nProcesses, regexp) {
         console.log("Testing...");
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
-            const err = yield single(pkg, log, options);
+            const err = yield single(pkg, log, options, tsNext);
             console.log(`Testing ${pkg.desc}`);
             logging_1.moveLogsWithErrors(console, logResult(), msg => "\t" + msg);
             if (err) {
@@ -89,11 +91,18 @@ function main(options, nProcesses, regexp) {
     });
 }
 exports.default = main;
-function single(pkg, log, options) {
+function single(pkg, log, options, tsNext) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = pkg.directoryPath(options);
         const shouldLint = yield fsp.exists(util_1.joinPaths(cwd, "tslint.json"));
-        return runCommand(log, cwd, pathToDtsLint, ...(shouldLint ? [] : ["--noLint"]));
+        const args = [];
+        if (!shouldLint) {
+            args.push("--noLint");
+        }
+        if (tsNext) {
+            args.push("--tsNext");
+        }
+        return runCommand(log, cwd, pathToDtsLint, ...args);
     });
 }
 function runCommand(log, cwd, cmd, ...args) {
