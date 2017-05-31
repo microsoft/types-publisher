@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const path = require("path");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
@@ -20,7 +20,7 @@ function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
 }
 exports.default = generateAnyPackage;
-const license = fsp.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
+const license = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
@@ -29,7 +29,7 @@ function generatePackage(typing, packages, versions, options) {
         yield writeCommonOutputs(typing, packageJson, createReadme(typing), log);
         yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy ${file}`);
-            yield fsp.copy(typing.filePath(file, options), yield outputFilePath(typing, file));
+            yield fs_extra_1.copy(typing.filePath(file, options), yield outputFilePath(typing, file));
         })));
         return logResult();
     });
@@ -63,7 +63,7 @@ function outputFilePath(pkg, filename) {
         const full = util_1.joinPaths(pkg.outputDirectory, filename);
         const dir = path.dirname(full);
         if (dir !== pkg.outputDirectory) {
-            yield fsp.mkdirp(dir);
+            yield fs_extra_1.mkdirp(dir);
         }
         return full;
     });
@@ -71,9 +71,9 @@ function outputFilePath(pkg, filename) {
 function clearOutputPath(outputPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         log(`Create output path ${outputPath}`);
-        yield fsp.mkdirp(outputPath);
+        yield fs_extra_1.mkdirp(outputPath);
         log(`Clear out old files`);
-        yield fsp.emptyDir(outputPath);
+        yield fs_extra_1.emptyDir(outputPath);
     });
 }
 exports.clearOutputPath = clearOutputPath;

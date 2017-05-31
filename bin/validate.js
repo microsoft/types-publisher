@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
@@ -69,8 +69,8 @@ function validatePackages(packageNames, outPath, log) {
         const failed = [];
         const passed = [];
         try {
-            yield fsp.remove(outPath);
-            yield fsp.mkdirp(outPath);
+            yield fs_extra_1.remove(outPath);
+            yield fs_extra_1.mkdirp(outPath);
         }
         catch (e) {
             log.error("Could not recreate output directory. " + e);
@@ -105,11 +105,11 @@ function validatePackage(packageName, outputDirecory, mainLog) {
             const packageDirectory = util_1.joinPaths(outputDirecory, packageName);
             log.info("");
             log.info("Processing `" + packageName + "`...");
-            yield fsp.mkdirp(packageDirectory);
+            yield fs_extra_1.mkdirp(packageDirectory);
             yield writePackage(packageDirectory, packageName);
             if ((yield runCommand("npm", log, packageDirectory, "../../node_modules/npm/bin/npm-cli.js", "install")) &&
                 (yield runCommand("tsc", log, packageDirectory, "../../node_modules/typescript/lib/tsc.js"))) {
-                yield fsp.remove(packageDirectory);
+                yield fs_extra_1.remove(packageDirectory);
                 log.info("Passed.");
                 passed = true;
             }

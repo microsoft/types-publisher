@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const child_process_1 = require("child_process");
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const path_1 = require("path");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
@@ -20,7 +20,7 @@ if (!module.parent) {
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const dtPath = options.definitelyTypedPath;
-        if (yield fsp.exists(options.definitelyTypedPath)) {
+        if (yield fs_extra_1.pathExists(options.definitelyTypedPath)) {
             console.log(`Fetching changes from ${settings_1.sourceBranch}`);
             const actualBranch = exec(`git rev-parse --abbrev-ref HEAD`, dtPath);
             if (actualBranch !== settings_1.sourceBranch) {

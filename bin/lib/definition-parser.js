@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -31,7 +31,7 @@ function getTypingInfo(packageName, options) {
                 throw new Error(`The latest major version is ${latestVersion}, but a directory v${latestVersion} exists.`);
             }
             const directory = util_1.joinPaths(rootDirectory, directoryName);
-            const files = yield fsp.readdir(directory);
+            const files = yield fs_extra_1.readdir(directory);
             const { data, logs } = yield getTypingData(packageName, directory, files, majorVersion);
             log(`Parsing older version ${majorVersion}`);
             logging_1.moveLogs(log, logs, (msg) => "    " + msg);
@@ -51,7 +51,7 @@ function getTypingInfo(packageName, options) {
 exports.getTypingInfo = getTypingInfo;
 function getOlderVersions(rootDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
-        const lsRootDirectory = yield fsp.readdir(rootDirectory);
+        const lsRootDirectory = yield fs_extra_1.readdir(rootDirectory);
         const rootDirectoryLs = [];
         const olderVersionDirectories = [];
         for (const fileOrDirectoryName of lsRootDirectory) {
@@ -83,14 +83,14 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         // There is a *single* main file, containing metadata comments.
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
-        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFile(directory, mainFilename));
-        const tsconfig = yield fsp.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
+        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFileAndThrowOnBOM(directory, mainFilename));
+        const tsconfig = yield fs_extra_1.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
         const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
         const testDependencies = yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet);
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const packageJsonPath = util_1.joinPaths(directory, "package.json");
-        const hasPackageJson = yield fsp.exists(packageJsonPath);
+        const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
         if (hasPackageJson) {
             checkPackageJson(yield io_1.readJson(packageJsonPath), packageJsonPath);
         }
@@ -246,7 +246,7 @@ function withoutEnd(s, end) {
 }
 function hash(directory, files, tsconfigPaths) {
     return __awaiter(this, void 0, void 0, function* () {
-        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return f + "**" + (yield readFile(directory, f)); }));
+        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return f + "**" + (yield readFileAndThrowOnBOM(directory, f)); }));
         let allContent = fileContents.join("||");
         if (tsconfigPaths) {
             allContent += JSON.stringify(tsconfigPaths);
@@ -254,7 +254,7 @@ function hash(directory, files, tsconfigPaths) {
         return util_1.computeHash(allContent);
     });
 }
-function readFile(directory, fileName) {
+function readFileAndThrowOnBOM(directory, fileName) {
     return __awaiter(this, void 0, void 0, function* () {
         const full = util_1.joinPaths(directory, fileName);
         const text = yield io_1.readFile(full);
@@ -269,13 +269,13 @@ function readFile(directory, fileName) {
         return text;
     });
 }
-exports.readFile = readFile;
+exports.readFileAndThrowOnBOM = readFileAndThrowOnBOM;
 const unusedFilesName = "UNUSED_FILES.txt";
 function checkAllFilesUsed(directory, ls, usedFiles) {
     return __awaiter(this, void 0, void 0, function* () {
         const lsSet = new Set(ls);
         const unusedFiles = lsSet.delete(unusedFilesName)
-            ? new Set((yield fsp.readFile(util_1.joinPaths(directory, unusedFilesName), "utf-8")).split(/\r?\n/g))
+            ? new Set((yield io_1.readFile(util_1.joinPaths(directory, unusedFilesName))).split(/\r?\n/g))
             : new Set();
         yield checkAllUsedRecur(directory, lsSet, usedFiles, unusedFiles);
     });
@@ -290,14 +290,13 @@ function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
                 unusedFiles.delete(lsEntry);
                 continue;
             }
-            const stat = yield fsp.stat(util_1.joinPaths(directory, lsEntry));
-            if (stat.isDirectory()) {
+            if (yield io_1.isDirectory(util_1.joinPaths(directory, lsEntry))) {
                 // We allow a "scripts" directory to be used for scripts.
                 if (lsEntry === "node_modules" || lsEntry === "scripts") {
                     continue;
                 }
                 const subdir = util_1.joinPaths(directory, lsEntry);
-                const lssubdir = yield fsp.readdir(subdir);
+                const lssubdir = yield fs_extra_1.readdir(subdir);
                 if (lssubdir.length === 0) {
                     throw new Error(`Empty directory ${subdir} (${util_1.join(usedFiles)})`);
                 }

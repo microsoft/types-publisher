@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const path = require("path");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -53,7 +53,7 @@ function uploadLogs(container, timeStamp, log) {
 }
 function uploadDirectory(container, uploadedDirPath, dirPath, log, filter) {
     return __awaiter(this, void 0, void 0, function* () {
-        let files = yield fsp.readdir(dirPath);
+        let files = yield fs_extra_1.readdir(dirPath);
         if (filter) {
             files = files.filter(filter);
         }

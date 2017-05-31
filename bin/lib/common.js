@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const settings_1 = require("../lib/settings");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
@@ -55,7 +55,7 @@ function readFileAndWarn(generatedBy, filePath) {
 exports.readFileAndWarn = readFileAndWarn;
 function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield fsp.ensureDir(dataDir);
+        yield fs_extra_1.ensureDir(dataDir);
         yield io_1.writeJson(dataFilePath(filename), content, formatted);
     });
 }

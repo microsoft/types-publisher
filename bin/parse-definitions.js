@@ -8,13 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const parser = require("./lib/definition-parser");
 const packages_1 = require("./lib/packages");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
-const fsp = require("fs-promise");
 if (!module.parent) {
     const singleName = yargs.argv.single;
     util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults)));
@@ -25,7 +25,7 @@ function main(options) {
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const packageNames = yield fsp.readdir(options.typesPath);
+        const packageNames = yield fs_extra_1.readdir(options.typesPath);
         summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
         const typings = {};
         yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name, options });

@@ -1,5 +1,5 @@
-// Run `node ./bin/test-get-secrets.js` to test that we can fetch secrets from Azure Keyvault
 "use strict";
+// Run `node ./bin/test-get-secrets.js` to test that we can fetch secrets from Azure Keyvault
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }

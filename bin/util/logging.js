@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const common_1 = require("../lib/common");
 const util_1 = require("../util/util");
 const io_1 = require("./io");
@@ -81,7 +81,7 @@ function logPath(logName) {
 exports.logPath = logPath;
 function writeLog(logName, contents) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield fsp.ensureDir(logDir);
+        yield fs_extra_1.ensureDir(logDir);
         yield io_1.writeFile(logPath(logName), contents.join("\r\n"));
     });
 }

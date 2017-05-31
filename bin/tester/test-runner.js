@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
@@ -57,7 +57,7 @@ function main(options, nProcesses, selection, tsNext) {
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
-            if (yield fsp.exists(util_1.joinPaths(cwd, "package.json"))) {
+            if (yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json"))) {
                 // Scripts may try to compile native code.
                 // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
                 let stdout = yield util_1.execAndThrowErrors(`npm install --ignore-scripts`, cwd);
@@ -94,7 +94,7 @@ exports.default = main;
 function single(pkg, log, options, tsNext) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = pkg.directoryPath(options);
-        const shouldLint = yield fsp.exists(util_1.joinPaths(cwd, "tslint.json"));
+        const shouldLint = yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "tslint.json"));
         const args = [];
         if (!shouldLint) {
             args.push("--noLint");

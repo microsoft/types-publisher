@@ -8,12 +8,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
+const fs_extra_1 = require("fs-extra");
 const node_fetch_1 = require("node-fetch");
 const stream = require("stream");
 const util_1 = require("./util");
 function readFile(path) {
-    return fsp.readFile(path, { encoding: "utf8" });
+    return fs_extra_1.readFile(path, { encoding: "utf8" });
 }
 exports.readFile = readFile;
 function readJson(path) {
@@ -31,11 +31,11 @@ function fetchJson(url, init) {
 }
 exports.fetchJson = fetchJson;
 function writeFile(path, content) {
-    return fsp.writeFile(path, content, { encoding: "utf8" });
+    return fs_extra_1.writeFile(path, content, { encoding: "utf8" });
 }
 exports.writeFile = writeFile;
 function writeJson(path, content, formatted = true) {
-    return fsp.writeJson(path, content, { spaces: formatted ? 4 : 0 });
+    return fs_extra_1.writeJson(path, content, { spaces: formatted ? 4 : 0 });
 }
 exports.writeJson = writeJson;
 function streamOfString(text) {
@@ -80,7 +80,7 @@ function fetchWithRetries(url, init) {
 }
 function isDirectory(path) {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield fsp.stat(path)).isDirectory();
+        return (yield fs_extra_1.stat(path)).isDirectory();
     });
 }
 exports.isDirectory = isDirectory;

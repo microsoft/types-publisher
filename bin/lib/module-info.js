@@ -200,7 +200,7 @@ function resolveModule(referencedFrom, directory, filename) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const dts = filename + ".d.ts";
-            return { resolvedFilename: dts, content: yield definition_parser_1.readFile(directory, dts) };
+            return { resolvedFilename: dts, content: yield definition_parser_1.readFileAndThrowOnBOM(directory, dts) };
         }
         catch (_) {
             const index = util_1.joinPaths(filename, "index.d.ts");
@@ -211,7 +211,7 @@ function resolveModule(referencedFrom, directory, filename) {
 function readFileAndReportErrors(referencedFrom, directory, referenceText, filename) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            return yield definition_parser_1.readFile(directory, filename);
+            return yield definition_parser_1.readFileAndThrowOnBOM(directory, filename);
         }
         catch (err) {
             console.error(`In ${directory}, ${referencedFrom} references ${referenceText}, which can't be read.`);
@@ -326,7 +326,7 @@ function getTestDependencies(pkgName, directory, testFiles, dependencies) {
     return __awaiter(this, void 0, void 0, function* () {
         const testDependencies = new Set();
         for (const filename of testFiles) {
-            const content = yield definition_parser_1.readFile(directory, filename);
+            const content = yield definition_parser_1.readFileAndThrowOnBOM(directory, filename);
             const sourceFile = createSourceFile(filename, content);
             const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
             const filePath = () => path.join(pkgName, fileName);
