@@ -125,7 +125,7 @@ export function intOfString(str: string) {
 }
 
 export function sortObjectKeys<T extends { [key: string]: any }>(data: T): T {
-	const out = {} as T;
+	const out = {} as T; // tslint:disable-line no-object-literal-type-assertion
 	for (const key of Object.keys(data).sort()) {
 		out[key] = data[key];
 	}
@@ -134,7 +134,7 @@ export function sortObjectKeys<T extends { [key: string]: any }>(data: T): T {
 
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 export function exec(cmd: string, cwd?: string): Promise<{ error?: Error, stdout: string, stderr: string }> {
-	return new Promise((resolve) => {
+	return new Promise<{ error?: Error, stdout: string, stderr: string }>((resolve) => {
 		child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
 			stdout = stdout.trim();
 			stderr = stderr.trim();
