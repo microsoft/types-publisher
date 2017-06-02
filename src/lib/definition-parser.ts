@@ -344,7 +344,7 @@ async function checkAllUsedRecur(directory: string, ls: Iterable<string>, usedFi
 			}
 			await checkAllUsedRecur(subdir, lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles));
 		} else {
-			if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
+			if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig" && lsEntry !== ".DS_Store") {
 				throw new Error(`Directory ${directory} has unused file ${lsEntry}`);
 			}
 		}
