@@ -1,4 +1,5 @@
-import { readdir } from "fs-extra";
+import { readdir, statSync } from "fs-extra";
+import * as path from "path";
 import * as yargs from "yargs";
 
 import { Options, writeDataFile } from "./lib/common";
@@ -19,7 +20,8 @@ export default async function main(options: Options): Promise<void> {
 	summaryLog("# Typing Publish Report Summary");
 	summaryLog(`Started at ${(new Date()).toUTCString()}`);
 
-	const packageNames = await readdir(options.typesPath);
+	let packageNames = await readdir(options.typesPath);
+	packageNames = packageNames.filter(packageName => statSync(path.join(options.typesPath, packageName)).isDirectory());
 
 	summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
 
