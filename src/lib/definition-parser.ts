@@ -223,9 +223,9 @@ async function calculateDependencies(packageName: string, tsconfig: TsConfig, de
 		const pathMapping = pathMappingList[0];
 
 		// Path mapping may be for "@foo/bar" -> "foo__bar". Based on `getPackageNameFromAtTypesDirectory` in TypeScript.
-		const mangledScopeedPackageSeparator = "__";
-		if (pathMapping.indexOf(mangledScopeedPackageSeparator) !== -1) {
-			const expected = "@" + pathMapping.replace(mangledScopeedPackageSeparator, "/");
+		const mangledScopedPackageSeparator = "__";
+		if (pathMapping.indexOf(mangledScopedPackageSeparator) !== -1) {
+			const expected = "@" + pathMapping.replace(mangledScopedPackageSeparator, "/");
 			if (dependencyName !== expected) {
 				throw new Error(`Expected directory ${pathMapping} to be the path mapping for ${dependencyName}`);
 			}
