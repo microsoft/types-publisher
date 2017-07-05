@@ -60,7 +60,7 @@ function main(options, nProcesses, selection, tsNext) {
             if (yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json"))) {
                 // Scripts may try to compile native code.
                 // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
-                let stdout = yield util_1.execAndThrowErrors(`npm install --ignore-scripts`, cwd);
+                let stdout = yield util_1.execAndThrowErrors(`npm install --ignore-scripts --no-shrinkwrap`, cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
                 if (stdout) {
                     console.log(stdout);

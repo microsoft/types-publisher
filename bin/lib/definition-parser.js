@@ -177,7 +177,7 @@ function entryFilesFromTsConfig(packageName, directory, tsconfig) {
 /** In addition to dependencies found oun source code, also get dependencies from tsconfig. */
 function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorVersion) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { paths } = tsconfig.compilerOptions;
+        const paths = tsconfig.compilerOptions && tsconfig.compilerOptions.paths || {};
         const dependencies = {};
         const pathMappings = {};
         for (const dependencyName in paths) {
@@ -189,7 +189,20 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
                 }
                 continue;
             }
-            const pathMapping = paths[dependencyName];
+            const pathMappingList = paths[dependencyName];
+            if (pathMappingList.length !== 1) {
+                throw new Error(`In ${packageName}: Path mapping for ${dependencyName} may only have 1 entry.`);
+            }
+            const pathMapping = pathMappingList[0];
+            // Path mapping may be for "@foo/bar" -> "foo__bar". Based on `getPackageNameFromAtTypesDirectory` in TypeScript.
+            const mangledScopedPackageSeparator = "__";
+            if (pathMapping.indexOf(mangledScopedPackageSeparator) !== -1) {
+                const expected = "@" + pathMapping.replace(mangledScopedPackageSeparator, "/");
+                if (dependencyName !== expected) {
+                    throw new Error(`Expected directory ${pathMapping} to be the path mapping for ${dependencyName}`);
+                }
+                continue;
+            }
             const version = parseDependencyVersionFromPath(dependencyName, dependencyName, pathMapping);
             if (dependencyName === packageName) {
                 if (oldMajorVersion === undefined) {
@@ -220,11 +233,7 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
     });
 }
 // e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
-function parseDependencyVersionFromPath(packageName, dependencyName, dependencyPaths) {
-    if (dependencyPaths.length !== 1) {
-        throw new Error(`In ${packageName}: Path mapping for ${dependencyName} may only have 1 entry.`);
-    }
-    const dependencyPath = dependencyPaths[0];
+function parseDependencyVersionFromPath(packageName, dependencyName, dependencyPath) {
     const versionString = withoutStart(dependencyPath, dependencyName + "/");
     const version = versionString === undefined ? undefined : parseMajorVersionFromDirectoryName(versionString);
     if (version === undefined) {

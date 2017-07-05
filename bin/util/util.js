@@ -32,7 +32,7 @@ function currentTimeStamp() {
     return moment().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 }
 exports.currentTimeStamp = currentTimeStamp;
-exports.numberOfOsProcesses = os.cpus().length;
+exports.numberOfOsProcesses = process.env.TRAVIS === "true" ? 8 : os.cpus().length * 4;
 function nAtATime(n, inputs, use, progressOptions) {
     return __awaiter(this, void 0, void 0, function* () {
         const progress = progressOptions && progressOptions.options.progress ? new progress_1.default({ name: progressOptions.name }) : undefined;
