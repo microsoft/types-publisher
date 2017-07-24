@@ -20,7 +20,7 @@ if (!module.parent) {
     const tsNext = !!yargs.argv.tsNext;
     util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), selection, tsNext));
 }
-const pathToDtsLint = util_1.joinPaths(__dirname, "..", "..", "node_modules", "dtslint", "bin", "index.js");
+const pathToDtsLint = require.resolve("dtslint");
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
     if (!str) {
@@ -60,7 +60,7 @@ function main(options, nProcesses, selection, tsNext) {
             if (yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json"))) {
                 // Scripts may try to compile native code.
                 // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
-                let stdout = yield util_1.execAndThrowErrors(`npm install --ignore-scripts --no-shrinkwrap`, cwd);
+                let stdout = yield util_1.execAndThrowErrors("npm install --ignore-scripts --no-shrinkwrap", cwd);
                 stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
                 if (stdout) {
                     console.log(stdout);
@@ -73,7 +73,7 @@ function main(options, nProcesses, selection, tsNext) {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
             const err = yield single(pkg, log, options, tsNext);
             console.log(`Testing ${pkg.desc}`);
-            logging_1.moveLogsWithErrors(console, logResult(), msg => "\t" + msg);
+            logging_1.moveLogsWithErrors(console, logResult(), msg => `\t${msg}`);
             if (err) {
                 allErrors.push({ err, pkg });
             }

@@ -16,14 +16,11 @@ const webhook_server_1 = require("./lib/webhook-server");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const remote = yargs.argv.remote;
-    function getPort() {
-        const port = parseInt(process.env.PORT, 10);
-        if (!port) {
-            throw new Error("Must provide PORT");
-        }
-        return port;
+    const port = parseInt(process.env.PORT, 10);
+    if (!port) {
+        throw new Error("Must provide PORT");
     }
-    const url = remote ? "http://types-publisher.azurewebsites.net" : `http://localhost:${getPort()}`;
+    const url = remote ? "http://types-publisher.azurewebsites.net" : `http://localhost:${port}`;
     util_1.done(main(url));
 }
 function main(url) {

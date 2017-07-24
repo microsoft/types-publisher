@@ -42,8 +42,8 @@ function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
         const tags = definitelytyped_header_parser_1.TypeScriptVersion.tagsToUpdate(pkg.typeScriptVersion);
         log(`Tag ${pkg.fullNpmName}@${version} as ${JSON.stringify(tags)}`);
         if (!dry) {
-            for (const tag of tags) {
-                yield client.tag(pkg.fullEscapedNpmName, version, tag);
+            for (const tagName of tags) {
+                yield tag(version, tagName);
             }
         }
         // Prerelease packages should never be tagged latest
@@ -55,9 +55,7 @@ function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
             }
         }
         function tag(versionString, tag) {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield client.tag(pkg.fullEscapedNpmName, versionString, tag);
-            });
+            return client.tag(pkg.fullEscapedNpmName, versionString, tag);
         }
     });
 }

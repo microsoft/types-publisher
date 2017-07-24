@@ -27,7 +27,7 @@ if (!module.parent) {
 function main(skipDownloads, full, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
-        console.log(`Generating search index...`);
+        console.log("Generating search index...");
         const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads), {
             name: "Indexing...",
             flavor: pkg => pkg.desc,
@@ -35,8 +35,8 @@ function main(skipDownloads, full, options) {
         });
         // Most downloads first
         records.sort((a, b) => b.d - a.d);
-        console.log(`Done generating search index`);
-        console.log(`Writing out data files`);
+        console.log("Done generating search index");
+        console.log("Writing out data files");
         yield common_1.writeDataFile("search-index-min.json", records, false);
         if (full) {
             yield common_1.writeDataFile("search-index-full.json", records.map(verboseRecord), true);

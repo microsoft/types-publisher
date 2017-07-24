@@ -75,7 +75,7 @@ function getClient() {
                 throw error;
             }
             // Calculate the value to be set in the request's Authorization header and resume the call.
-            callback(null, `${tokenResponse.tokenType} ${tokenResponse.accessToken}`);
+            callback(undefined, `${tokenResponse.tokenType} ${tokenResponse.accessToken}`);
         });
     });
     return new azure_keyvault_1.KeyVaultClient(credentials);

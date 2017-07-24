@@ -41,7 +41,7 @@ exports.writeJson = writeJson;
 function streamOfString(text) {
     const s = new stream.Readable();
     s.push(text);
-    s.push(null);
+    s.push(null); // tslint:disable-line no-null-keyword
     return s;
 }
 exports.streamOfString = streamOfString;
@@ -52,7 +52,7 @@ function stringOfStream(stream) {
     });
     return new Promise((resolve, reject) => {
         stream.on("error", reject);
-        stream.on("end", () => resolve(body));
+        stream.on("end", () => { resolve(body); });
     });
 }
 exports.stringOfStream = stringOfStream;

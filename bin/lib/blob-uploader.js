@@ -36,12 +36,12 @@ function uploadBlobs(container, timeStamp) {
         // Finally, output blob logs and upload them.
         const blobLogs = "upload-blobs.md";
         yield logging_1.writeLog(blobLogs, logResult());
-        logUrls.push(yield uploadFile(container, logsUploadedLocation(timeStamp) + "/" + blobLogs, logging_1.logPath(blobLogs)));
+        logUrls.push(yield uploadFile(container, `${logsUploadedLocation(timeStamp)}/${blobLogs}`, logging_1.logPath(blobLogs)));
         return [dataUrls, logUrls];
     });
 }
 const logsDirectoryName = "logs";
-const logsPrefix = logsDirectoryName + "/";
+const logsPrefix = `${logsDirectoryName}/`;
 function logsUploadedLocation(timeStamp) {
     return logsPrefix + timeStamp;
 }

@@ -22,15 +22,15 @@ function main(options) {
         const dtPath = options.definitelyTypedPath;
         if (yield fs_extra_1.pathExists(options.definitelyTypedPath)) {
             console.log(`Fetching changes from ${settings_1.sourceBranch}`);
-            const actualBranch = exec(`git rev-parse --abbrev-ref HEAD`, dtPath);
+            const actualBranch = exec("git rev-parse --abbrev-ref HEAD", dtPath);
             if (actualBranch !== settings_1.sourceBranch) {
                 throw new Error(`Please checkout branch '${settings_1.sourceBranch}`);
             }
-            const diff = exec(`git diff --name-only`, dtPath);
+            const diff = exec("git diff --name-only", dtPath);
             if (diff) {
                 throw new Error(`'git diff' should be empty. Following files changed:\n${diff}`);
             }
-            exec(`git pull`, dtPath);
+            exec("git pull", dtPath);
         }
         else {
             console.log(`Cloning ${settings_1.sourceRepository} to ${dtPath}`);
@@ -41,7 +41,7 @@ function main(options) {
 }
 exports.default = main;
 function exec(cmd, cwd) {
-    console.log(`Exec${cwd ? " at " + cwd : ""}: ${cmd}`);
+    console.log(`Exec${cwd ? ` at ${cwd}` : ""}: ${cmd}`);
     const result = child_process_1.execSync(cmd, { cwd, encoding: "utf8" }).trim();
     console.log(result);
     return result.trim();

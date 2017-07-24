@@ -72,7 +72,7 @@ function clearOutputPath(outputPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         log(`Create output path ${outputPath}`);
         yield fs_extra_1.mkdirp(outputPath);
-        log(`Clear out old files`);
+        log("Clear out old files");
         yield fs_extra_1.emptyDir(outputPath);
     });
 }
@@ -146,7 +146,7 @@ function createNotNeededPackageJSON({ libraryName, name, fullNpmName, sourceRepo
 function createReadme(typing) {
     const lines = [];
     lines.push("# Installation");
-    lines.push("> `npm install --save " + typing.fullNpmName + "`");
+    lines.push(`> \`npm install --save ${typing.fullNpmName}\``);
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {
@@ -159,7 +159,7 @@ function createReadme(typing) {
     lines.push("# Details");
     lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}`);
     lines.push("");
-    lines.push(`Additional Details`);
+    lines.push("Additional Details");
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
     const dependencies = Array.from(typing.dependencies).map(d => d.name);
     lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);

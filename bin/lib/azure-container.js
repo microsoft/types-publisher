@@ -39,10 +39,12 @@ class BlobWriter {
                 ]
             }
         };
-        return promisifyErrorOrResponse(cb => this.service.setServiceProperties(properties, cb));
+        return promisifyErrorOrResponse(cb => { this.service.setServiceProperties(properties, cb); });
     }
     ensureCreated(options) {
-        return promisifyErrorOrResult(cb => this.service.createContainerIfNotExists(settings_1.azureContainer, options, cb));
+        return promisifyErrorOrResult(cb => {
+            this.service.createContainerIfNotExists(settings_1.azureContainer, options, cb);
+        });
     }
     createBlobFromFile(blobName, fileName) {
         return this.createBlobFromStream(blobName, fs.createReadStream(fileName));
@@ -52,7 +54,9 @@ class BlobWriter {
     }
     listBlobs(prefix) {
         return __awaiter(this, void 0, void 0, function* () {
-            const once = (token) => promisifyErrorOrResult(cb => this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb));
+            const once = (token) => promisifyErrorOrResult(cb => {
+                this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb);
+            });
             const out = [];
             let token;
             do {
@@ -64,7 +68,9 @@ class BlobWriter {
         });
     }
     deleteBlob(blobName) {
-        return promisifyErrorOrResponse(cb => this.service.deleteBlob(settings_1.azureContainer, blobName, cb));
+        return promisifyErrorOrResponse(cb => {
+            this.service.deleteBlob(settings_1.azureContainer, blobName, cb);
+        });
     }
     createBlobFromStream(blobName, stream) {
         const options = {

@@ -88,7 +88,7 @@ class AllPackages {
         return versions && versions.tryGet(majorVersion);
     }
     allPackages() {
-        return this.allTypings().concat(this.allNotNeeded());
+        return [...this.allTypings(), ...this.allNotNeeded()];
     }
     allTypings() {
         return Array.from(flattenData(this.data));

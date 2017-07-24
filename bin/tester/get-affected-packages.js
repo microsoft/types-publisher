@@ -129,7 +129,7 @@ function gitDiff(log, options) {
         return diff.split("\n");
         function run(cmd) {
             return __awaiter(this, void 0, void 0, function* () {
-                log("Running: " + cmd);
+                log(`Running: ${cmd}`);
                 const stdout = yield util_1.execAndThrowErrors(cmd, options.definitelyTypedPath);
                 log(stdout);
                 return stdout;

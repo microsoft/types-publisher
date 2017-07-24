@@ -34,7 +34,7 @@ class ProgressBar {
             }
             charm.write("]");
             if (this.flavor.length) {
-                charm.write(" " + this.flavor);
+                charm.write(` ${this.flavor}`);
             }
         });
     }

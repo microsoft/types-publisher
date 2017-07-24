@@ -34,7 +34,7 @@ function getTypingInfo(packageName, options) {
             const files = yield fs_extra_1.readdir(directory);
             const { data, logs } = yield getTypingData(packageName, directory, files, majorVersion);
             log(`Parsing older version ${majorVersion}`);
-            logging_1.moveLogs(log, logs, (msg) => "    " + msg);
+            logging_1.moveLogs(log, logs, msg => `    ${msg}`);
             if (data.libraryMajorVersion !== majorVersion) {
                 throw new Error(`Directory ${directory} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
             }
@@ -68,6 +68,7 @@ function getOlderVersions(rootDirectory) {
 }
 function parseMajorVersionFromDirectoryName(directoryName) {
     const match = /^v(\d+)$/.exec(directoryName);
+    // tslint:disable-next-line no-null-keyword
     return match === null ? undefined : Number(match[1]);
 }
 exports.parseMajorVersionFromDirectoryName = parseMajorVersionFromDirectoryName;
@@ -164,7 +165,7 @@ function entryFilesFromTsConfig(packageName, directory, tsconfig) {
             else {
                 if (!file.startsWith("test/")) {
                     const expectedName = `${packageName}-tests.ts`;
-                    if (file !== expectedName && file !== expectedName + "x") {
+                    if (file !== expectedName && file !== `${expectedName}x`) {
                         throw new Error(`In ${directory}: Expected file '${file}' to be named ${expectedName}`);
                     }
                 }
@@ -197,7 +198,7 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
             // Path mapping may be for "@foo/bar" -> "foo__bar". Based on `getPackageNameFromAtTypesDirectory` in TypeScript.
             const mangledScopedPackageSeparator = "__";
             if (pathMapping.indexOf(mangledScopedPackageSeparator) !== -1) {
-                const expected = "@" + pathMapping.replace(mangledScopedPackageSeparator, "/");
+                const expected = `@${pathMapping.replace(mangledScopedPackageSeparator, "/")}`;
                 if (dependencyName !== expected) {
                     throw new Error(`Expected directory ${pathMapping} to be the path mapping for ${dependencyName}`);
                 }
@@ -234,7 +235,7 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
 }
 // e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
 function parseDependencyVersionFromPath(packageName, dependencyName, dependencyPath) {
-    const versionString = withoutStart(dependencyPath, dependencyName + "/");
+    const versionString = withoutStart(dependencyPath, `${dependencyName}/`);
     const version = versionString === undefined ? undefined : parseMajorVersionFromDirectoryName(versionString);
     if (version === undefined) {
         throw new Error(`In ${packageName}, unexpected path mapping for ${dependencyName}: '${dependencyPath}'`);
@@ -255,7 +256,7 @@ function withoutEnd(s, end) {
 }
 function hash(directory, files, tsconfigPaths) {
     return __awaiter(this, void 0, void 0, function* () {
-        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return f + "**" + (yield readFileAndThrowOnBOM(directory, f)); }));
+        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return `${f}**${yield readFileAndThrowOnBOM(directory, f)}`; }));
         let allContent = fileContents.join("||");
         if (tsconfigPaths) {
             allContent += JSON.stringify(tsconfigPaths);
@@ -312,7 +313,7 @@ function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
                 function takeSubdirectoryOutOfSet(originalSet) {
                     const subdirSet = new Set();
                     for (const file of originalSet) {
-                        const sub = withoutStart(file, lsEntry + "/");
+                        const sub = withoutStart(file, `${lsEntry}/`);
                         if (sub !== undefined) {
                             originalSet.delete(file);
                             subdirSet.add(sub);

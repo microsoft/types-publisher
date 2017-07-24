@@ -28,11 +28,11 @@ if (!module.parent) {
         util_1.done(doAll());
     }
     else if (packageNames.length) {
-        console.log("Validating: " + JSON.stringify(packageNames));
+        console.log(`Validating: ${JSON.stringify(packageNames)}`);
         util_1.done(doValidate(packageNames));
     }
     else {
-        main(common_1.Options.defaults);
+        util_1.done(main(common_1.Options.defaults));
     }
 }
 function main(options) {
@@ -63,7 +63,7 @@ function doValidate(packageNames) {
 function validatePackages(packageNames, outPath, log) {
     return __awaiter(this, void 0, void 0, function* () {
         log.info("");
-        log.info("Using output path: " + outPath);
+        log.info(`Using output path: ${outPath}`);
         log.info("Running tests....");
         log.info("");
         const failed = [];
@@ -73,7 +73,7 @@ function validatePackages(packageNames, outPath, log) {
             yield fs_extra_1.mkdirp(outPath);
         }
         catch (e) {
-            log.error("Could not recreate output directory. " + e);
+            log.error(`Could not recreate output directory. ${e}`);
             return;
         }
         // Run the tests
@@ -104,7 +104,7 @@ function validatePackage(packageName, outputDirecory, mainLog) {
         try {
             const packageDirectory = util_1.joinPaths(outputDirecory, packageName);
             log.info("");
-            log.info("Processing `" + packageName + "`...");
+            log.info(`Processing \`${packageName}\`...`);
             yield fs_extra_1.mkdirp(packageDirectory);
             yield writePackage(packageDirectory, packageName);
             if ((yield runCommand("npm", log, packageDirectory, "../../node_modules/npm/bin/npm-cli.js", "install")) &&
@@ -115,7 +115,7 @@ function validatePackage(packageName, outputDirecory, mainLog) {
             }
         }
         catch (e) {
-            log.info("Error: " + e);
+            log.info(`Error: ${e}`);
             log.info("Failed!");
         }
         // Write the log as one entry to the main log

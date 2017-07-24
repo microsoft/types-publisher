@@ -16,7 +16,7 @@ if (!module.parent) {
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         for (const dir of ["data", "logs", "output"]) {
-            console.log("Clean " + dir);
+            console.log(`Clean ${dir}`);
             yield fs_extra_1.remove(dir);
         }
     });

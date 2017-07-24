@@ -80,10 +80,11 @@ function listenToGithub(key, githubAccessToken, dry, onUpdate) {
             work().then(() => rollingLogs.then(logs => writeLog(logs, logResult()))).catch(onError);
         }
         catch (error) {
-            rollingLogs.then(logs => writeLog(logs, logResult())).then(() => onError(error)).catch(onError);
+            rollingLogs.then(logs => writeLog(logs, logResult())).then(() => { onError(error); }).catch(onError);
         }
         function onError(error) {
             server.close();
+            // tslint:disable-next-line no-floating-promises
             issue_updater_1.reopenIssue(githubAccessToken, timeStamp, error).catch(issueError => {
                 console.error(util_1.errorDetails(issueError));
             }).then(() => {
@@ -125,7 +126,7 @@ function updateOneAtATime(doOnce) {
     return (log, timeStamp) => {
         if (working) {
             anyUpdatesWhileWorking = true;
-            log.info(`Not starting update, because already performing one.`);
+            log.info("Not starting update, because already performing one.");
             return undefined;
         }
         else {
@@ -135,7 +136,7 @@ function updateOneAtATime(doOnce) {
         }
         function work() {
             return __awaiter(this, void 0, void 0, function* () {
-                log.info(`Starting update`);
+                log.info("Starting update");
                 working = true;
                 anyUpdatesWhileWorking = false;
                 do {

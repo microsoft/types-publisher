@@ -35,7 +35,7 @@ function main(options, all = false, tgz = false) {
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, allPackages, versions, options);
             if (tgz) {
-                yield tgz_1.writeTgz(pkg.outputDirectory, pkg.outputDirectory + ".tgz");
+                yield tgz_1.writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
             }
             log(` * ${pkg.libraryName}`);
             logging_1.moveLogs(log, logs, line => `   * ${line}`);

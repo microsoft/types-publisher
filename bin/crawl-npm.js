@@ -36,7 +36,7 @@ function main(options) {
 function allNpmPackages() {
     const progress = new progress_1.default({ name: "Loading NPM packages..." });
     // https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md
-    const url = settings_1.npmRegistry + "-/all";
+    const url = `${settings_1.npmRegistry}-/all`;
     const all = [];
     return new Promise((resolve, reject) => {
         oboe(url)
@@ -54,7 +54,7 @@ function allNpmPackages() {
             progress.done();
             resolve(all);
         })
-            .fail(err => reject(err.thrown));
+            .fail(err => { reject(err.thrown); });
     });
 }
 //# sourceMappingURL=crawl-npm.js.map

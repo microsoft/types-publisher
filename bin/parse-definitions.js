@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
+const path = require("path");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const parser = require("./lib/definition-parser");
@@ -25,7 +26,7 @@ function main(options) {
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const packageNames = yield fs_extra_1.readdir(options.typesPath);
+        const packageNames = yield util_1.filterNAtATime(10, yield fs_extra_1.readdir(options.typesPath), (packageName) => __awaiter(this, void 0, void 0, function* () { return (yield fs_extra_1.stat(path.join(options.typesPath, packageName))).isDirectory(); }));
         summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
         const typings = {};
         yield util_1.nAtATime(1, packageNames, use, { name: "Parsing...", flavor: name => name, options });

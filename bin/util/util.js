@@ -77,7 +77,7 @@ function mapAsyncOrdered(arr, mapper) {
 }
 exports.mapAsyncOrdered = mapAsyncOrdered;
 function indent(str) {
-    return "\t" + str.replace(/\n/g, "\n\t");
+    return `\t${str.replace(/\n/g, "\n\t")}`;
 }
 exports.indent = indent;
 function unique(arr) {
@@ -134,7 +134,7 @@ function sortObjectKeys(data) {
 exports.sortObjectKeys = sortObjectKeys;
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 function exec(cmd, cwd) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
             stdout = stdout.trim();
             stderr = stderr.trim();
@@ -232,7 +232,7 @@ exports.sort = sort;
 function join(values, joiner = ", ") {
     let s = "";
     for (const v of values) {
-        s += v + joiner;
+        s += `${v}${joiner}`;
     }
     return s.slice(0, s.length - joiner.length);
 }

@@ -124,7 +124,7 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                     case ts.SyntaxKind.ExportDeclaration:
                     case ts.SyntaxKind.ExportAssignment:
                         // These nodes always indicate an external module
-                        log(`Found export assignment or export declaration`);
+                        log("Found export assignment or export declaration");
                         hasAnyExport = true;
                         break;
                     case ts.SyntaxKind.ImportEqualsDeclaration:
@@ -199,7 +199,7 @@ function allReferencedFiles(directory, entryFilenames, log) {
 function resolveModule(referencedFrom, directory, filename) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const dts = filename + ".d.ts";
+            const dts = `${filename}.d.ts`;
             return { resolvedFilename: dts, content: yield definition_parser_1.readFileAndThrowOnBOM(directory, dts) };
         }
         catch (_) {

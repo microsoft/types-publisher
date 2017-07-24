@@ -65,7 +65,7 @@ class NpmClient {
             tag,
             auth: this.auth
         };
-        return promisifyVoid(cb => this.client.tag(packageUrl(packageName), params, cb));
+        return promisifyVoid(cb => { this.client.tag(packageUrl(packageName), params, cb); });
     }
     deprecate(packageName, version, message) {
         const url = packageUrl(packageName.replace("/", "%2f"));
@@ -74,7 +74,7 @@ class NpmClient {
             version,
             auth: this.auth,
         };
-        return promisifyVoid(cb => this.client.deprecate(url, params, cb));
+        return promisifyVoid(cb => { this.client.deprecate(url, params, cb); });
     }
 }
 exports.default = NpmClient;
