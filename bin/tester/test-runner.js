@@ -57,14 +57,18 @@ function main(options, nProcesses, selection, tsNext) {
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
-            if (yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json"))) {
-                // Scripts may try to compile native code.
-                // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
-                let stdout = yield util_1.execAndThrowErrors("npm install --ignore-scripts --no-shrinkwrap", cwd);
-                stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
-                if (stdout) {
-                    console.log(stdout);
-                }
+            if (!(yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json")))) {
+                return;
+            }
+            // Scripts may try to compile native code.
+            // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
+            const cmd = "npm install --ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links";
+            console.log(`  ${cwd}: ${cmd}`);
+            let stdout = yield util_1.execAndThrowErrors(cmd, cwd);
+            stdout = stdout.replace(/npm WARN \S+ No (description|repository field\.|license field\.)\n?/g, "");
+            if (stdout) {
+                // Must specify what this is for since these run in parallel.
+                console.log(` from ${cwd}: ${stdout}`);
             }
         }));
         yield runCommand(console, undefined, pathToDtsLint, "--installAll");
