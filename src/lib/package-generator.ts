@@ -127,7 +127,7 @@ function addInferredDependencies(dependencies: Dependencies, peerDependencies: D
 		}
 
 		if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && allPackages.hasTypingFor(dependency)) {
-			dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
+			peerDependencies[typesDependency] = dependencySemver(dependency.majorVersion);
 		}
 	}
 }
