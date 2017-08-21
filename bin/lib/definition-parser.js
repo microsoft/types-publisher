@@ -15,6 +15,7 @@ const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const module_info_1 = require("./module-info");
 const packages_1 = require("./packages");
+const dependenciesWhitelist = new Set(fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "dependenciesWhitelist.txt"), "utf-8").split(/\r?\n/));
 function getTypingInfo(packageName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         if (packageName !== packageName.toLowerCase()) {
@@ -92,9 +93,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const packageJsonPath = util_1.joinPaths(directory, "package.json");
         const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
-        if (hasPackageJson) {
-            checkPackageJson(yield io_1.readJson(packageJsonPath), packageJsonPath);
-        }
+        const packageJsonDependencies = hasPackageJson ? checkPackageJson(yield io_1.readJson(packageJsonPath), packageJsonPath) : [];
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
         yield checkAllFilesUsed(directory, ls, allFiles);
@@ -121,7 +120,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
             declaredModules,
             files: declFiles,
             testFiles,
-            hasPackageJson,
+            packageJsonDependencies,
             contentHash: yield hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
         };
         return { data, logs: logResult() };
@@ -129,19 +128,29 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
 }
 function checkPackageJson(pkg, path) {
     for (const key in pkg) {
-        if (key !== "dependencies" && key !== "peerDependencies") {
+        if (key !== "dependencies") {
             throw new Error(`${path} should not specify ${key}`);
         }
     }
-    for (const key in pkg) {
-        const dependencies = pkg[key];
-        for (const dependencyName in dependencies) {
-            // TODO: don't specially allow @types/vue, it should use the real vue typings.
-            if (dependencyName.startsWith("@types/") && dependencyName !== "@types/vue") {
-                throw new Error(`In ${path}: Don't use a 'package.json' for @types dependencies.`);
-            }
-        }
+    const dependencies = pkg.dependencies;
+    if (dependencies === null || typeof dependencies !== "object") {
+        throw new Error(`${path} should contain "dependencies" or not exist.`);
     }
+    const deps = [];
+    for (const dependencyName in dependencies) {
+        if (!dependenciesWhitelist.has(dependencyName)) {
+            const msg = dependencyName.startsWith("@types/")
+                ? "Don't use a 'package.json' for @types dependencies."
+                : `Dependency ${dependencyName} not in whitelist; please make a pull request to types-publisher adding it.`;
+            throw new Error(`In ${path}: ${msg}`);
+        }
+        const version = dependencies[dependencyName];
+        if (typeof version !== "string") {
+            throw new Error(`In ${path}: Dependency version for ${dependencyName} should be a string.`);
+        }
+        deps.push({ name: dependencyName, version });
+    }
+    return deps;
 }
 function entryFilesFromTsConfig(packageName, directory, tsconfig) {
     return __awaiter(this, void 0, void 0, function* () {

@@ -70,12 +70,18 @@ function fetchWithRetries(url, init) {
                 return yield node_fetch_1.default(url, init);
             }
             catch (err) {
-                if (!/ETIMEDOUT|ECONNRESET/.test(err.message)) {
+                if (!/EAI_AGAIN|ETIMEDOUT|ECONNRESET/.test(err.message)) {
                     throw err;
                 }
             }
+            yield sleep(1000);
         }
-        return yield node_fetch_1.default(url);
+        return yield node_fetch_1.default(url, init);
+    });
+}
+function sleep(millis) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise(resolve => setTimeout(resolve, millis));
     });
 }
 function isDirectory(path) {

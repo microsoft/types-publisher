@@ -24,7 +24,7 @@ const license = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", 
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages, options);
+        const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages);
         log("Write metadata files to disk");
         yield writeCommonOutputs(typing, packageJson, createReadme(typing), log);
         yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
@@ -77,14 +77,10 @@ function clearOutputPath(outputPath, log) {
     });
 }
 exports.clearOutputPath = clearOutputPath;
-function createPackageJSON(typing, version, packages, options) {
+function createPackageJSON(typing, version, packages) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
-        const pkgPath = typing.filePath("package.json", options);
-        const pkg = typing.hasPackageJson ? yield io_1.readJson(pkgPath) : {};
-        const dependencies = pkg.dependencies || {};
-        const peerDependencies = pkg.peerDependencies || {};
-        addInferredDependencies(dependencies, peerDependencies, typing, packages);
+        const dependencies = getDependencies(typing.packageJsonDependencies, typing, packages);
         const description = `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
@@ -103,7 +99,6 @@ function createPackageJSON(typing, version, packages, options) {
             },
             scripts: {},
             dependencies,
-            peerDependencies,
             typesPublisherContentHash: typing.contentHash,
             typeScriptVersion: typing.typeScriptVersion
         };
@@ -111,17 +106,22 @@ function createPackageJSON(typing, version, packages, options) {
     });
 }
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
-function addInferredDependencies(dependencies, peerDependencies, typing, allPackages) {
+function getDependencies(packageJsonDependencies, typing, allPackages) {
+    const dependencies = {};
+    for (const { name, version } of packageJsonDependencies) {
+        dependencies[name] = version;
+    }
     for (const dependency of typing.dependencies) {
         const typesDependency = packages_1.fullNpmName(dependency.name);
-        // A dependency "foo" is already handled if we already have a dependency/peerDependency on the package "foo" or "@types/foo".
+        // A dependency "foo" is already handled if we already have a dependency on the package "foo" or "@types/foo".
         function handlesDependency(deps) {
             return util_1.hasOwnProperty(deps, dependency.name) || util_1.hasOwnProperty(deps, typesDependency);
         }
-        if (!handlesDependency(dependencies) && !handlesDependency(peerDependencies) && allPackages.hasTypingFor(dependency)) {
+        if (!handlesDependency(dependencies) && allPackages.hasTypingFor(dependency)) {
             dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
         }
     }
+    return dependencies;
 }
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
