@@ -1,5 +1,3 @@
-import usernameRegex = require("github-username-regex");
-
 import { Options } from "./lib/common";
 import { AllPackages, TypingsData } from "./lib/packages";
 import { typesDirectoryName } from "./lib/settings";
@@ -27,16 +25,11 @@ function getEntry(pkg: TypingsData, maxPathLen: number): string | undefined {
 	}
 
 	const path = `${pkg.subDirectoryPath}/`.padEnd(maxPathLen);
-	return `/${typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(", ")}`;
+	return `/${typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(" ")}`;
 }
 
 function getGithubUsername(url: string): string | undefined {
-	const rgx = /^https\:\/\/github.com\/(.*)$/;
+	const rgx = /^https\:\/\/github.com\/([a-zA-Z\d\-]+)$/;
 	const match = rgx.exec(url);
-	if (match === null) {
-		return undefined;
-	}
-
-	const username = match[1];
-	return usernameRegex.test(username) ? username : undefined;
+	return match === null ? undefined : match[1];
 }
