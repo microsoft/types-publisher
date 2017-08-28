@@ -8,7 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const usernameRegex = require("github-username-regex");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
@@ -34,15 +33,11 @@ function getEntry(pkg, maxPathLen) {
         return undefined;
     }
     const path = `${pkg.subDirectoryPath}/`.padEnd(maxPathLen);
-    return `/${settings_1.typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(", ")}`;
+    return `/${settings_1.typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(" ")}`;
 }
 function getGithubUsername(url) {
-    const rgx = /^https\:\/\/github.com\/(.*)$/;
+    const rgx = /^https\:\/\/github.com\/([a-zA-Z\d\-]+)$/;
     const match = rgx.exec(url);
-    if (match === null) {
-        return undefined;
-    }
-    const username = match[1];
-    return usernameRegex.test(username) ? username : undefined;
+    return match === null ? undefined : match[1];
 }
 //# sourceMappingURL=code-owners.js.map

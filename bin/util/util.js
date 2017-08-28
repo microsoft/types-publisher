@@ -45,7 +45,7 @@ function nAtATime(n, inputs, use, progressOptions) {
                 const index = nextIndex;
                 nextIndex++;
                 const input = inputs[index];
-                const output = yield use(inputs[index]);
+                const output = yield use(input);
                 results[index] = output;
                 if (progress) {
                     progress.update(index / inputs.length, progressOptions.flavor(input, output));
@@ -136,9 +136,7 @@ exports.sortObjectKeys = sortObjectKeys;
 function exec(cmd, cwd) {
     return new Promise(resolve => {
         child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
-            stdout = stdout.trim();
-            stderr = stderr.trim();
-            resolve({ error, stdout, stderr });
+            resolve({ error, stdout: stdout.trim(), stderr: stderr.trim() });
         });
     });
 }
@@ -178,9 +176,9 @@ function best(inputs, isBetter) {
 exports.best = best;
 function computeHash(content) {
     // Normalize line endings
-    content = content.replace(/\r\n?/g, "\n");
+    const normalContent = content.replace(/\r\n?/g, "\n");
     const h = crypto.createHash("sha256");
-    h.update(content, "utf8");
+    h.update(normalContent, "utf8");
     return h.digest("hex");
 }
 exports.computeHash = computeHash;

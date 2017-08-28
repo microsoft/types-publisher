@@ -23,8 +23,7 @@ class ProgressBar {
         }
     }
     doUpdate(current) {
-        current = Math.min(1, Math.max(0, current));
-        const nCellsFilled = Math.ceil(this.width * current);
+        const nCellsFilled = Math.ceil(this.width * Math.min(1, Math.max(0, current)));
         this.console.update(charm => {
             charm.write(this.name);
             charm.write(" [");

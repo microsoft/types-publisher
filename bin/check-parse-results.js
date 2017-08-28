@@ -102,6 +102,7 @@ function firstPackageVersionWithTypes(packageName) {
 }
 function firstVersionWithTypes(versions) {
     const versionsWithTypings = Object.entries(versions).filter(([_version, info]) => hasTypes(info)).map(([version]) => version);
+    // Type annotation needed because of https://github.com/Microsoft/TypeScript/issues/12915
     return util_1.best(versionsWithTypings, semver.lt);
 }
 function hasTypes(info) {
