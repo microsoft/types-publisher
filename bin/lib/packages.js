@@ -184,7 +184,7 @@ class NotNeededPackage extends PackageBase {
     get projectName() { return this.sourceRepoURL; }
     get declaredModules() { return []; }
     get globals() { return this.globals; }
-    get typeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.Lowest; }
+    get typeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.lowest; }
     readme(useNewline = true) {
         const { libraryName, sourceRepoURL, name } = this;
         const lines = [

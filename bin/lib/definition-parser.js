@@ -93,7 +93,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const packageJsonPath = util_1.joinPaths(directory, "package.json");
         const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
-        const packageJsonDependencies = hasPackageJson ? checkPackageJson(yield io_1.readJson(packageJsonPath), packageJsonPath) : [];
+        const packageJsonDependencies = hasPackageJson ? checkDependencies((yield io_1.readJson(packageJsonPath)).dependencies, packageJsonPath) : [];
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
         yield checkAllFilesUsed(directory, ls, allFiles);
@@ -126,13 +126,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         return { data, logs: logResult() };
     });
 }
-function checkPackageJson(pkg, path) {
-    for (const key in pkg) {
-        if (key !== "dependencies") {
-            throw new Error(`${path} should not specify ${key}`);
-        }
-    }
-    const dependencies = pkg.dependencies;
+function checkDependencies(dependencies, path) {
     if (dependencies === null || typeof dependencies !== "object") {
         throw new Error(`${path} should contain "dependencies" or not exist.`);
     }

@@ -28,16 +28,11 @@ function main(options) {
     });
 }
 function getEntry(pkg, maxPathLen) {
-    const users = util_1.mapDefined(pkg.contributors, c => getGithubUsername(c.url));
+    const users = util_1.mapDefined(pkg.contributors, c => c.githubUsername);
     if (!users.length) {
         return undefined;
     }
     const path = `${pkg.subDirectoryPath}/`.padEnd(maxPathLen);
     return `/${settings_1.typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(" ")}`;
-}
-function getGithubUsername(url) {
-    const rgx = /^https\:\/\/github.com\/([a-zA-Z\d\-]+)$/;
-    const match = rgx.exec(url);
-    return match === null ? undefined : match[1];
 }
 //# sourceMappingURL=code-owners.js.map
