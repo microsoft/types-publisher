@@ -1,8 +1,12 @@
+import { readFileSync } from "fs-extra";
+
 import { Options } from "./lib/common";
 import { AllPackages, TypingsData } from "./lib/packages";
 import { typesDirectoryName } from "./lib/settings";
 import { writeFile } from "./util/io";
 import {  done, joinPaths, mapDefined } from "./util/util";
+
+const codeOwnersOptOut = new Set(readFileSync(joinPaths(__dirname, "..", "..", "codeOwnersOptOut.txt"), "utf-8").split(/\r?\n/));
 
 if (!module.parent) {
 	done(main(Options.defaults));
@@ -25,5 +29,6 @@ function getEntry(pkg: TypingsData, maxPathLen: number): string | undefined {
 	}
 
 	const path = `${pkg.subDirectoryPath}/`.padEnd(maxPathLen);
+	const keptUsers = users.filter(u => !codeOwnersOptOut.has(u));
 	return `/${typesDirectoryName}/${path} ${users.map(u => `@${u}`).join(" ")}`;
 }
