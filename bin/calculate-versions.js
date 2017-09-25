@@ -21,8 +21,8 @@ if (!module.parent) {
 function main(forceUpdate, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("=== Calculating versions ===");
-        const { changes, additions, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, forceUpdate, options);
-        yield versions_1.writeChanges(changes, additions);
+        const { changes, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, forceUpdate, options);
+        yield versions_1.writeChanges(changes);
         yield versions.save();
     });
 }

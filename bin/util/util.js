@@ -136,7 +136,7 @@ exports.sortObjectKeys = sortObjectKeys;
 function exec(cmd, cwd) {
     return new Promise(resolve => {
         child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
-            resolve({ error, stdout: stdout.trim(), stderr: stderr.trim() });
+            resolve({ error: error === null ? undefined : error, stdout: stdout.trim(), stderr: stderr.trim() });
         });
     });
 }
@@ -146,7 +146,7 @@ function execAndThrowErrors(cmd, cwd) {
     return __awaiter(this, void 0, void 0, function* () {
         const { error, stdout, stderr } = yield exec(cmd, cwd);
         if (error) {
-            throw new Error(stderr);
+            throw new Error(`${error.stack}\n${stderr}`);
         }
         return stdout + stderr;
     });
@@ -235,4 +235,18 @@ function join(values, joiner = ", ") {
     return s.slice(0, s.length - joiner.length);
 }
 exports.join = join;
+function setDifference(left, right) {
+    const leftExclusive = [];
+    const rightExclusive = new Set(right);
+    for (const l of left) {
+        if (rightExclusive.has(l)) {
+            rightExclusive.delete(l);
+        }
+        else {
+            leftExclusive.push(l);
+        }
+    }
+    return { leftExclusive, rightExclusive };
+}
+exports.setDifference = setDifference;
 //# sourceMappingURL=util.js.map

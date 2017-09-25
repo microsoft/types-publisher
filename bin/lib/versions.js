@@ -16,7 +16,6 @@ const common_1 = require("./common");
 const settings_1 = require("./settings");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
-const additionsFilename = "version-additions.json";
 class Versions {
     constructor(data) {
         this.data = data;
@@ -38,12 +37,10 @@ class Versions {
     }
     /**
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
-     * `additions` is a subset of `changes`.
      */
     static determineFromNpm(allPackages, log, forceUpdate, options) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
-            const additions = [];
             const data = {};
             yield util_1.nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
             function getTypingsVersion(pkg) {
@@ -52,7 +49,6 @@ class Versions {
                     const versionInfo = yield fetchTypesPackageVersionInfo(pkg, isPrerelease, pkg.majorMinor);
                     if (!versionInfo) {
                         log(`Added: ${pkg.desc}`);
-                        additions.push(pkg.id);
                     }
                     // tslint:disable-next-line:prefer-const
                     let { version, latestNonPrerelease, contentHash, deprecated } = versionInfo || defaultVersionInfo(isPrerelease);
@@ -81,7 +77,7 @@ class Versions {
             }
             function flavor(pkg) { return pkg.desc; }
             // Sort keys so that versions.json is easy to read
-            return { changes, additions, versions: new Versions(util_1.sortObjectKeys(data)) };
+            return { changes, versions: new Versions(util_1.sortObjectKeys(data)) };
             function defaultVersionInfo(isPrerelease) {
                 return { version: new Semver(-1, -1, -1, isPrerelease), latestNonPrerelease: undefined, contentHash: "", deprecated: false };
             }
@@ -248,15 +244,9 @@ function readChanges() {
     return common_1.readDataFile("calculate-versions", changesFilename);
 }
 exports.readChanges = readChanges;
-/** Read only packages which are newly added. */
-function readAdditions() {
-    return common_1.readDataFile("calculate-versions", additionsFilename);
-}
-exports.readAdditions = readAdditions;
-function writeChanges(changes, additions) {
+function writeChanges(changes) {
     return __awaiter(this, void 0, void 0, function* () {
         yield common_1.writeDataFile(changesFilename, changes);
-        yield common_1.writeDataFile(additionsFilename, additions);
     });
 }
 exports.writeChanges = writeChanges;
