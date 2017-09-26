@@ -237,11 +237,12 @@ function* referencedFiles(src, subDirectory, directory) {
     return out;
     function addReference({ exact, text }) {
         noWindowsSlashes(src.fileName, text);
-        let full = path.normalize(util_1.joinPaths(subDirectory, text));
         // `path.normalize` may add windows slashes
-        full = util_1.normalizeSlashes(full);
-        if (full.startsWith(".")) {
-            throw new Error(`In ${directory} ${src.fileName}: Definitions must use global references, not parent references. (Based on reference '${text}')`);
+        const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, text)));
+        if (full.startsWith("..")) {
+            throw new Error(`In ${directory} ${src.fileName}: ` +
+                'Definitions must use global references to other packages, not parent ("../xxx") references.' +
+                `(Based on reference '${text}')`);
         }
         return { exact, text: full };
     }

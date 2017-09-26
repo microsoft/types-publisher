@@ -24,17 +24,18 @@ class Options {
         /** e.g. '../DefinitelyTyped'
          * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
          */
-        definitelyTypedPath, 
+        definitelyTypedPath, resetDefinitelyTyped, 
         /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
         progress) {
         this.definitelyTypedPath = definitelyTypedPath;
+        this.resetDefinitelyTyped = resetDefinitelyTyped;
         this.progress = progress;
         this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
     }
 }
 /** Options for running locally. */
-Options.defaults = new Options("../DefinitelyTyped", true);
-Options.azure = new Options("../DefinitelyTyped", false);
+Options.defaults = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ false, /*progress*/ true);
+Options.azure = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false);
 exports.Options = Options;
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));

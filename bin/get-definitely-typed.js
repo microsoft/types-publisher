@@ -26,6 +26,11 @@ function main(options) {
             if (actualBranch !== settings_1.sourceBranch) {
                 throw new Error(`Please checkout branch '${settings_1.sourceBranch}`);
             }
+            if (options.resetDefinitelyTyped) {
+                exec("git reset --hard origin/master", dtPath);
+                exec("git checkout -- .", dtPath);
+                exec("git clean -f -d", dtPath);
+            }
             const diff = exec("git diff --name-only", dtPath);
             if (diff) {
                 throw new Error(`'git diff' should be empty. Following files changed:\n${diff}`);

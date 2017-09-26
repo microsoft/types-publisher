@@ -35,7 +35,7 @@ function parseNProcesses() {
 exports.parseNProcesses = parseNProcesses;
 function testerOptions(runFromDefinitelyTyped) {
     if (runFromDefinitelyTyped) {
-        return new common_1.Options(process.cwd(), false);
+        return new common_1.Options(process.cwd(), /*resetDefinitelyTyped*/ false, /*progress*/ false);
     }
     else {
         return common_1.Options.defaults;
