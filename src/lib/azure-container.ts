@@ -1,8 +1,7 @@
 import { BlobService, common, createBlobService, ErrorOrResponse, ErrorOrResult } from "azure-storage";
 import * as fs from "fs";
-import * as https from "https";
 
-import { streamDone, streamOfString, stringOfStream } from "../util/io";
+import { fetchResponse, streamDone, streamOfString, stringOfStream } from "../util/io";
 import { gzip, unGzip } from "../util/tgz";
 import { parseJson } from "../util/util";
 
@@ -83,23 +82,12 @@ export default class BlobWriter {
 }
 
 export async function readBlob(blobName: string): Promise<string> {
-	return new Promise<string>((resolve, reject) => {
-		const url = urlOfBlob(blobName);
-		const req = https.get(url as any, res => {
-			switch (res.statusCode) {
-				case 200:
-					if (res.headers["content-encoding"] !== "GZIP") {
-						reject(new Error(`${url} is not gzipped`));
-					} else {
-						resolve(stringOfStream(unGzip(res)));
-					}
-					break;
-				default:
-					reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
-			}
-		});
-		req.on("error", reject);
-	});
+	const url = urlOfBlob(blobName);
+	const response = await fetchResponse(url);
+	if (response.headers["content-encoding"] !== "GZIP") {
+		throw new Error(`${url} is not gzipped`);
+	}
+	return stringOfStream(unGzip(response));
 }
 
 export async function readJsonBlob(blobName: string): Promise<any> {
