@@ -26,28 +26,28 @@ export default class NpmClient {
 	async publish(publishedDirectory: string, packageJson: {}, dry: boolean): Promise<void> {
 		const readme = await readFile(joinPaths(publishedDirectory, "README.md"));
 
+		const body = createTgz(publishedDirectory);
+		const metadata = { readme, ...packageJson };
+
+		const params = {
+			access: "public" as "public",
+			auth: this.auth,
+			metadata,
+			body
+		};
+
+		if (dry) {
+			return;
+		}
+
 		return new Promise<void>((resolve, reject) => {
-			const body = createTgz(publishedDirectory, reject);
-			const metadata = { readme, ...packageJson };
-
-			const params = {
-				access: "public" as "public",
-				auth: this.auth,
-				metadata,
-				body
-			};
-
-			if (dry) {
-				resolve();
-			} else {
-				this.client.publish(npmRegistry, params, err => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				});
-			}
+			this.client.publish(npmRegistry, params, err => {
+				if (err) {
+					reject(err);
+				} else {
+					resolve();
+				}
+			});
 		});
 	}
 

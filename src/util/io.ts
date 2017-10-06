@@ -1,4 +1,5 @@
 import { readFile as readFileWithEncoding, stat, writeFile as writeFileWithEncoding, writeJson as writeJsonRaw } from "fs-extra";
+import { get as httpsGet, IncomingMessage } from "https";
 import fetch, { RequestInit, Response } from "node-fetch";
 import * as stream from "stream";
 
@@ -16,6 +17,20 @@ export async function fetchJson(url: string, init?: RequestInit & { retries?: nu
 	// Cast needed: https://github.com/Microsoft/TypeScript/issues/10065
 	const response = await (init && init.retries ? fetchWithRetries(url, init as RequestInit & { retries: number | true }) : fetch(url, init));
 	return parseJson(await response.text());
+}
+
+export async function fetchResponse(url: string): Promise<IncomingMessage> {
+	return new Promise<IncomingMessage>((resolve, reject) => {
+		const req = httpsGet(url, res => {
+			switch (res.statusCode) {
+				case 200:
+					resolve(res);
+				default:
+					reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
+			}
+		});
+		req.on("error", reject);
+	});
 }
 
 export function writeFile(path: string, content: string): Promise<void> {
