@@ -97,4 +97,4 @@ export async function assertDirectoriesEqual(expected: string, actual: string, o
 	}
 }
 
-export const npmInstallFlags = "--ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links";
+export const npmInstallFlags = "--ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links --no-save";
