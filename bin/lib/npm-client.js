@@ -25,10 +25,10 @@ class NpmClient {
         this.client = client;
         this.auth = auth;
     }
-    static create() {
+    static create(config) {
         return __awaiter(this, void 0, void 0, function* () {
             const token = yield secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN);
-            return new this(new RegClient({}), { token });
+            return new this(new RegClient(config), { token });
         });
     }
     publish(publishedDirectory, packageJson, dry) {
@@ -41,7 +41,7 @@ class NpmClient {
                     access: "public",
                     auth: this.auth,
                     metadata,
-                    body
+                    body,
                 };
                 if (dry) {
                     resolve();

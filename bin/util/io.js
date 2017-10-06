@@ -8,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const node_fetch_1 = require("node-fetch");
+const path_1 = require("path");
 const stream = require("stream");
 const util_1 = require("./util");
 function readFile(path) {
@@ -90,4 +92,29 @@ function isDirectory(path) {
     });
 }
 exports.isDirectory = isDirectory;
+function assertDirectoriesEqual(expected, actual, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const expectedLs = yield fs_extra_1.readdir(expected);
+        const actualLs = yield fs_extra_1.readdir(actual);
+        assert.deepEqual(expectedLs, actualLs);
+        for (const name of expectedLs) {
+            if (options.ignore(name)) {
+                continue;
+            }
+            const expectedFile = path_1.join(expected, name);
+            const actualFile = path_1.join(actual, name);
+            const expectedStat = yield fs_extra_1.stat(expectedFile);
+            const actualStat = yield fs_extra_1.stat(actualFile);
+            assert.equal(expectedStat.isDirectory(), actualStat.isDirectory());
+            if (expectedStat.isDirectory()) {
+                yield assertDirectoriesEqual(expectedFile, actualFile, options);
+            }
+            else {
+                assert.equal(yield readFile(expectedFile), yield readFile(actualFile));
+            }
+        }
+    });
+}
+exports.assertDirectoriesEqual = assertDirectoriesEqual;
+exports.npmInstallFlags = "--ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links --no-save";
 //# sourceMappingURL=io.js.map

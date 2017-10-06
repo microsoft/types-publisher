@@ -235,18 +235,4 @@ function join(values, joiner = ", ") {
     return s.slice(0, s.length - joiner.length);
 }
 exports.join = join;
-function setDifference(left, right) {
-    const leftExclusive = [];
-    const rightExclusive = new Set(right);
-    for (const l of left) {
-        if (rightExclusive.has(l)) {
-            rightExclusive.delete(l);
-        }
-        else {
-            leftExclusive.push(l);
-        }
-    }
-    return { leftExclusive, rightExclusive };
-}
-exports.setDifference = setDifference;
 //# sourceMappingURL=util.js.map

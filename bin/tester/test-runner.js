@@ -12,6 +12,7 @@ const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
+const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
@@ -61,7 +62,7 @@ function main(options, nProcesses, selection) {
             }
             // Scripts may try to compile native code.
             // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
-            const cmd = "npm install --ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links";
+            const cmd = `npm install ${io_1.npmInstallFlags}`;
             console.log(`  ${cwd}: ${cmd}`);
             const stdout = yield util_1.execAndThrowErrors(cmd, cwd);
             if (stdout) {

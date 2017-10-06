@@ -38,7 +38,7 @@ function full(client, dry, timeStamp, options) {
         yield generate_packages_1.default(options);
         yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, options);
         yield publish_packages_1.default(client, dry, options);
-        yield publish_registry_1.default(options, dry);
+        yield publish_registry_1.default(dry);
         yield validate_1.default(options);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);

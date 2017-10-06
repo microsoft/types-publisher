@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const path_1 = require("path");
 /** URL of the NPM registry to upload to. */
 exports.npmRegistry = "https://registry.npmjs.org/";
 /** Note: this is 'types' and not '@types' */
 exports.scopeName = "types";
 exports.outputPath = "./output";
-exports.validateOutputPath = "./validateOutput";
+exports.validateOutputPath = path_1.join(__dirname, "..", "..", "validateOutput");
 /** Git location of the source repository. */
 exports.sourceRepository = "https://github.com/DefinitelyTyped/DefinitelyTyped.git";
 /** The branch that DefinitelyTyped is sourced from. */

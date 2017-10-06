@@ -164,12 +164,13 @@ function fetchTypesPackageVersionInfo(pkg, isPrerelease, newMajorAndMinor) {
     });
 }
 /** For use by publish-registry only. */
-function fetchLastPatchNumber(packageName) {
+function fetchNpmInfo(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield fetchVersionInfoFromNpm(packageName, /*isPrerelease*/ false)).version.patch;
+        const v = (yield fetchVersionInfoFromNpm(packageName, /*isPrerelease*/ false));
+        return { version: v.version, contentHash: v.contentHash };
     });
 }
-exports.fetchLastPatchNumber = fetchLastPatchNumber;
+exports.fetchNpmInfo = fetchNpmInfo;
 function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
         const uri = settings_1.npmRegistry + escapedPackageName;
