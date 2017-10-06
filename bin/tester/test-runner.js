@@ -17,8 +17,7 @@ const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
     const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
-    const tsNext = !!yargs.argv.tsNext;
-    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), selection, tsNext));
+    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), selection));
 }
 const pathToDtsLint = require.resolve("dtslint");
 function parseNProcesses() {
@@ -42,7 +41,7 @@ function testerOptions(runFromDefinitelyTyped) {
     }
 }
 exports.testerOptions = testerOptions;
-function main(options, nProcesses, selection, tsNext) {
+function main(options, nProcesses, selection) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
         const typings = selection === "all"
@@ -74,7 +73,7 @@ function main(options, nProcesses, selection, tsNext) {
         console.log("Testing...");
         yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const [log, logResult] = logging_1.quietLoggerWithErrors();
-            const err = yield single(pkg, log, options, tsNext);
+            const err = yield single(pkg, log, options);
             console.log(`Testing ${pkg.desc}`);
             logging_1.moveLogsWithErrors(console, logResult(), msg => `\t${msg}`);
             if (err) {
@@ -94,17 +93,11 @@ function main(options, nProcesses, selection, tsNext) {
     });
 }
 exports.default = main;
-function single(pkg, log, options, tsNext) {
+function single(pkg, log, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const cwd = pkg.directoryPath(options);
         const shouldLint = yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "tslint.json"));
-        const args = [];
-        if (!shouldLint) {
-            args.push("--noLint");
-        }
-        if (tsNext) {
-            args.push("--tsNext");
-        }
+        const args = shouldLint ? [] : ["--noLint"];
         return runCommand(log, cwd, pathToDtsLint, ...args);
     });
 }
