@@ -8,6 +8,7 @@ eventemitter3
 immutable
 inversify
 localforage
+log4js
 meteor-typings
 mqtt
 moment
