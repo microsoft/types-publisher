@@ -221,9 +221,9 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
                 if (dependencyNames.has(dependencyName)) {
                     dependencies[dependencyName] = version;
                 }
-                // Else, the path mapping may be necessary if it is for a dependency-of-a-dependency. We will check this in check-parse-results.
-                pathMappings[dependencyName] = version;
             }
+            // Else, the path mapping may be necessary if it is for a dependency-of-a-dependency. We will check this in check-parse-results.
+            pathMappings[dependencyName] = version;
         }
         if (oldMajorVersion !== undefined && !(paths && packageName in paths)) {
             throw new Error(`${packageName}: Older version ${oldMajorVersion} must have a path mapping for itself.`);
