@@ -156,7 +156,7 @@ class PackageBase {
         return { name: this.name, majorVersion: this.major };
     }
     get outputDirectory() {
-        return util_1.joinPaths(outputDir, this.desc);
+        return util_1.joinPaths(exports.outputDir, this.desc);
     }
 }
 exports.PackageBase = PackageBase;
@@ -164,7 +164,7 @@ function fullNpmName(packageName) {
     return `@${settings_1.scopeName}/${packageName}`;
 }
 exports.fullNpmName = fullNpmName;
-const outputDir = util_1.joinPaths(common_1.home, settings_1.outputPath);
+exports.outputDir = util_1.joinPaths(common_1.home, settings_1.outputPath);
 class NotNeededPackage extends PackageBase {
     constructor(raw) {
         super(raw);

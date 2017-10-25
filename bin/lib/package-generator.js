@@ -26,7 +26,7 @@ function generatePackage(typing, packages, versions, options) {
         const [log, logResult] = logging_1.quietLogger();
         const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages);
         log("Write metadata files to disk");
-        yield writeCommonOutputs(typing, packageJson, createReadme(typing), log);
+        yield writeCommonOutputs(typing, packageJson, createReadme(typing));
         yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy ${file}`);
             yield fs_extra_1.copy(typing.filePath(file, options), yield outputFilePath(typing, file));
@@ -39,13 +39,13 @@ function generateNotNeededPackage(pkg, versions) {
         const [log, logResult] = logging_1.quietLogger();
         const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
         log("Write metadata files to disk");
-        yield writeCommonOutputs(pkg, packageJson, pkg.readme(), log);
+        yield writeCommonOutputs(pkg, packageJson, pkg.readme());
         return logResult();
     });
 }
-function writeCommonOutputs(pkg, packageJson, readme, log) {
+function writeCommonOutputs(pkg, packageJson, readme) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield clearOutputPath(pkg.outputDirectory, log);
+        yield fs_extra_1.mkdir(pkg.outputDirectory);
         yield Promise.all([
             writeOutputFile("package.json", packageJson),
             writeOutputFile("README.md", readme),
@@ -68,15 +68,6 @@ function outputFilePath(pkg, filename) {
         return full;
     });
 }
-function clearOutputPath(outputPath, log) {
-    return __awaiter(this, void 0, void 0, function* () {
-        log(`Create output path ${outputPath}`);
-        yield fs_extra_1.mkdirp(outputPath);
-        log("Clear out old files");
-        yield fs_extra_1.emptyDir(outputPath);
-    });
-}
-exports.clearOutputPath = clearOutputPath;
 function createPackageJSON(typing, version, packages) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete

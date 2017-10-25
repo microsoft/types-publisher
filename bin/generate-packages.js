@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const package_generator_1 = require("./lib/package-generator");
@@ -31,6 +32,7 @@ function main(options, all = false, tgz = false) {
         log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
         const allPackages = yield packages_1.AllPackages.read(options);
         const versions = yield versions_1.default.load();
+        yield fs_extra_1.emptyDir(packages_1.outputDir);
         const packages = all ? allPackages.allPackages() : yield versions_1.changedPackages(allPackages);
         yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
             const logs = yield package_generator_1.default(pkg, allPackages, versions, options);

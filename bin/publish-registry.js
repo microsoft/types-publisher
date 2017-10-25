@@ -12,7 +12,6 @@ const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
 const npm_client_1 = require("./lib/npm-client");
-const package_generator_1 = require("./lib/package-generator");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
 const versions_1 = require("./lib/versions");
@@ -34,13 +33,13 @@ function main(dry) {
         const { version: oldVersion, contentHash: oldContentHash } = yield versions_1.fetchNpmInfo(packageName);
         // Don't include not-needed packages in the registry.
         const typings = yield packages_1.AllPackages.readTypings();
-        const registry = generateRegistry(typings);
-        const newContentHash = util_1.computeHash(JSON.stringify(registry, undefined, 4));
+        const registry = JSON.stringify(generateRegistry(typings), undefined, 4);
+        const newContentHash = util_1.computeHash(registry);
         assert.equal(oldVersion.major, 0);
         assert.equal(oldVersion.minor, 1);
         const newVersion = `0.1.${oldVersion.patch + 1}`;
         const packageJson = generatePackageJson(newVersion, newContentHash);
-        yield generate(registry, packageJson, log);
+        yield generate(registry, packageJson);
         if (oldContentHash !== newContentHash) {
             log("New packages have been added, so publishing a new registry.");
             yield publish(packageJson, newVersion, dry);
@@ -54,14 +53,20 @@ function main(dry) {
     });
 }
 exports.default = main;
-function generate(registry, packageJson, log) {
+function generate(registry, packageJson) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield package_generator_1.clearOutputPath(registryOutputPath, log);
-        yield writeOutputFile("package.json", packageJson);
+        yield fs_extra_1.mkdir(registryOutputPath);
+        yield writeOutputJson("package.json", packageJson);
         yield writeOutputFile("index.json", registry);
         yield writeOutputFile("README.md", readme);
+        function writeOutputJson(filename, content) {
+            return io_1.writeJson(outputPath(filename), content);
+        }
         function writeOutputFile(filename, content) {
-            return io_1.writeJson(util_1.joinPaths(registryOutputPath, filename), content);
+            return io_1.writeFile(outputPath(filename), content);
+        }
+        function outputPath(filename) {
+            return util_1.joinPaths(registryOutputPath, filename);
         }
     });
 }
@@ -76,7 +81,6 @@ function publish(packageJson, version, dry) {
 }
 function validate() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(settings_1.validateOutputPath);
         yield fs_extra_1.emptyDir(settings_1.validateOutputPath);
         yield io_1.writeJson(util_1.joinPaths(settings_1.validateOutputPath, "package.json"), {
             name: "validate",
@@ -87,7 +91,7 @@ function validate() {
             repository: {},
         });
         const npmPath = util_1.joinPaths(__dirname, "..", "node_modules", "npm", "bin", "npm-cli.js");
-        const err = (yield util_1.execAndThrowErrors(`node ${npmPath} install types-registry ${io_1.npmInstallFlags}`, settings_1.validateOutputPath)).trim();
+        const err = (yield util_1.execAndThrowErrors(`node ${npmPath} install types-registry@next ${io_1.npmInstallFlags}`, settings_1.validateOutputPath)).trim();
         if (err) {
             console.error(err);
         }
