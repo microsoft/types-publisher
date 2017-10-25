@@ -195,11 +195,9 @@ function resolveModule(referencedFrom, directory, filename) {
             return { resolvedFilename: dts, content: yield definition_parser_1.readFileAndThrowOnBOM(directory, dts) };
         }
         catch (_) {
-            let index = util_1.joinPaths(filename, "index.d.ts");
-            if (index === "./index.d.ts") {
-                index = "index.d.ts";
-            }
-            return { resolvedFilename: index, content: yield readFileAndReportErrors(referencedFrom, directory, filename, index) };
+            const index = util_1.joinPaths(filename.endsWith("/") ? filename.slice(0, filename.length - 1) : filename, "index.d.ts");
+            const resolvedFilename = index === "./index.d.ts" ? "index.d.ts" : index;
+            return { resolvedFilename, content: yield readFileAndReportErrors(referencedFrom, directory, filename, index) };
         }
     });
 }

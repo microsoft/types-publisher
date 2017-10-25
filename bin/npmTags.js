@@ -31,33 +31,39 @@ function tagAll(dry) {
             // Only update tags for the latest version of the package.
             if (pkg.isLatest) {
                 const version = versions.getVersion(pkg).versionString;
-                yield addNpmTagsForPackage(pkg, versions, version, client, console.log, dry);
+                yield updateTypeScriptVersionTags(pkg, version, client, console.log, dry);
+                yield updateLatestTag(pkg, versions, client, console.log, dry);
             }
         }));
         // Don't tag notNeeded packages
     });
 }
-function addNpmTagsForPackage(pkg, versions, version, client, log, dry) {
+function updateTypeScriptVersionTags(pkg, version, client, log, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const tags = definitelytyped_header_parser_1.TypeScriptVersion.tagsToUpdate(pkg.typeScriptVersion);
         log(`Tag ${pkg.fullNpmName}@${version} as ${JSON.stringify(tags)}`);
         if (!dry) {
             for (const tagName of tags) {
-                yield tag(version, tagName);
+                yield tag(version, tagName, client, pkg);
             }
         }
+    });
+}
+exports.updateTypeScriptVersionTags = updateTypeScriptVersionTags;
+function updateLatestTag(pkg, versions, client, log, dry) {
+    return __awaiter(this, void 0, void 0, function* () {
         // Prerelease packages should never be tagged latest
         const latestNonPrerelease = versions.latestNonPrerelease(pkg);
         if (latestNonPrerelease) {
             log(`	but tag ${pkg.fullNpmName}@${latestNonPrerelease.versionString} as "latest"`);
             if (!dry) {
-                yield tag(latestNonPrerelease.versionString, "latest");
+                yield tag(latestNonPrerelease.versionString, "latest", client, pkg);
             }
-        }
-        function tag(versionString, tag) {
-            return client.tag(pkg.fullEscapedNpmName, versionString, tag);
         }
     });
 }
-exports.addNpmTagsForPackage = addNpmTagsForPackage;
+exports.updateLatestTag = updateLatestTag;
+function tag(versionString, tag, client, pkg) {
+    return client.tag(pkg.fullEscapedNpmName, versionString, tag);
+}
 //# sourceMappingURL=npmTags.js.map
