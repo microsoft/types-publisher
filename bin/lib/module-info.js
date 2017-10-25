@@ -15,9 +15,6 @@ const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
 function getModuleInfo(packageName, directory, allEntryFilenames, log) {
     return __awaiter(this, void 0, void 0, function* () {
-        let hasUmdDecl = false;
-        let hasGlobalDeclarations = false;
-        let ambientModuleCount = 0;
         const dependencies = new Set();
         const declaredModules = [];
         const globals = new Set();
@@ -52,7 +49,6 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                         // since this is still a legal module-only declaration
                         globals.add(globalName);
                         hasAnyExport = true;
-                        hasUmdDecl = true;
                         break;
                     }
                     case ts.SyntaxKind.ModuleDeclaration: {
@@ -69,13 +65,11 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                                     noWindowsSlashes(packageName, name);
                                     declaredModules.push(name);
                                     log(`Found ambient external module \`"${name}"\``);
-                                    ambientModuleCount++;
                                 }
                             }
                             else {
                                 const moduleName = decl.name.text;
                                 log(`Found global namespace declaration \`${moduleName}\``);
-                                hasGlobalDeclarations = true;
                                 if (isValueNamespace(decl)) {
                                     globals.add(moduleName);
                                 }
@@ -96,7 +90,6 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                                     globals.add(declName);
                                 }
                             }
-                            hasGlobalDeclarations = true;
                         }
                         break;
                     case ts.SyntaxKind.InterfaceDeclaration:
@@ -117,7 +110,6 @@ function getModuleInfo(packageName, directory, allEntryFilenames, log) {
                             if (!isType) {
                                 globals.add(declName);
                             }
-                            hasGlobalDeclarations = true;
                         }
                         break;
                     }
@@ -203,7 +195,10 @@ function resolveModule(referencedFrom, directory, filename) {
             return { resolvedFilename: dts, content: yield definition_parser_1.readFileAndThrowOnBOM(directory, dts) };
         }
         catch (_) {
-            const index = util_1.joinPaths(filename, "index.d.ts");
+            let index = util_1.joinPaths(filename, "index.d.ts");
+            if (index === "./index.d.ts") {
+                index = "index.d.ts";
+            }
             return { resolvedFilename: index, content: yield readFileAndReportErrors(referencedFrom, directory, filename, index) };
         }
     });

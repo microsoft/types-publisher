@@ -48,6 +48,7 @@ function main(options, all = false, tgz = false) {
 exports.default = main;
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        yield fs_extra_1.emptyDir(packages_1.outputDir);
         const allPackages = yield packages_1.AllPackages.read(options);
         const pkg = allPackages.getSingle(singleName);
         const versions = yield versions_1.default.load();
