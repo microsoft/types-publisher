@@ -1,3 +1,4 @@
+import assert = require("assert");
 import * as child_process from "child_process";
 import * as crypto from "crypto";
 import moment = require("moment");
@@ -9,6 +10,11 @@ import { inspect } from "util";
 if (!Object.entries) {
 	Object.entries = (obj: any) =>
 		Object.getOwnPropertyNames(obj).map(key => [key, obj[key]] as [string, any]);
+}
+
+export function assertDefined<T>(x: T | undefined): T {
+	assert(x !== undefined);
+	return x!;
 }
 
 import { Options } from "../lib/common";
@@ -200,6 +206,11 @@ export function multiMapAdd<K, V>(map: Map<K, V[]>, key: K, value: V): void {
 	} else {
 		map.set(key, [value]);
 	}
+}
+
+export function* concat<T>(a: Iterable<T>, b: Iterable<T>): Iterable<T> {
+	yield* a;
+	yield* b;
 }
 
 export function mapDefined<T, U>(arr: Iterable<T>, mapper: (t: T) => U | undefined): U[] {
