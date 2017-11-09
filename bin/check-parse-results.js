@@ -22,6 +22,7 @@ function main(includeNpmChecks, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
         const [log, logResult] = logging_1.logger();
+        checkTypeScriptVersions(allPackages);
         checkPathMappings(allPackages);
         const packages = allPackages.allPackages();
         checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
@@ -50,6 +51,15 @@ function checkForDuplicates(packages, func, key, log) {
             log(` * Duplicate ${key} descriptions "${libName}"`);
             for (const n of values) {
                 log(`   * ${n.desc}`);
+            }
+        }
+    }
+}
+function checkTypeScriptVersions(allPackages) {
+    for (const pkg of allPackages.allTypings()) {
+        for (const dep of allPackages.allDependencyTypings(pkg)) {
+            if (dep.typeScriptVersion > pkg.typeScriptVersion) {
+                throw new Error(`${pkg.desc} depends on ${dep.desc} but has a lower required TypeScript version.`);
             }
         }
     }

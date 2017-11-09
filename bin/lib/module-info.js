@@ -337,7 +337,7 @@ function getTestDependencies(pkgName, directory, testFiles, dependencies) {
                 testDependencies.add(referencedPackage);
             }
             for (const imported of imports(sourceFile)) {
-                if (!imported.startsWith(".") && !dependencies.has(imported)) {
+                if (!imported.startsWith(".") && !dependencies.has(imported) && imported !== pkgName) {
                     testDependencies.add(imported);
                 }
             }

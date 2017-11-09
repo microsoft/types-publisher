@@ -19,7 +19,7 @@ if (!module.parent) {
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), console.log, options);
-        console.log(util_1.join(util_1.map(changes, t => t.desc)));
+        console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
     });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
@@ -28,8 +28,8 @@ function getAffectedPackages(allPackages, log, options) {
         const changedPackageIds = yield gitChanges(log, options);
         // If a package doesn't exist, that's because it was deleted.
         const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-        const dependedOn = getReverseDependencies(allPackages);
-        return collectDependers(changedPackages, dependedOn);
+        const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages)).filter(d => changedPackages.includes(d));
+        return { changedPackages, dependentPackages };
     });
 }
 exports.default = getAffectedPackages;

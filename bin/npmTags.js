@@ -54,11 +54,9 @@ function updateLatestTag(pkg, versions, client, log, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         // Prerelease packages should never be tagged latest
         const latestNonPrerelease = versions.latestNonPrerelease(pkg);
-        if (latestNonPrerelease) {
-            log(`	but tag ${pkg.fullNpmName}@${latestNonPrerelease.versionString} as "latest"`);
-            if (!dry) {
-                yield tag(latestNonPrerelease.versionString, "latest", client, pkg);
-            }
+        log(`	but tag ${pkg.fullNpmName}@${latestNonPrerelease.versionString} as "latest"`);
+        if (!dry) {
+            yield tag(latestNonPrerelease.versionString, "latest", client, pkg);
         }
     });
 }

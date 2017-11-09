@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const assert = require("assert");
 const child_process = require("child_process");
 const crypto = require("crypto");
 const moment = require("moment");
@@ -18,6 +19,11 @@ const util_1 = require("util");
 if (!Object.entries) {
     Object.entries = (obj) => Object.getOwnPropertyNames(obj).map(key => [key, obj[key]]);
 }
+function assertDefined(x) {
+    assert(x !== undefined);
+    return x;
+}
+exports.assertDefined = assertDefined;
 const progress_1 = require("./progress");
 function parseJson(text) {
     try {
@@ -200,6 +206,11 @@ function multiMapAdd(map, key, value) {
     }
 }
 exports.multiMapAdd = multiMapAdd;
+function* concat(a, b) {
+    yield* a;
+    yield* b;
+}
+exports.concat = concat;
 function mapDefined(arr, mapper) {
     const out = [];
     for (const a of arr) {

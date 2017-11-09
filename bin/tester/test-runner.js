@@ -45,17 +45,18 @@ exports.testerOptions = testerOptions;
 function main(options, nProcesses, selection) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
-        const typings = selection === "all"
-            ? allPackages.allTypings()
+        const { changedPackages, dependentPackages } = selection === "all"
+            ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
             : selection === "affected"
                 ? yield get_affected_packages_1.default(allPackages, console.log, options)
-                : allPackages.allTypings().filter(t => selection.test(t.name));
-        console.log(`Testing ${typings.length} packages: ${typings.map(t => t.desc)}`);
+                : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
+        console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
+        console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
         const allErrors = [];
         console.log("Installing NPM dependencies...");
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
-        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, typings), (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, util_1.concat(changedPackages, dependentPackages)), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
             if (!(yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json")))) {
                 return;
@@ -70,17 +71,10 @@ function main(options, nProcesses, selection) {
                 console.log(` from ${cwd}: ${stdout}`);
             }
         }));
-        yield runCommand(console, undefined, pathToDtsLint, "--installAll");
+        yield runCommand(console, undefined, pathToDtsLint, ["--installAll"]);
         console.log("Testing...");
-        yield util_1.nAtATime(nProcesses, typings, (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const [log, logResult] = logging_1.quietLoggerWithErrors();
-            const err = yield single(pkg, log, options);
-            console.log(`Testing ${pkg.desc}`);
-            logging_1.moveLogsWithErrors(console, logResult(), msg => `\t${msg}`);
-            if (err) {
-                allErrors.push({ err, pkg });
-            }
-        }));
+        yield runTests(changedPackages, false);
+        yield runTests(dependentPackages, true);
         if (allErrors.length) {
             allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => packages_1.PackageBase.compare(pkgA, pkgB));
             console.log("\n\n=== ERRORS ===\n");
@@ -91,18 +85,26 @@ function main(options, nProcesses, selection) {
             console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.desc).join(", ")}`);
             throw new Error("There was a test failure.");
         }
+        function runTests(packages, isDepender) {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield util_1.nAtATime(nProcesses, packages, pkg => runTest(pkg, isDepender));
+            });
+        }
+        function runTest(pkg, isDepender) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const [log, logResult] = logging_1.quietLoggerWithErrors();
+                const err = yield runCommand(log, pkg.directoryPath(options), pathToDtsLint, isDepender ? ["--onlyTestTsNext"] : []);
+                console.log(`Testing ${pkg.desc}`);
+                logging_1.moveLogsWithErrors(console, logResult(), msg => `\t${msg}`);
+                if (err) {
+                    allErrors.push({ err, pkg });
+                }
+            });
+        }
     });
 }
 exports.default = main;
-function single(pkg, log, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const cwd = pkg.directoryPath(options);
-        const shouldLint = yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "tslint.json"));
-        const args = shouldLint ? [] : ["--noLint"];
-        return runCommand(log, cwd, pathToDtsLint, ...args);
-    });
-}
-function runCommand(log, cwd, cmd, ...args) {
+function runCommand(log, cwd, cmd, args) {
     return __awaiter(this, void 0, void 0, function* () {
         const nodeCmd = `node ${cmd} ${args.join(" ")}`;
         log.info(`Running: ${nodeCmd}`);

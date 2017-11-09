@@ -98,7 +98,8 @@ class Versions {
         return new Semver(pkg.major, pkg.minor, this.info(pkg.id).patch, pkg.isPrerelease);
     }
     latestNonPrerelease(pkg) {
-        return this.info(pkg.id).latestNonPrerelease;
+        const info = this.info(pkg.id);
+        return pkg.isLatest ? this.getVersion(pkg) : util_1.assertDefined(info.latestNonPrerelease);
     }
     info({ name, majorVersion }) {
         const info = this.data[name][majorVersion];
