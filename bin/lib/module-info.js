@@ -342,7 +342,7 @@ function getTestDependencies(pkgName, directory, testFiles, dependencies) {
                 }
             }
         }
-        return Array.from(testDependencies);
+        return testDependencies;
     });
 }
 exports.getTestDependencies = getTestDependencies;

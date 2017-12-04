@@ -65,6 +65,21 @@ function nAtATime(n, inputs, use, progressOptions) {
     });
 }
 exports.nAtATime = nAtATime;
+function filter(iterable, predicate) {
+    const iter = iterable[Symbol.iterator]();
+    return {
+        [Symbol.iterator]() { return this; },
+        next() {
+            while (true) {
+                const res = iter.next();
+                if (res.done || predicate(res.value)) {
+                    return res;
+                }
+            }
+        }
+    };
+}
+exports.filter = filter;
 function filterNAtATime(n, inputs, shouldKeep, progress) {
     return __awaiter(this, void 0, void 0, function* () {
         const shouldKeeps = yield nAtATime(n, inputs, shouldKeep, progress);

@@ -48,7 +48,7 @@ function logsUploadedLocation(timeStamp) {
 function uploadLogs(container, timeStamp, log) {
     return __awaiter(this, void 0, void 0, function* () {
         yield removeOldDirectories(container, logsPrefix, maxNumberOfOldLogsDirectories - 1, log);
-        return yield uploadDirectory(container, logsUploadedLocation(timeStamp), logsDirectoryName, log, f => f !== "upload-blobs.md");
+        return uploadDirectory(container, logsUploadedLocation(timeStamp), logsDirectoryName, log, f => f !== "upload-blobs.md");
     });
 }
 function uploadDirectory(container, uploadedDirPath, dirPath, log, filter) {
@@ -57,7 +57,7 @@ function uploadDirectory(container, uploadedDirPath, dirPath, log, filter) {
         if (filter) {
             files = files.filter(filter);
         }
-        return yield Promise.all(files.map(fileName => {
+        return Promise.all(files.map(fileName => {
             const fullPath = util_1.joinPaths(dirPath, fileName);
             const blobName = util_1.joinPaths(uploadedDirPath, fileName);
             return logAndUploadFile(container, blobName, fullPath, log);

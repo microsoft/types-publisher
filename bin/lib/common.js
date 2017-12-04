@@ -21,7 +21,8 @@ exports.home = util_1.joinPaths(__dirname, "..", "..");
 /** Settings that may be determined dynamically. */
 class Options {
     constructor(
-        /** e.g. '../DefinitelyTyped'
+        /**
+         * e.g. '../DefinitelyTyped'
          * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
          */
         definitelyTypedPath, resetDefinitelyTyped, 

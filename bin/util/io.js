@@ -78,7 +78,7 @@ function fetchWithRetries(url, init) {
             }
             yield sleep(1000);
         }
-        return yield node_fetch_1.default(url, init);
+        return node_fetch_1.default(url, init);
     });
 }
 function sleep(millis) {

@@ -88,12 +88,16 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFileAndThrowOnBOM(directory, mainFilename));
         const tsconfig = yield fs_extra_1.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
-        const { dependencies: dependenciesSet, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
-        const testDependencies = yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet);
+        const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
+        const declaredModulesSet = new Set(declaredModules);
+        // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
+        const removeDeclaredModules = (modules) => util_1.filter(modules, m => !declaredModulesSet.has(m));
+        const dependenciesSet = new Set(removeDeclaredModules(dependenciesWithDeclaredModules));
+        const testDependencies = Array.from(removeDeclaredModules(yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet)));
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const packageJsonPath = util_1.joinPaths(directory, "package.json");
         const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
-        const packageJsonDependencies = hasPackageJson ? checkDependencies((yield io_1.readJson(packageJsonPath)).dependencies, packageJsonPath) : [];
+        const packageJsonDependencies = hasPackageJson ? checkPackageJsonDependencies((yield io_1.readJson(packageJsonPath)).dependencies, packageJsonPath) : [];
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
         yield checkAllFilesUsed(directory, ls, allFiles);
@@ -126,7 +130,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         return { data, logs: logResult() };
     });
 }
-function checkDependencies(dependencies, path) {
+function checkPackageJsonDependencies(dependencies, path) {
     if (dependencies === null || typeof dependencies !== "object") {
         throw new Error(`${path} should contain "dependencies" or not exist.`);
     }
