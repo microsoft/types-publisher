@@ -433,8 +433,3 @@ function notNeededPackagesPath(options: Options): string {
 async function readNotNeededPackages(options: Options): Promise<NotNeededPackageRaw[]> {
 	return (await readJson(notNeededPackagesPath(options))).packages;
 }
-
-/** Path to the *root* for a given package. Path to a particular version may differ. */
-export function packageRootPath(packageName: string, options: Options): string {
-	return joinPaths(options.typesPath, packageName);
-}
