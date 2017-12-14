@@ -6,18 +6,18 @@ import { isDirectory, readFile, readJson } from "../util/io";
 import { Log, moveLogs, quietLogger } from "../util/logging";
 import { computeHash, filter, hasWindowsSlashes, join, joinPaths, mapAsyncOrdered } from "../util/util";
 
-import { Options } from "./common";
 import getModuleInfo, { getTestDependencies } from "./module-info";
 
-import { DependenciesRaw, PackageJsonDependency, packageRootPath, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
+import { DependenciesRaw, getLicenseFromPackageJson, PackageJsonDependency, PathMappingsRaw, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
 
 const dependenciesWhitelist = new Set(readFileSync(joinPaths(__dirname, "..", "..", "dependenciesWhitelist.txt"), "utf-8").split(/\r?\n/));
 
-export async function getTypingInfo(packageName: string, options: Options): Promise<{ data: TypingsVersionsRaw, logs: Log }> {
+export interface TypingInfo { data: TypingsVersionsRaw; logs: Log; }
+export async function getTypingInfo(packageName: string, typesPath: string): Promise<TypingInfo> {
 	if (packageName !== packageName.toLowerCase()) {
 		throw new Error(`Package name \`${packageName}\` should be strictly lowercase`);
 	}
-	const rootDirectory = packageRootPath(packageName, options);
+	const rootDirectory = joinPaths(typesPath, packageName);
 	const { rootDirectoryLs, olderVersionDirectories } = await getOlderVersions(rootDirectory);
 
 	const { data: latestData, logs: latestLogs } = await getTypingData(packageName, rootDirectory, rootDirectoryLs);
@@ -95,7 +95,7 @@ async function getTypingData(packageName: string, directory: string, ls: Readonl
 	const tsconfig: TsConfig = await readJSON(joinPaths(directory, "tsconfig.json"));
 	const { typeFiles, testFiles } = await entryFilesFromTsConfig(packageName, directory, tsconfig);
 	const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } =
-		await getModuleInfo(packageName, directory, typeFiles, log);
+		await getModuleInfo(packageName, directory, typeFiles);
 	const declaredModulesSet = new Set(declaredModules);
 	// Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
 	const removeDeclaredModules = (modules: Iterable<string>): Iterable<string> => filter(modules, m => !declaredModulesSet.has(m));
@@ -105,7 +105,9 @@ async function getTypingData(packageName: string, directory: string, ls: Readonl
 
 	const packageJsonPath = joinPaths(directory, "package.json");
 	const hasPackageJson = await pathExists(packageJsonPath);
-	const packageJsonDependencies = hasPackageJson ? checkPackageJsonDependencies((await readJson(packageJsonPath)).dependencies, packageJsonPath) : [];
+	const packageJson = hasPackageJson ? await readJson(packageJsonPath) as { readonly license?: {} | null, readonly dependencies?: {} | null } : {};
+	const license = getLicenseFromPackageJson(packageJson.license);
+	const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonPath);
 
 	const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
 
@@ -137,6 +139,7 @@ async function getTypingData(packageName: string, directory: string, ls: Readonl
 		declaredModules,
 		files: declFiles,
 		testFiles,
+		license,
 		packageJsonDependencies,
 		contentHash: await hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
 	};
@@ -144,6 +147,9 @@ async function getTypingData(packageName: string, directory: string, ls: Readonl
 }
 
 function checkPackageJsonDependencies(dependencies: {} | null | undefined, path: string): ReadonlyArray<PackageJsonDependency> {
+	if (dependencies === undefined) {
+		return [];
+	}
 	if (dependencies === null || typeof dependencies !== "object") { // tslint:disable-line strict-type-predicates
 		throw new Error(`${path} should contain "dependencies" or not exist.`);
 	}
@@ -154,7 +160,9 @@ function checkPackageJsonDependencies(dependencies: {} | null | undefined, path:
 		if (!dependenciesWhitelist.has(dependencyName)) {
 			const msg = dependencyName.startsWith("@types/")
 				? "Don't use a 'package.json' for @types dependencies."
-				: `Dependency ${dependencyName} not in whitelist; please make a pull request to types-publisher adding it.`;
+				: `Dependency ${dependencyName} not in whitelist.
+If you are depending on another \`@types\` package, do *not* add it to a \`package.json\`. Path mapping should make the import work.
+If this is an external library that provides typings,  please make a pull request to types-publisher adding it to \`dependenciesWhitelist.txt\`.`;
 			throw new Error(`In ${path}: ${msg}`);
 		}
 

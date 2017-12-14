@@ -2,14 +2,14 @@ import { Options } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
 import { AllPackages, PackageBase, TypingsData } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
-import { Logger } from "../util/logging";
+import { consoleLogger, Logger } from "../util/logging";
 import { done, execAndThrowErrors, flatMap, map, mapDefined, sort } from "../util/util";
 
 if (!module.parent) {
 	done(main(Options.defaults));
 }
 async function main(options: Options): Promise<void> {
-	const changes = await getAffectedPackages(await AllPackages.read(options), console.log, options);
+	const changes = await getAffectedPackages(await AllPackages.read(options), consoleLogger.info, options);
 	console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
 }
 
@@ -24,7 +24,7 @@ export default async function getAffectedPackages(allPackages: AllPackages, log:
 	// If a package doesn't exist, that's because it was deleted.
 	const changedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) =>
 		majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-	const dependentPackages = collectDependers(changedPackages,  getReverseDependencies(allPackages)).filter(d => changedPackages.includes(d));
+	const dependentPackages = collectDependers(changedPackages,  getReverseDependencies(allPackages));
 	return { changedPackages, dependentPackages };
 }
 
@@ -34,12 +34,17 @@ export function allDependencies(allPackages: AllPackages, packages: Iterable<Typ
 }
 
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependers(changedPackages: Iterable<TypingsData>, reverseDependencies: Map<TypingsData, Set<TypingsData>>): TypingsData[] {
-	return sortPackages(transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []));
+function collectDependers(changedPackages: TypingsData[], reverseDependencies: Map<TypingsData, Set<TypingsData>>): TypingsData[] {
+	const dependers = transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []);
+	// Don't include the original changed packages, just their dependers
+	for (const original of changedPackages) {
+		dependers.delete(original);
+	}
+	return sortPackages(dependers);
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
-	return sort<TypingsData>(packages, PackageBase.compare);
+	return sort<TypingsData>(packages, PackageBase.compare); // tslint:disable-line no-unbound-method
 }
 
 function transitiveClosure<T>(initialItems: Iterable<T>, getRelatedItems: (item: T) => Iterable<T>): Set<T> {
