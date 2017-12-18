@@ -90,4 +90,15 @@ function promisifyVoid(callsBack) {
         });
     });
 }
+function fetchNpmInfo(escapedPackageName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const uri = settings_1.npmRegistry + escapedPackageName;
+        const info = (yield io_1.fetchJson(uri, { retries: true }));
+        if ("error" in info) {
+            throw new Error(`Error getting version at ${uri}: ${info.error}`);
+        }
+        return info;
+    });
+}
+exports.fetchNpmInfo = fetchNpmInfo;
 //# sourceMappingURL=npm-client.js.map

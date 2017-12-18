@@ -10,10 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
-const settings_1 = require("./settings");
+const npm_client_1 = require("./npm-client");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
 class Versions {
@@ -165,35 +164,28 @@ function fetchTypesPackageVersionInfo(pkg, isPrerelease, newMajorAndMinor) {
     });
 }
 /** For use by publish-registry only. */
-function fetchNpmInfo(packageName) {
+function fetchAndProcessNpmInfo(escapedPackageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const v = (yield fetchVersionInfoFromNpm(packageName, /*isPrerelease*/ false));
-        return { version: v.version, contentHash: v.contentHash };
+        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName);
+        const version = getVersionSemver(info, /*isPrerelease*/ false);
+        const { "dist-tags": distTags, versions } = info;
+        const highestSemverVersion = getLatestVersion(versions);
+        assert.equal(highestSemverVersion.versionString, distTags.next);
+        const contentHash = versions[version.versionString].typesPublisherContentHash || "";
+        return { version, highestSemverVersion, contentHash };
     });
 }
-exports.fetchNpmInfo = fetchNpmInfo;
+exports.fetchAndProcessNpmInfo = fetchAndProcessNpmInfo;
 function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = settings_1.npmRegistry + escapedPackageName;
-        const info = yield io_1.fetchJson(uri, { retries: true });
-        if (info.error) {
-            throw new Error(`Error getting version at ${uri}: ${info.error}`);
-        }
-        else if (!info["dist-tags"]) {
+        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName);
+        if (!info["dist-tags"]) {
             // NPM returns `{}` for missing packages.
             return undefined;
         }
         else {
-            const versions = info.versions;
-            const latestNonPrerelease = !isPrerelease ? undefined : util_1.best(Object.keys(versions).map(parseAnySemver), (a, b) => {
-                if (a.isPrerelease && !b.isPrerelease) {
-                    return false;
-                }
-                if (!a.isPrerelease && b.isPrerelease) {
-                    return true;
-                }
-                return a.major >= b.major && a.minor >= b.minor && a.patch > b.patch;
-            });
+            const { versions } = info;
+            const latestNonPrerelease = !isPrerelease ? undefined : getLatestVersion(versions);
             const version = getVersionSemver(info, isPrerelease, newMajorAndMinor);
             const latestVersionInfo = versions[version.versionString];
             assert(!!latestVersionInfo);
@@ -201,6 +193,17 @@ function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMi
             const deprecated = !!latestVersionInfo.deprecated;
             return { version, latestNonPrerelease, contentHash, deprecated };
         }
+    });
+}
+function getLatestVersion(versions) {
+    return util_1.best(Object.keys(versions).map(parseAnySemver), (a, b) => {
+        if (a.isPrerelease && !b.isPrerelease) {
+            return false;
+        }
+        if (!a.isPrerelease && b.isPrerelease) {
+            return true;
+        }
+        return a.major >= b.major && a.minor >= b.minor && a.patch > b.patch;
     });
 }
 function getVersionSemver(info, isPrerelease, newMajorAndMinor) {

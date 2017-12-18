@@ -10,9 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const semver = require("semver");
 const common_1 = require("./lib/common");
+const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
-const settings_1 = require("./lib/settings");
-const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -103,13 +102,9 @@ function packageHasTypes(packageName) {
 exports.packageHasTypes = packageHasTypes;
 function firstPackageVersionWithTypes(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = settings_1.npmRegistry + packageName;
-        const info = yield io_1.fetchJson(uri, { retries: true });
+        const info = yield npm_client_1.fetchNpmInfo(packageName);
         // Info may be empty if the package is not on NPM
-        if (!info.versions) {
-            return undefined;
-        }
-        return firstVersionWithTypes(info.versions);
+        return info.versions && firstVersionWithTypes(info.versions);
     });
 }
 function firstVersionWithTypes(versions) {

@@ -40,7 +40,7 @@ function doUpdate(accessToken, body) {
     return __awaiter(this, void 0, void 0, function* () {
         const url = `https://api.github.com/repos/${settings_1.errorsIssue}?access_token=${accessToken}`;
         const message = { body, state: "open" };
-        const responseBody = yield io_1.fetchJson(url, { method: "PATCH", body: JSON.stringify(message) });
+        const responseBody = (yield io_1.fetchJson(url, { method: "PATCH", body: JSON.stringify(message) }));
         if (responseBody.body !== body) {
             throw new Error(JSON.stringify(responseBody, undefined, 4));
         }

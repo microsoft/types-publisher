@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
-const child_process = require("child_process");
+const child_process_1 = require("child_process");
 const crypto = require("crypto");
 const moment = require("moment");
 const os = require("os");
@@ -38,7 +38,7 @@ function currentTimeStamp() {
     return moment().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 }
 exports.currentTimeStamp = currentTimeStamp;
-exports.numberOfOsProcesses = process.env.TRAVIS === "true" ? 8 : os.cpus().length * 4;
+exports.numberOfOsProcesses = process.env.TRAVIS === "true" ? 8 : os.cpus().length;
 function nAtATime(n, inputs, use, progressOptions) {
     return __awaiter(this, void 0, void 0, function* () {
         const progress = progressOptions && progressOptions.options.progress ? new progress_1.default({ name: progressOptions.name }) : undefined;
@@ -115,7 +115,7 @@ exports.done = done;
 function initArray(length, makeElement) {
     const arr = new Array(length);
     for (let i = 0; i < length; i++) {
-        arr[i] = makeElement();
+        arr[i] = makeElement(i);
     }
     return arr;
 }
@@ -156,7 +156,7 @@ exports.sortObjectKeys = sortObjectKeys;
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 function exec(cmd, cwd) {
     return new Promise(resolve => {
-        child_process.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
+        child_process_1.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
             resolve({ error: error === null ? undefined : error, stdout: stdout.trim(), stderr: stderr.trim() });
         });
     });
@@ -261,4 +261,43 @@ function join(values, joiner = ", ") {
     return s.slice(0, s.length - joiner.length);
 }
 exports.join = join;
+function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, handleOutput }) {
+    return new Promise((resolve, reject) => {
+        const nPerProcess = Math.floor(inputs.length / nProcesses);
+        let processesLeft = nProcesses;
+        for (let i = 0; i < nProcesses; i++) {
+            const lo = nPerProcess * i;
+            const hi = i === nProcesses - 1 ? inputs.length : lo + nPerProcess;
+            let outputsLeft = hi - lo; // Expect one output per input
+            if (outputsLeft === 0) {
+                // No work for this process to do, so don't launch it
+                processesLeft--;
+                continue;
+            }
+            const child = child_process_1.fork(workerFile, commandLineArgs);
+            child.send(inputs.slice(lo, hi));
+            child.on("message", outputMessage => {
+                handleOutput(outputMessage);
+                assert(outputsLeft > 0);
+                outputsLeft--;
+                if (outputsLeft === 0) {
+                    assert(processesLeft > 0);
+                    processesLeft--;
+                    if (processesLeft === 0) {
+                        resolve();
+                    }
+                    child.kill();
+                }
+            });
+            child.on("disconnect", () => { assert(outputsLeft === 0); });
+            child.on("close", () => { assert(outputsLeft === 0); });
+            child.on("error", reject);
+        }
+    });
+}
+exports.runWithChildProcesses = runWithChildProcesses;
+function assertNever(_) {
+    throw new Error();
+}
+exports.assertNever = assertNever;
 //# sourceMappingURL=util.js.map

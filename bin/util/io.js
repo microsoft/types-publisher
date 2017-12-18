@@ -76,16 +76,17 @@ function fetchWithRetries(url, init) {
                     throw err;
                 }
             }
-            yield sleep(1000);
+            yield sleep(1);
         }
         return node_fetch_1.default(url, init);
     });
 }
-function sleep(millis) {
+function sleep(seconds) {
     return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => setTimeout(resolve, millis));
+        return new Promise(resolve => setTimeout(resolve, seconds * 1000));
     });
 }
+exports.sleep = sleep;
 function isDirectory(path) {
     return __awaiter(this, void 0, void 0, function* () {
         return (yield fs_extra_1.stat(path)).isDirectory();
@@ -110,7 +111,7 @@ function assertDirectoriesEqual(expected, actual, options) {
                 yield assertDirectoriesEqual(expectedFile, actualFile, options);
             }
             else {
-                assert.equal(yield readFile(expectedFile), yield readFile(actualFile));
+                assert.equal(yield readFile(actualFile), yield readFile(expectedFile));
             }
         }
     });

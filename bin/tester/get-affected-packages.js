@@ -12,13 +12,14 @@ const common_1 = require("../lib/common");
 const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
 const settings_1 = require("../lib/settings");
+const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 if (!module.parent) {
     util_1.done(main(common_1.Options.defaults));
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), console.log, options);
+        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, options);
         console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
     });
 }
@@ -28,7 +29,7 @@ function getAffectedPackages(allPackages, log, options) {
         const changedPackageIds = yield gitChanges(log, options);
         // If a package doesn't exist, that's because it was deleted.
         const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-        const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages)).filter(d => changedPackages.includes(d));
+        const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
         return { changedPackages, dependentPackages };
     });
 }
@@ -40,10 +41,15 @@ function allDependencies(allPackages, packages) {
 exports.allDependencies = allDependencies;
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
 function collectDependers(changedPackages, reverseDependencies) {
-    return sortPackages(transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []));
+    const dependers = transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []);
+    // Don't include the original changed packages, just their dependers
+    for (const original of changedPackages) {
+        dependers.delete(original);
+    }
+    return sortPackages(dependers);
 }
 function sortPackages(packages) {
-    return util_1.sort(packages, packages_1.PackageBase.compare);
+    return util_1.sort(packages, packages_1.PackageBase.compare); // tslint:disable-line no-unbound-method
 }
 function transitiveClosure(initialItems, getRelatedItems) {
     const all = new Set();

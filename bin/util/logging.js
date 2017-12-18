@@ -15,7 +15,7 @@ const io_1 = require("./io");
 /** Logger that *just* outputs to the console and does not save anything. */
 exports.consoleLogger = {
     info: console.log,
-    error: console.error
+    error: console.error,
 };
 /** Logger that *just* records writes and does not output to console. */
 function quietLogger() {
@@ -36,7 +36,7 @@ function alsoConsoleLogger(consoleLog) {
 }
 /** Logger that writes to console in addition to recording a result. */
 function logger() {
-    return alsoConsoleLogger(console.log);
+    return alsoConsoleLogger(exports.consoleLogger.info);
 }
 exports.logger = logger;
 /** Helper for creating `info` and `error` loggers together. */

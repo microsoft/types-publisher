@@ -13,141 +13,98 @@ const path = require("path");
 const ts = require("typescript");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
-function getModuleInfo(packageName, directory, allEntryFilenames, log) {
+function getModuleInfo(packageName, directory, allEntryFilenames) {
     return __awaiter(this, void 0, void 0, function* () {
+        const all = yield allReferencedFiles(directory, allEntryFilenames);
         const dependencies = new Set();
         const declaredModules = [];
         const globals = new Set();
-        const all = yield allReferencedFiles(directory, allEntryFilenames, log);
-        for (const sourceFile of all.values()) {
-            const isExternal = ts.isExternalModule(sourceFile);
-            // A file is a proper module if it is an external module *and* it has at least one export.
-            // A module with only imports is not a proper module; it likely just augments some other module.
-            let hasAnyExport = false;
-            function addDependency(dependency) {
-                if (dependency !== packageName) {
-                    dependencies.add(dependency);
-                }
-                // TODO: else throw new Error(`Package ${packageName} references itself. (via ${src.fileName})`);
+        function addDependency(dependency) {
+            if (dependency !== packageName) {
+                dependencies.add(dependency);
             }
+            // TODO: else throw new Error(`Package ${packageName} references itself. (via ${src.fileName})`);
+        }
+        for (const sourceFile of all.values()) {
             for (const ref of imports(sourceFile)) {
                 if (!ref.startsWith(".")) {
-                    const importedModule = rootName(ref);
-                    addDependency(importedModule);
-                    log(`Found import declaration from \`"${importedModule}"\``);
+                    addDependency(rootName(ref));
                 }
             }
             for (const ref of sourceFile.typeReferenceDirectives) {
                 addDependency(ref.fileName);
             }
-            for (const node of sourceFile.statements) {
-                switch (node.kind) {
-                    case ts.SyntaxKind.NamespaceExportDeclaration: {
-                        const globalName = node.name.text;
-                        log(`Found UMD module declaration for global \`${globalName}\``);
-                        // Don't set hasGlobalDeclarations = true even though we add a symbol here
-                        // since this is still a legal module-only declaration
-                        globals.add(globalName);
-                        hasAnyExport = true;
-                        break;
+            if (ts.isExternalModule(sourceFile)) {
+                if (sourceFileExportsSomething(sourceFile)) {
+                    declaredModules.push(properModuleName(packageName, sourceFile.fileName));
+                    const namespaceExport = sourceFile.statements.find(ts.isNamespaceExportDeclaration);
+                    if (namespaceExport) {
+                        globals.add(namespaceExport.name.text);
                     }
-                    case ts.SyntaxKind.ModuleDeclaration: {
-                        const decl = node;
-                        if (isExternal) {
-                            log(`Found exported namespace \`${decl.name.text}\``);
-                            hasAnyExport = true;
-                        }
-                        else {
-                            if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
-                                // If we're in an external module, this is an augmentation, not a declaration.
-                                if (!ts.isExternalModule(sourceFile)) {
-                                    const name = decl.name.text;
-                                    noWindowsSlashes(packageName, name);
-                                    declaredModules.push(name);
-                                    log(`Found ambient external module \`"${name}"\``);
-                                }
-                            }
-                            else {
-                                const moduleName = decl.name.text;
-                                log(`Found global namespace declaration \`${moduleName}\``);
-                                if (isValueNamespace(decl)) {
-                                    globals.add(moduleName);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case ts.SyntaxKind.VariableStatement:
-                        if (isExternal) {
-                            log("Found exported variables");
-                            hasAnyExport = true;
-                        }
-                        else {
-                            for (const decl of node.declarationList.declarations) {
-                                if (decl.name.kind === ts.SyntaxKind.Identifier) {
-                                    const declName = decl.name.text;
-                                    log(`Found global variable \`${declName}\``);
-                                    globals.add(declName);
-                                }
-                            }
-                        }
-                        break;
-                    case ts.SyntaxKind.InterfaceDeclaration:
-                    case ts.SyntaxKind.TypeAliasDeclaration:
-                    case ts.SyntaxKind.EnumDeclaration:
-                    case ts.SyntaxKind.ClassDeclaration:
-                    case ts.SyntaxKind.FunctionDeclaration: {
-                        const declNameNode = node.name;
-                        const declName = declNameNode && declNameNode.text;
-                        // If these nodes have an 'export' modifier, the file is an external module
-                        if (isExternal) {
-                            log(`Found exported declaration "${declName}"`);
-                            hasAnyExport = true;
-                        }
-                        else if (declName) {
-                            const isType = node.kind === ts.SyntaxKind.InterfaceDeclaration || node.kind === ts.SyntaxKind.TypeAliasDeclaration;
-                            log(`Found global ${isType ? "type" : "value"} declaration "${declName}"`);
-                            if (!isType) {
-                                globals.add(declName);
-                            }
-                        }
-                        break;
-                    }
-                    case ts.SyntaxKind.ExportDeclaration:
-                    case ts.SyntaxKind.ExportAssignment:
-                        // These nodes always indicate an external module
-                        log("Found export assignment or export declaration");
-                        hasAnyExport = true;
-                        break;
-                    case ts.SyntaxKind.ImportEqualsDeclaration:
-                    case ts.SyntaxKind.ImportDeclaration:
-                        // Already handled these in `imports`
-                        break;
-                    default:
-                        throw new Error(`Bad node in ${util_1.joinPaths(directory, sourceFile.fileName)}: ${ts.SyntaxKind[node.kind]}`);
                 }
             }
-            const isProperModule = isExternal && hasAnyExport;
-            if (isProperModule) {
-                declaredModules.push(properModuleName(packageName, sourceFile.fileName));
+            else {
+                for (const node of sourceFile.statements) {
+                    switch (node.kind) {
+                        case ts.SyntaxKind.ModuleDeclaration: {
+                            const decl = node;
+                            const name = decl.name.text;
+                            if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
+                                declaredModules.push(assertNoWindowsSlashes(packageName, name));
+                            }
+                            else if (isValueNamespace(decl)) {
+                                globals.add(name);
+                            }
+                            break;
+                        }
+                        case ts.SyntaxKind.VariableStatement:
+                            for (const decl of node.declarationList.declarations) {
+                                if (decl.name.kind === ts.SyntaxKind.Identifier) {
+                                    globals.add(decl.name.text);
+                                }
+                            }
+                            break;
+                        case ts.SyntaxKind.EnumDeclaration:
+                        case ts.SyntaxKind.ClassDeclaration:
+                        case ts.SyntaxKind.FunctionDeclaration: {
+                            // Deliberately not doing this for types, because those won't show up in JS code and can't be used for ATA
+                            const nameNode = node.name;
+                            if (nameNode) {
+                                globals.add(nameNode.text);
+                            }
+                        }
+                    }
+                }
             }
         }
-        return {
-            declFiles: util_1.sort(all.keys()),
-            dependencies,
-            declaredModules,
-            globals: util_1.sort(globals)
-        };
+        return { declFiles: util_1.sort(all.keys()), dependencies, declaredModules, globals: util_1.sort(globals) };
     });
 }
 exports.default = getModuleInfo;
+/**
+ * A file is a proper module if it is an external module *and* it has at least one export.
+ * A module with only imports is not a proper module; it likely just augments some other module.
+ */
+function sourceFileExportsSomething({ statements }) {
+    return statements.some(statement => {
+        switch (statement.kind) {
+            case ts.SyntaxKind.ImportEqualsDeclaration:
+            case ts.SyntaxKind.ImportDeclaration:
+                return false;
+            case ts.SyntaxKind.ModuleDeclaration:
+                return statement.name.kind === ts.SyntaxKind.Identifier;
+            default:
+                return true;
+        }
+    });
+}
 /**
  * Given a file name, get the name of the module it declares.
  * `foo/index.d.ts` declares "foo", `foo/bar.d.ts` declares "foo/bar", "foo/bar/index.d.ts" declares "foo/bar"
  */
 function properModuleName(folderName, fileName) {
     const part = path.basename(fileName) === "index.d.ts" ? path.dirname(fileName) : withoutExtension(fileName, ".d.ts");
-    return util_1.joinPaths(folderName, part);
+    return part === "." ? folderName : util_1.joinPaths(folderName, part);
 }
 /** Given "foo/bar/baz", return "foo". */
 function rootName(importText) {
@@ -164,7 +121,7 @@ function withoutExtension(str, ext) {
     return str.slice(0, str.length - ext.length);
 }
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-function allReferencedFiles(directory, entryFilenames, log) {
+function allReferencedFiles(directory, entryFilenames) {
     return __awaiter(this, void 0, void 0, function* () {
         const seenReferences = new Set();
         const all = new Map();
@@ -177,7 +134,6 @@ function allReferencedFiles(directory, entryFilenames, log) {
                 const { resolvedFilename, content } = exact
                     ? { resolvedFilename: text, content: yield readFileAndReportErrors(referencedFrom, directory, text, text) }
                     : yield resolveModule(referencedFrom, directory, text);
-                log(`Parse ${resolvedFilename}`);
                 const src = createSourceFile(resolvedFilename, content);
                 all.set(resolvedFilename, src);
                 const refs = referencedFiles(src, path.dirname(resolvedFilename), directory);
@@ -217,7 +173,6 @@ function readFileAndReportErrors(referencedFrom, directory, referenceText, filen
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
 function* referencedFiles(src, subDirectory, directory) {
-    const out = [];
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
         yield addReference({ text: ref.fileName, exact: true });
@@ -227,11 +182,9 @@ function* referencedFiles(src, subDirectory, directory) {
             yield addReference({ text: ref, exact: false });
         }
     }
-    return out;
     function addReference({ exact, text }) {
-        noWindowsSlashes(src.fileName, text);
         // `path.normalize` may add windows slashes
-        const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, text)));
+        const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, text))));
         if (full.startsWith("..")) {
             throw new Error(`In ${directory} ${src.fileName}: ` +
                 'Definitions must use global references to other packages, not parent ("../xxx") references.' +
@@ -244,55 +197,47 @@ function* referencedFiles(src, subDirectory, directory) {
  * All strings referenced in `import` statements.
  * Does *not* include <reference> directives.
  */
-function imports(sourceFile) {
-    const out = [];
-    findImports(sourceFile.statements);
-    return out;
-    function findImports(statements) {
-        for (const node of statements) {
-            switch (node.kind) {
-                case ts.SyntaxKind.ImportDeclaration:
-                case ts.SyntaxKind.ExportDeclaration: {
-                    const decl = node;
-                    if (decl.moduleSpecifier && decl.moduleSpecifier.kind === ts.SyntaxKind.StringLiteral) {
-                        out.push(decl.moduleSpecifier.text);
-                    }
-                    break;
+function* imports({ statements }) {
+    for (const node of statements) {
+        switch (node.kind) {
+            case ts.SyntaxKind.ImportDeclaration:
+            case ts.SyntaxKind.ExportDeclaration: {
+                const { moduleSpecifier } = node;
+                if (moduleSpecifier && moduleSpecifier.kind === ts.SyntaxKind.StringLiteral) {
+                    yield moduleSpecifier.text;
                 }
-                case ts.SyntaxKind.ImportEqualsDeclaration: {
-                    const decl = node;
-                    if (decl.moduleReference.kind === ts.SyntaxKind.ExternalModuleReference) {
-                        out.push(parseRequire(decl.moduleReference));
-                    }
-                    break;
+                break;
+            }
+            case ts.SyntaxKind.ImportEqualsDeclaration: {
+                const { moduleReference } = node;
+                if (moduleReference.kind === ts.SyntaxKind.ExternalModuleReference) {
+                    yield parseRequire(moduleReference);
                 }
-                case ts.SyntaxKind.ModuleDeclaration: {
-                    const decl = node;
-                    if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
-                        findImports(decl.body.statements);
-                    }
-                    break;
+                break;
+            }
+            case ts.SyntaxKind.ModuleDeclaration: {
+                const { name, body } = node;
+                if (name.kind === ts.SyntaxKind.StringLiteral) {
+                    yield* imports(body);
                 }
-                default:
             }
         }
     }
-    function parseRequire(reference) {
-        const expr = reference.expression;
-        if (!expr || expr.kind !== ts.SyntaxKind.StringLiteral) {
-            throw new Error(`Bad 'import =' reference: ${reference.getText(sourceFile)}`);
-        }
-        return expr.text;
+}
+function parseRequire(reference) {
+    const { expression } = reference;
+    if (!expression || !ts.isStringLiteral(expression)) {
+        throw new Error(`Bad 'import =' reference: ${reference.getText()}`);
     }
+    return expression.text;
 }
 function isValueNamespace(ns) {
     if (!ns.body) {
         throw new Error("@types should not use shorthand ambient modules");
     }
-    if (ns.body.kind === ts.SyntaxKind.ModuleDeclaration) {
-        return isValueNamespace(ns.body);
-    }
-    return ns.body.statements.some(statementDeclaresValue);
+    return ns.body.kind === ts.SyntaxKind.ModuleDeclaration
+        ? isValueNamespace(ns.body)
+        : ns.body.statements.some(statementDeclaresValue);
 }
 function statementDeclaresValue(statement) {
     switch (statement.kind) {
@@ -311,10 +256,11 @@ function statementDeclaresValue(statement) {
             throw new Error(`Forgot to implement ambient namespace statement ${ts.SyntaxKind[statement.kind]}`);
     }
 }
-function noWindowsSlashes(packageName, fileName) {
+function assertNoWindowsSlashes(packageName, fileName) {
     if (util_1.hasWindowsSlashes(fileName)) {
         throw new Error(`In ${packageName}: Use forward slash instead when referencing ${fileName}`);
     }
+    return fileName;
 }
 function getTestDependencies(pkgName, directory, testFiles, dependencies) {
     return __awaiter(this, void 0, void 0, function* () {

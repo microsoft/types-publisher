@@ -20,7 +20,7 @@ if (!module.parent) {
     if (!port) {
         throw new Error("Must provide PORT");
     }
-    const url = remote ? "http://types-publisher.azurewebsites.net" : `http://localhost:${port}`;
+    const url = remote ? "http://typespublisher.azurewebsites.net" : `http://localhost:${port}`;
     util_1.done(main(url));
 }
 function main(url) {

@@ -20,7 +20,7 @@ function generateAnyPackage(pkg, packages, versions, options) {
     return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
 }
 exports.default = generateAnyPackage;
-const license = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
+const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
 function generatePackage(typing, packages, versions, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
@@ -49,7 +49,7 @@ function writeCommonOutputs(pkg, packageJson, readme) {
         yield Promise.all([
             writeOutputFile("package.json", packageJson),
             writeOutputFile("README.md", readme),
-            writeOutputFile("LICENSE", license),
+            writeOutputFile("LICENSE", getLicenseFileText(pkg)),
         ]);
         function writeOutputFile(filename, content) {
             return __awaiter(this, void 0, void 0, function* () {
@@ -72,16 +72,15 @@ function createPackageJSON(typing, version, packages) {
     return __awaiter(this, void 0, void 0, function* () {
         // typing may provide a partial `package.json` for us to complete
         const dependencies = getDependencies(typing.packageJsonDependencies, typing, packages);
-        const description = `TypeScript definitions for ${typing.libraryName}`;
         // Use the ordering of fields from https://docs.npmjs.com/files/package.json
         const out = {
             name: typing.fullNpmName,
             version: version.versionString,
-            description,
+            description: `TypeScript definitions for ${typing.libraryName}`,
             // keywords,
             // homepage,
             // bugs,
-            license: "MIT",
+            license: typing.license,
             contributors: typing.contributors,
             main: "",
             repository: {
@@ -117,7 +116,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, name, fullNpmName, sourceRepoURL }, version) {
+function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL }, version) {
     return JSON.stringify({
         name: fullNpmName,
         version: version.versionString,
@@ -127,7 +126,7 @@ function createNotNeededPackageJSON({ libraryName, name, fullNpmName, sourceRepo
         scripts: {},
         author: "",
         repository: sourceRepoURL,
-        license: "MIT",
+        license,
         // No `typings`, that's provided by the dependency.
         dependencies: {
             [name]: "*"
@@ -161,5 +160,27 @@ function createReadme(typing) {
     lines.push(`These definitions were written by ${contributors}.`);
     lines.push("");
     return lines.join("\r\n");
+}
+function getLicenseFileText(typing) {
+    switch (typing.license) {
+        case "MIT" /* MIT */:
+            return mitLicense;
+        case "Apache-2.0" /* Apache20 */:
+            return apacheLicense(typing);
+        default:
+            throw util_1.assertNever(typing);
+    }
+}
+function apacheLicense(typing) {
+    const year = new Date().getFullYear();
+    const names = typing.contributors.map(c => c.name);
+    // tslint:disable max-line-length
+    return `Copyright ${year} ${names.join(", ")}
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.`;
+    // tslint:enable max-line-length
 }
 //# sourceMappingURL=package-generator.js.map

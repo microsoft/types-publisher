@@ -48,7 +48,7 @@ function main(options, nProcesses, selection) {
         const { changedPackages, dependentPackages } = selection === "all"
             ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
             : selection === "affected"
-                ? yield get_affected_packages_1.default(allPackages, console.log, options)
+                ? yield get_affected_packages_1.default(allPackages, logging_1.consoleLogger.info, options)
                 : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
         console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
         console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);

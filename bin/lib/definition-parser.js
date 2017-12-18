@@ -16,12 +16,12 @@ const util_1 = require("../util/util");
 const module_info_1 = require("./module-info");
 const packages_1 = require("./packages");
 const dependenciesWhitelist = new Set(fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "dependenciesWhitelist.txt"), "utf-8").split(/\r?\n/));
-function getTypingInfo(packageName, options) {
+function getTypingInfo(packageName, typesPath) {
     return __awaiter(this, void 0, void 0, function* () {
         if (packageName !== packageName.toLowerCase()) {
             throw new Error(`Package name \`${packageName}\` should be strictly lowercase`);
         }
-        const rootDirectory = packages_1.packageRootPath(packageName, options);
+        const rootDirectory = util_1.joinPaths(typesPath, packageName);
         const { rootDirectoryLs, olderVersionDirectories } = yield getOlderVersions(rootDirectory);
         const { data: latestData, logs: latestLogs } = yield getTypingData(packageName, rootDirectory, rootDirectoryLs);
         const latestVersion = latestData.libraryMajorVersion;
@@ -88,7 +88,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFileAndThrowOnBOM(directory, mainFilename));
         const tsconfig = yield fs_extra_1.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
         const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
-        const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles, log);
+        const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles);
         const declaredModulesSet = new Set(declaredModules);
         // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
         const removeDeclaredModules = (modules) => util_1.filter(modules, m => !declaredModulesSet.has(m));
@@ -97,7 +97,9 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
         const packageJsonPath = util_1.joinPaths(directory, "package.json");
         const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
-        const packageJsonDependencies = hasPackageJson ? checkPackageJsonDependencies((yield io_1.readJson(packageJsonPath)).dependencies, packageJsonPath) : [];
+        const packageJson = hasPackageJson ? yield io_1.readJson(packageJsonPath) : {};
+        const license = packages_1.getLicenseFromPackageJson(packageJson.license);
+        const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonPath);
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
         yield checkAllFilesUsed(directory, ls, allFiles);
@@ -124,6 +126,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
             declaredModules,
             files: declFiles,
             testFiles,
+            license,
             packageJsonDependencies,
             contentHash: yield hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
         };
@@ -131,6 +134,9 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
     });
 }
 function checkPackageJsonDependencies(dependencies, path) {
+    if (dependencies === undefined) {
+        return [];
+    }
     if (dependencies === null || typeof dependencies !== "object") {
         throw new Error(`${path} should contain "dependencies" or not exist.`);
     }
@@ -139,7 +145,9 @@ function checkPackageJsonDependencies(dependencies, path) {
         if (!dependenciesWhitelist.has(dependencyName)) {
             const msg = dependencyName.startsWith("@types/")
                 ? "Don't use a 'package.json' for @types dependencies."
-                : `Dependency ${dependencyName} not in whitelist; please make a pull request to types-publisher adding it.`;
+                : `Dependency ${dependencyName} not in whitelist.
+If you are depending on another \`@types\` package, do *not* add it to a \`package.json\`. Path mapping should make the import work.
+If this is an external library that provides typings,  please make a pull request to types-publisher adding it to \`dependenciesWhitelist.txt\`.`;
             throw new Error(`In ${path}: ${msg}`);
         }
         const version = dependencies[dependencyName];

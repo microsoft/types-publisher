@@ -13,6 +13,7 @@ const yargs = require("yargs");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
+const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
@@ -31,8 +32,8 @@ function tagAll(dry) {
             // Only update tags for the latest version of the package.
             if (pkg.isLatest) {
                 const version = versions.getVersion(pkg).versionString;
-                yield updateTypeScriptVersionTags(pkg, version, client, console.log, dry);
-                yield updateLatestTag(pkg, versions, client, console.log, dry);
+                yield updateTypeScriptVersionTags(pkg, version, client, logging_1.consoleLogger.info, dry);
+                yield updateLatestTag(pkg, versions, client, logging_1.consoleLogger.info, dry);
             }
         }));
         // Don't tag notNeeded packages

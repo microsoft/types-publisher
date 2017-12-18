@@ -23,7 +23,7 @@ class AllPackages {
     static read(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const map = yield readData();
-            const notNeeded = (yield readNotNeededPackages(options)).map(raw => new NotNeededPackage(raw));
+            const notNeeded = yield readNotNeededPackages(options);
             return new AllPackages(map, notNeeded);
         });
     }
@@ -166,6 +166,7 @@ function fullNpmName(packageName) {
 exports.fullNpmName = fullNpmName;
 exports.outputDir = util_1.joinPaths(common_1.home, settings_1.outputPath);
 class NotNeededPackage extends PackageBase {
+    get license() { return "MIT" /* MIT */; }
     constructor(raw) {
         super(raw);
         for (const key in raw) {
@@ -195,6 +196,20 @@ class NotNeededPackage extends PackageBase {
     }
 }
 exports.NotNeededPackage = NotNeededPackage;
+const allLicenses = ["MIT" /* MIT */, "Apache-2.0" /* Apache20 */];
+function getLicenseFromPackageJson(packageJsonLicense) {
+    if (packageJsonLicense === undefined) {
+        return "MIT" /* MIT */;
+    }
+    if (packageJsonLicense === "MIT") {
+        throw new Error(`Specifying '"license": "MIT"' is redundant, this is the default.`);
+    }
+    if (allLicenses.includes(packageJsonLicense)) {
+        return packageJsonLicense;
+    }
+    throw new Error(`'package.json' license is ${JSON.stringify(packageJsonLicense)}.\nExpected one of: ${JSON.stringify(allLicenses)}}`);
+}
+exports.getLicenseFromPackageJson = getLicenseFromPackageJson;
 class TypingsVersions {
     constructor(data) {
         const versions = Object.keys(data).map(Number);
@@ -238,6 +253,7 @@ class TypingsData extends PackageBase {
     get typeScriptVersion() { return this.data.typeScriptVersion; }
     get files() { return this.data.files; }
     get testFiles() { return this.data.testFiles; }
+    get license() { return this.data.license; }
     get packageJsonDependencies() { return this.data.packageJsonDependencies; }
     get contentHash() { return this.data.contentHash; }
     get declaredModules() { return this.data.declaredModules; }
@@ -278,12 +294,9 @@ function notNeededPackagesPath(options) {
 }
 function readNotNeededPackages(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield io_1.readJson(notNeededPackagesPath(options))).packages;
+        const raw = yield io_1.readJson(notNeededPackagesPath(options));
+        return raw.packages.map(raw => new NotNeededPackage(raw));
     });
 }
-/** Path to the *root* for a given package. Path to a particular version may differ. */
-function packageRootPath(packageName, options) {
-    return util_1.joinPaths(options.typesPath, packageName);
-}
-exports.packageRootPath = packageRootPath;
+exports.readNotNeededPackages = readNotNeededPackages;
 //# sourceMappingURL=packages.js.map

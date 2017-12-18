@@ -32,13 +32,13 @@ function full(client, dry, timeStamp, options) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
         yield get_definitely_typed_1.default(options);
-        yield parse_definitions_1.default(options);
+        yield parse_definitions_1.default(options, /*nProcesses*/ util_1.numberOfOsProcesses);
         yield check_parse_results_1.default(/*includeNpmChecks*/ false, options);
         yield calculate_versions_1.default(/*forceUpdate*/ false, options);
         yield generate_packages_1.default(options);
         yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, options);
         yield publish_packages_1.default(client, dry, options);
-        yield publish_registry_1.default(dry);
+        yield publish_registry_1.default(options, dry);
         yield validate_1.default(options);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);
