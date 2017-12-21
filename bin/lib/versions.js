@@ -151,6 +151,10 @@ class Semver {
         const { isPrerelease, major, minor, patch } = this;
         return isPrerelease ? `${major}.${minor}.0-next.${patch}` : `${major}.${minor}.${patch}`;
     }
+    greaterThan(sem) {
+        return this.major > sem.major || this.major === sem.major
+            && (this.minor > sem.minor || this.minor === sem.minor && this.patch > sem.patch);
+    }
     update({ major, minor }, isPrerelease) {
         const patch = this.major === major && this.minor === minor && this.isPrerelease === isPrerelease ? this.patch + 1 : 0;
         return new Semver(major, minor, patch, isPrerelease);
@@ -203,7 +207,7 @@ function getLatestVersion(versions) {
         if (!a.isPrerelease && b.isPrerelease) {
             return true;
         }
-        return a.major >= b.major && a.minor >= b.minor && a.patch > b.patch;
+        return a.greaterThan(b);
     });
 }
 function getVersionSemver(info, isPrerelease, newMajorAndMinor) {

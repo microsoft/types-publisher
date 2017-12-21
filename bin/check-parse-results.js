@@ -8,10 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const semver = require("semver");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
+const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -26,11 +26,22 @@ function main(includeNpmChecks, options) {
         const packages = allPackages.allPackages();
         checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
         checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
+        const dependedOn = new Set();
+        for (const pkg of packages) {
+            if (pkg instanceof packages_1.TypingsData) {
+                for (const dep of pkg.dependencies) {
+                    dependedOn.add(dep.name);
+                }
+                for (const dep of pkg.testDependencies) {
+                    dependedOn.add(dep);
+                }
+            }
+        }
         if (includeNpmChecks) {
-            yield util_1.nAtATime(10, allPackages.allTypings(), pkg => checkNpm(pkg, log), {
+            yield util_1.nAtATime(10, allPackages.allTypings(), pkg => checkNpm(pkg, log, dependedOn), {
                 name: "Checking for typed packages...",
                 flavor: pkg => pkg.desc,
-                options
+                options,
             });
         }
         yield logging_1.writeLog("conflicts.md", logResult());
@@ -85,34 +96,77 @@ function checkPathMappings(allPackages) {
         }
     }
 }
-function checkNpm(pkg, log) {
+function checkNpm({ major, minor, name, libraryName, projectName, contributors }, log, dependedOn) {
     return __awaiter(this, void 0, void 0, function* () {
-        const asOfVersion = yield firstPackageVersionWithTypes(pkg.name);
-        if (asOfVersion) {
-            const ourVersion = `${pkg.major}.${pkg.minor}`;
-            log(`Typings already defined for ${pkg.name} (${pkg.libraryName}) as of ${asOfVersion} (our version: ${ourVersion})`);
+        if (notNeededExceptions.has(name)) {
+            return;
+        }
+        const info = yield npm_client_1.fetchNpmInfo(name);
+        const versions = getRegularVersions(info.versions);
+        const firstTypedVersion = util_1.best(util_1.mapDefined(versions, ({ hasTypes, version }) => hasTypes ? version : undefined), (a, b) => b.greaterThan(a));
+        // A package might have added types but removed them later, so check the latest version too
+        if (firstTypedVersion === undefined || !util_1.best(versions, (a, b) => a.version.greaterThan(b.version)).hasTypes) {
+            return;
+        }
+        const ourVersion = `${major}.${minor}`;
+        log("");
+        log(`Typings already defined for ${name} (${libraryName}) as of ${firstTypedVersion.versionString} (our version: ${ourVersion})`);
+        const contributorUrls = contributors.map(c => {
+            const gh = "https://github.com/";
+            return c.url.startsWith(gh) ? `@${c.url.slice(gh.length)}` : `${c.name} (${c.url})`;
+        }).join(", ");
+        log("  To fix this:");
+        log(`  git checkout -b not-needed-${name}`);
+        log(`  yarn not-needed ${name} ${firstTypedVersion.versionString} ${projectName}${libraryName !== name ? ` ${JSON.stringify(libraryName)}` : ""}`);
+        log(`  git add --all && git commit -m "${name}: Provides its own types" && git push -u origin not-needed-${name}`);
+        log(`  And comment PR: This will deprecate \`@types/${name}\` in favor of just \`${name}\`. CC ${contributorUrls}`);
+        if (new versions_1.Semver(major, minor, 0, /*isPrerelease*/ false).greaterThan(firstTypedVersion)) {
+            log("  WARNING: our version is greater!");
+        }
+        if (dependedOn.has(name)) {
+            log("  WARNING: other packages depend on this!");
         }
     });
 }
 function packageHasTypes(packageName) {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield firstPackageVersionWithTypes(packageName)) !== undefined;
+        const info = yield npm_client_1.fetchNpmInfo(packageName);
+        return hasTypes(info.versions[info.version]);
     });
 }
 exports.packageHasTypes = packageHasTypes;
-function firstPackageVersionWithTypes(packageName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(packageName);
-        // Info may be empty if the package is not on NPM
-        return info.versions && firstVersionWithTypes(info.versions);
+function getRegularVersions(versions) {
+    // Versions can be undefined if an NPM package doesn't exist.
+    return versions === undefined ? [] : util_1.mapDefined(Object.entries(versions), ([versionString, info]) => {
+        const version = versions_1.Semver.tryParse(versionString, /*isPrerelease*/ false);
+        return version === undefined ? undefined : { version, hasTypes: hasTypes(info) };
     });
-}
-function firstVersionWithTypes(versions) {
-    const versionsWithTypings = Object.entries(versions).filter(([_version, info]) => hasTypes(info)).map(([version]) => version);
-    // Type annotation needed because of https://github.com/Microsoft/TypeScript/issues/12915
-    return util_1.best(versionsWithTypings, semver.lt);
 }
 function hasTypes(info) {
     return "types" in info || "typings" in info;
 }
+const notNeededExceptions = new Set([
+    // Declares to bundle types, but they're also in the `.npmignore` (https://github.com/nkovacic/angular-touchspin/issues/21)
+    "angular-touchspin",
+    // "typings" points to the wrong file (https://github.com/Microsoft/Bing-Maps-V8-TypeScript-Definitions/issues/31)
+    "bingmaps",
+    // Types are bundled, but not officially released (https://github.com/DefinitelyTyped/DefinitelyTyped/pull/22313#issuecomment-353225893)
+    "dwt",
+    // Waiting on some typing errors to be fixed (https://github.com/julien-c/epub/issues/30)
+    "epub",
+    // Typings file is not in package.json "files" list (https://github.com/silentmatt/expr-eval/issues/127)
+    "expr-eval",
+    // NPM package "express-serve-static-core" isn't a real package -- express-serve-static-core exists only for the purpose of types
+    "express-serve-static-core",
+    // Has "typings": "index.d.ts" but does not actually bundle typings. https://github.com/kolodny/immutability-helper/issues/79
+    "immutability-helper",
+    // Has `"typings": "compiled/typings/node-mysql-wrapper/node-mysql-wrapper.d.ts",`, but `compiled/typings` doesn't exist.
+    // Package hasn't updated in 2 years and author seems to have deleted their account, so no chance of being fixed.
+    "node-mysql-wrapper",
+    // raspi packages bundle types, but can only be installed on a Raspberry Pi, so they are duplicated to DefinitelyTyped.
+    // See https://github.com/DefinitelyTyped/DefinitelyTyped/pull/21618
+    "raspi", "raspi-board", "raspi-peripheral",
+    // Declare "typings" but don't actually have them yet (https://github.com/stampit-org/stampit/issues/245)
+    "stampit",
+]);
 //# sourceMappingURL=check-parse-results.js.map

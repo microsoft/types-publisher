@@ -31,18 +31,25 @@ function main(options, nProcesses) {
         const packageNames = yield util_1.filterNAtATime(10, yield fs_extra_1.readdir(options.typesPath), (packageName) => __awaiter(this, void 0, void 0, function* () { return (yield fs_extra_1.stat(path.join(options.typesPath, packageName))).isDirectory(); }));
         summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
         const typings = {};
-        yield util_1.runWithChildProcesses({
-            inputs: packageNames,
-            commandLineArgs: [options.typesPath],
-            workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
-            nProcesses,
-            handleOutput(output) {
-                const { data, logs, packageName } = output;
-                typings[packageName] = data;
-                detailedLog(`# ${packageName}`);
-                logging_1.moveLogs(detailedLog, logs);
+        if (options.parseInParallel) {
+            yield util_1.runWithChildProcesses({
+                inputs: packageNames,
+                commandLineArgs: [options.typesPath],
+                workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
+                nProcesses,
+                handleOutput,
+            });
+        }
+        else {
+            for (const packageName of packageNames) {
+                handleOutput(Object.assign({}, yield definition_parser_1.getTypingInfo(packageName, options.typesPath), { packageName }));
             }
-        });
+        }
+        function handleOutput({ data, logs, packageName }) {
+            typings[packageName] = data;
+            detailedLog(`# ${packageName}`);
+            logging_1.moveLogs(detailedLog, logs);
+        }
         yield Promise.all([
             logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
             logging_1.writeLog("parser-log-details.md", detailedLogResult()),

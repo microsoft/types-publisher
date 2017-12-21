@@ -265,6 +265,8 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
     return new Promise((resolve, reject) => {
         const nPerProcess = Math.floor(inputs.length / nProcesses);
         let processesLeft = nProcesses;
+        let rejected = false;
+        const allChildren = [];
         for (let i = 0; i < nProcesses; i++) {
             const lo = nPerProcess * i;
             const hi = i === nProcesses - 1 ? inputs.length : lo + nPerProcess;
@@ -275,6 +277,7 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
                 continue;
             }
             const child = child_process_1.fork(workerFile, commandLineArgs);
+            allChildren.push(child);
             child.send(inputs.slice(lo, hi));
             child.on("message", outputMessage => {
                 handleOutput(outputMessage);
@@ -289,9 +292,20 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
                     child.kill();
                 }
             });
-            child.on("disconnect", () => { assert(outputsLeft === 0); });
-            child.on("close", () => { assert(outputsLeft === 0); });
-            child.on("error", reject);
+            child.on("disconnect", () => {
+                if (outputsLeft !== 0) {
+                    fail();
+                }
+            });
+            child.on("close", () => { assert(rejected || outputsLeft === 0); });
+            child.on("error", fail);
+        }
+        function fail() {
+            rejected = true;
+            for (const child of allChildren) {
+                child.kill();
+            }
+            reject(new Error("Parsing failed."));
         }
     });
 }

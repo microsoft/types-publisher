@@ -27,16 +27,19 @@ class Options {
          */
         definitelyTypedPath, resetDefinitelyTyped, 
         /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
-        progress) {
+        progress, 
+        /** Disabled on azure since it has problems logging errors from other processes. */
+        parseInParallel) {
         this.definitelyTypedPath = definitelyTypedPath;
         this.resetDefinitelyTyped = resetDefinitelyTyped;
         this.progress = progress;
+        this.parseInParallel = parseInParallel;
         this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
     }
 }
 /** Options for running locally. */
-Options.defaults = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ false, /*progress*/ true);
-Options.azure = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false);
+Options.defaults = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ false, /*progress*/ true, /*parseInParallel*/ true);
+Options.azure = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false, /*parseInParallel*/ false);
 exports.Options = Options;
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));
