@@ -17,9 +17,11 @@ export default async function main(includeNpmChecks: boolean, options: Options):
 
 	checkPathMappings(allPackages);
 
-	const packages = allPackages.allPackages();
+	const packages = allPackages.allTypings();
+
 	checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
 	checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
+	if (1) return;
 
 	const dependedOn = new Set<string>();
 	for (const pkg of packages) {
@@ -46,10 +48,14 @@ export default async function main(includeNpmChecks: boolean, options: Options):
 
 function checkForDuplicates(packages: ReadonlyArray<AnyPackage>, func: (info: AnyPackage) => string | undefined, key: string, log: Logger): void {
 	const lookup = new Map<string, TypingsData[]>();
-	for (const info of packages) {
-		const libraryOrProjectName = func(info);
+	for (const pkg of packages) {
+		if (!pkg.isLatest) {
+			continue;
+		}
+
+		const libraryOrProjectName = func(pkg);
 		if (libraryOrProjectName !== undefined) {
-			multiMapAdd(lookup, libraryOrProjectName, info);
+			multiMapAdd(lookup, libraryOrProjectName, pkg);
 		}
 	}
 
