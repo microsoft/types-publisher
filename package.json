@@ -68,8 +68,5 @@
   "bugs": {
     "url": "https://github.com/Microsoft/types-publisher/issues"
   },
-  "engines": {
-    "node": ">=6.10.0"
-  },
   "homepage": "https://github.com/Microsoft/types-publisher#readme"
 }
