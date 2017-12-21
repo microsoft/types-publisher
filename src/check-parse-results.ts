@@ -21,7 +21,7 @@ export default async function main(includeNpmChecks: boolean, options: Options):
 
 	checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
 	checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
-	if (1) return;
+	if (1) return; //kill
 
 	const dependedOn = new Set<string>();
 	for (const pkg of packages) {
@@ -46,6 +46,11 @@ export default async function main(includeNpmChecks: boolean, options: Options):
 	await writeLog("conflicts.md", logResult());
 }
 
+const duplicatesExcludes: ReadonlySet<string> = new Set([
+	// https://github.com/DefinitelyTyped/DefinitelyTyped/issues/22456
+	"bootstrap.v3.datetimepicker",
+]);
+
 function checkForDuplicates(packages: ReadonlyArray<AnyPackage>, func: (info: AnyPackage) => string | undefined, key: string, log: Logger): void {
 	const lookup = new Map<string, TypingsData[]>();
 	for (const pkg of packages) {
@@ -60,11 +65,13 @@ function checkForDuplicates(packages: ReadonlyArray<AnyPackage>, func: (info: An
 	}
 
 	for (const [libName, values] of lookup) {
-		if (values.length > 1) {
-			log(` * Duplicate ${key} descriptions "${libName}"`);
-			for (const n of values) {
-				log(`   * ${n.desc}`);
-			}
+		if (values.length === 1 || values.some(v => duplicatesExcludes.has(v.name)) {
+			continue;
+		}
+
+		log(` * Duplicate ${key} descriptions "${libName}"`);
+		for (const n of values) {
+			log(`   * ${n.desc}`);
 		}
 	}
 }
