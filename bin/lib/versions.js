@@ -151,6 +151,9 @@ class Semver {
         const { isPrerelease, major, minor, patch } = this;
         return isPrerelease ? `${major}.${minor}.0-next.${patch}` : `${major}.${minor}.${patch}`;
     }
+    equals(sem) {
+        return this.major === sem.major && this.minor === sem.minor && this.patch === sem.patch && this.isPrerelease === sem.isPrerelease;
+    }
     greaterThan(sem) {
         return this.major > sem.major || this.major === sem.major
             && (this.minor > sem.minor || this.minor === sem.minor && this.patch > sem.patch);

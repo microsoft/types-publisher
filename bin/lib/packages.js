@@ -47,6 +47,16 @@ class AllPackages {
             return new TypingsData(raw[versions[0]], /*isLatest*/ true);
         });
     }
+    static readSingleNotNeeded(name, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const notNeeded = yield readNotNeededPackages(options);
+            const pkg = notNeeded.find(p => p.name === name);
+            if (pkg === undefined) {
+                throw new Error(`Cannot find not-needed package ${name}`);
+            }
+            return pkg;
+        });
+    }
     getAnyPackage(id) {
         const pkg = this.tryGetTypingsData(id) || this.notNeeded.find(p => p.name === id.name);
         if (!pkg) {

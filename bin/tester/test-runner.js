@@ -53,10 +53,17 @@ function main(options, nProcesses, selection) {
         console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
         console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
-        const allErrors = [];
+        yield doInstalls(allPackages, util_1.concat(changedPackages, dependentPackages), options, nProcesses);
+        console.log("Testing...");
+        yield runTests([...changedPackages, ...dependentPackages], new Set(changedPackages), options, nProcesses);
+    });
+}
+exports.default = main;
+function doInstalls(allPackages, packages, options, nProcesses) {
+    return __awaiter(this, void 0, void 0, function* () {
         console.log("Installing NPM dependencies...");
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
-        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, util_1.concat(changedPackages, dependentPackages)), (pkg) => __awaiter(this, void 0, void 0, function* () {
+        yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, packages), (pkg) => __awaiter(this, void 0, void 0, function* () {
             const cwd = pkg.directoryPath(options);
             if (!(yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json")))) {
                 return;
@@ -72,38 +79,43 @@ function main(options, nProcesses, selection) {
             }
         }));
         yield runCommand(console, undefined, pathToDtsLint, ["--installAll"]);
-        console.log("Testing...");
-        yield runTests(changedPackages, false);
-        yield runTests(dependentPackages, true);
-        if (allErrors.length) {
-            allErrors.sort(({ pkg: pkgA }, { pkg: pkgB }) => packages_1.PackageBase.compare(pkgA, pkgB));
-            console.log("\n\n=== ERRORS ===\n");
-            for (const { err, pkg } of allErrors) {
-                console.error(`\n\nError in ${pkg.desc}`);
-                console.error(err.message);
-            }
-            console.error(`The following packages had errors: ${allErrors.map(e => e.pkg.desc).join(", ")}`);
-            throw new Error("There was a test failure.");
-        }
-        function runTests(packages, isDepender) {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield util_1.nAtATime(nProcesses, packages, pkg => runTest(pkg, isDepender));
-            });
-        }
-        function runTest(pkg, isDepender) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const [log, logResult] = logging_1.quietLoggerWithErrors();
-                const err = yield runCommand(log, pkg.directoryPath(options), pathToDtsLint, isDepender ? ["--onlyTestTsNext"] : []);
-                console.log(`Testing ${pkg.desc}`);
-                logging_1.moveLogsWithErrors(console, logResult(), msg => `\t${msg}`);
-                if (err) {
-                    allErrors.push({ err, pkg });
-                }
-            });
-        }
     });
 }
-exports.default = main;
+function runTests(packages, changed, options, nProcesses) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (packages.length < nProcesses) {
+            throw new Error("TODO");
+        }
+        const allFailures = [];
+        yield util_1.runWithListeningChildProcesses({
+            inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p) })),
+            commandLineArgs: ["--listen"],
+            workerFile: pathToDtsLint,
+            nProcesses,
+            cwd: options.typesPath,
+            handleOutput(output) {
+                const { path, status } = output;
+                if (status === "OK") {
+                    console.log(`${path} OK`);
+                }
+                else {
+                    console.error(`${path} failing:`);
+                    console.error(status);
+                    allFailures.push([path, status]);
+                }
+            },
+        });
+        if (allFailures.length === 0) {
+            return;
+        }
+        console.error("\n\n=== ERRORS ===\n");
+        for (const [path, error] of allFailures) {
+            console.error(`\n\nError in ${path}`);
+            console.error(error);
+        }
+        console.error(`The following packages had errors: ${allFailures.map(e => e[0]).join(", ")}`);
+    });
+}
 function runCommand(log, cwd, cmd, args) {
     return __awaiter(this, void 0, void 0, function* () {
         const nodeCmd = `node ${cmd} ${args.join(" ")}`;

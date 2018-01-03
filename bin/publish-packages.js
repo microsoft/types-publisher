@@ -19,25 +19,24 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     const singleName = yargs.argv.single;
-    // For testing only. Do not use on real @types repo.
-    const shouldUnpublish = !!yargs.argv.unpublish;
-    if (singleName && shouldUnpublish) {
-        throw new Error("Select only one of --single=foo or --shouldUnpublish");
+    const deprecateName = yargs.argv.deprecate;
+    if (singleName !== undefined && deprecateName !== undefined) {
+        throw new Error("Select only one of --single=foo or --deprecate=foo or --shouldUnpublish");
     }
     util_1.done(go());
     function go() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (shouldUnpublish) {
-                yield unpublish(dry);
+            const client = yield npm_client_1.default.create();
+            if (deprecateName !== undefined) {
+                // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
+                // Normally this should not be needed.
+                yield package_publisher_1.deprecateNotNeededPackage(client, yield packages_1.AllPackages.readSingleNotNeeded(deprecateName, common_1.Options.defaults));
+            }
+            else if (singleName !== undefined) {
+                yield single(client, singleName, common_1.Options.defaults, dry);
             }
             else {
-                const client = yield npm_client_1.default.create();
-                if (singleName) {
-                    yield single(client, singleName, common_1.Options.defaults, dry);
-                }
-                else {
-                    yield main(client, dry, common_1.Options.defaults);
-                }
+                yield main(client, dry, common_1.Options.defaults);
             }
         });
     }
@@ -80,12 +79,5 @@ function single(client, name, options, dry) {
 }
 function publish(pkg, client, allPackages, versions, dry) {
     return package_publisher_1.default(client, pkg, versions, allPackages.getLatest(pkg), dry);
-}
-function unpublish(dry) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const pkg of yield packages_1.AllPackages.readTypings()) {
-            yield package_publisher_1.unpublishPackage(pkg, dry);
-        }
-    });
 }
 //# sourceMappingURL=publish-packages.js.map

@@ -42,10 +42,11 @@ function main(options, dry) {
         const newVersion = `0.1.${oldVersion.patch + 1}`;
         const packageJson = generatePackageJson(newVersion, newContentHash);
         yield generate(registry, packageJson);
-        if (highestSemverVersion !== oldVersion) {
+        if (!highestSemverVersion.equals(oldVersion)) {
             // There was an error in the last publish and types-registry wasn't validated.
             // This may have just been due to a timeout, so test if types-registry@next is a subset of the one we're about to publish.
             // If so, we should just update it to "latest" now.
+            log("Old version of types-registry was never tagged latest, so updating");
             yield validateIsSubset(yield packages_1.readNotNeededPackages(options));
             yield client.tag(packageName, highestSemverVersion.versionString, "latest");
         }

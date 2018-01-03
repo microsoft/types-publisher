@@ -310,6 +310,52 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
     });
 }
 exports.runWithChildProcesses = runWithChildProcesses;
+function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput }) {
+    return new Promise((resolve, reject) => {
+        let inputIndex = 0;
+        let processesLeft = nProcesses;
+        let rejected = false;
+        const allChildren = [];
+        for (let i = 0; i < nProcesses; i++) {
+            if (inputIndex === inputs.length) {
+                continue;
+            }
+            const child = child_process_1.fork(workerFile, commandLineArgs, { cwd });
+            allChildren.push(child);
+            child.send(inputs[inputIndex]);
+            inputIndex++;
+            child.on("message", outputMessage => {
+                handleOutput(outputMessage);
+                if (inputIndex === inputs.length) {
+                    processesLeft--;
+                    if (processesLeft === 0) {
+                        resolve();
+                    }
+                    child.kill();
+                }
+                else {
+                    child.send(inputs[inputIndex]);
+                    inputIndex++;
+                }
+            });
+            child.on("disconnect", () => {
+                if (inputIndex !== inputs.length) {
+                    fail();
+                }
+            });
+            child.on("close", () => { assert(rejected || inputIndex === inputs.length); });
+            child.on("error", fail);
+        }
+        function fail() {
+            rejected = true;
+            for (const child of allChildren) {
+                child.kill();
+            }
+            reject(new Error(`Something went wrong in ${runWithListeningChildProcesses.name}`));
+        }
+    });
+}
+exports.runWithListeningChildProcesses = runWithListeningChildProcesses;
 function assertNever(_) {
     throw new Error();
 }

@@ -31,45 +31,22 @@ function publishPackage(client, pkg, versions, latestVersion, dry) {
         yield npmTags_1.updateLatestTag(latestVersion, versions, client, log, dry);
         if (pkg.isNotNeeded()) {
             log(`Deprecating ${pkg.name}`);
+            assert(latestVersionString === pkg.version.versionString);
             // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
-            const message = pkg.readme(/*useNewline*/ false);
-            if (!dry) {
-                yield client.deprecate(pkg.fullNpmName, latestVersionString, message);
-            }
+            yield deprecateNotNeededPackage(client, pkg, dry);
         }
         return logResult();
     });
 }
 exports.default = publishPackage;
-// Used for testing only.
-function unpublishPackage(pkg, dry) {
+function deprecateNotNeededPackage(client, pkg, dry = false) {
     return __awaiter(this, void 0, void 0, function* () {
-        const args = ["npm", "unpublish", pkg.fullNpmName, "--force"];
-        yield runCommand("Unpublish", logging_1.consoleLogger, dry, args);
-    });
-}
-exports.unpublishPackage = unpublishPackage;
-function runCommand(commandDescription, log, dry, args) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const cmd = args.join(" ");
-        log.info(`Run ${cmd}`);
+        // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
+        const message = pkg.readme(/*useNewline*/ false);
         if (!dry) {
-            const { error, stdout, stderr } = yield util_1.exec(cmd);
-            if (error) {
-                log.error(`${commandDescription} failed: ${JSON.stringify(error)}`);
-                log.info(`${commandDescription} failed, refer to error log`);
-                log.error(stderr);
-                throw new Error(stderr);
-            }
-            else {
-                log.info("Ran successfully");
-                log.info(stdout);
-            }
-        }
-        else {
-            log.info("(dry run)");
-            return Promise.resolve();
+            yield client.deprecate(pkg.fullNpmName, pkg.version.versionString, message);
         }
     });
 }
+exports.deprecateNotNeededPackage = deprecateNotNeededPackage;
 //# sourceMappingURL=package-publisher.js.map
