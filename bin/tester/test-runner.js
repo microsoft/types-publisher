@@ -83,9 +83,6 @@ function doInstalls(allPackages, packages, options, nProcesses) {
 }
 function runTests(packages, changed, options, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (packages.length < nProcesses) {
-            throw new Error("TODO");
-        }
         const allFailures = [];
         yield util_1.runWithListeningChildProcesses({
             inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p) })),
