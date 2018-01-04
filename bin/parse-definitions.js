@@ -53,11 +53,18 @@ function main(options, nProcesses) {
         yield Promise.all([
             logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
             logging_1.writeLog("parser-log-details.md", detailedLogResult()),
-            common_1.writeDataFile(packages_1.typesDataFilename, typings)
+            common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings)),
         ]);
     });
 }
 exports.default = main;
+function sorted(obj) {
+    const out = {};
+    for (const key of Object.keys(obj).sort()) {
+        out[key] = obj[key];
+    }
+    return out;
+}
 function single(singleName, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield definition_parser_1.getTypingInfo(singleName, options.typesPath);

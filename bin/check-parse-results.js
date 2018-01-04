@@ -146,6 +146,8 @@ function hasTypes(info) {
     return "types" in info || "typings" in info;
 }
 const notNeededExceptions = new Set([
+    // https://github.com/DefinitelyTyped/DefinitelyTyped/pull/22306
+    "angular-ui-router", "ui-router-extras",
     // Declares to bundle types, but they're also in the `.npmignore` (https://github.com/nkovacic/angular-touchspin/issues/21)
     "angular-touchspin",
     // "typings" points to the wrong file (https://github.com/Microsoft/Bing-Maps-V8-TypeScript-Definitions/issues/31)
