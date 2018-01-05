@@ -110,7 +110,7 @@ function runTests(packages, changed, options, nProcesses) {
             console.error(`\n\nError in ${path}`);
             console.error(error);
         }
-        console.error(`The following packages had errors: ${allFailures.map(e => e[0]).join(", ")}`);
+        throw new Error(`The following packages had errors: ${allFailures.map(e => e[0]).join(", ")}`);
     });
 }
 function runCommand(log, cwd, cmd, args) {
