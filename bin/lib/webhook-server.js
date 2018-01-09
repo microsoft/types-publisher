@@ -21,7 +21,7 @@ const settings_1 = require("./settings");
 function server(key, githubAccessToken, dry, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
-        return listenToGithub(key, githubAccessToken, dry, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
+        return listenToGithub(key, githubAccessToken, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
             log.info("");
             log.info("");
             log.info(`# ${timeStamp}`);
@@ -35,37 +35,11 @@ exports.default = server;
 function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
-function webResult(dry, timeStamp) {
-    // tslint:disable:max-line-length
-    return `
-<html>
-<head></head>
-<body>
-	This is the TypeScript types-publisher webhook server.<br/>
-	If you can read this, the webhook is running. (Dry mode: <strong>${dry}</strong>)<br/>
-	Latest deploy was on <strong>${timeStamp}</strong>.
-	You probably meant to see:
-	<ul>
-		<li><a href="https://typespublisher.blob.core.windows.net/typespublisher/index.html">Latest data</a></li>
-		<li><a href="https://github.com/Microsoft/types-publisher">GitHub</a></li>
-		<li><a href="https://github.com/Microsoft/types-publisher/issues/40">Server status issue</a></li>
-		<li><a href="https://ms.portal.azure.com/?resourceMenuPerf=true#resource/subscriptions/99160d5b-9289-4b66-8074-ed268e739e8e/resourceGroups/Default-Web-WestUS/providers/Microsoft.Web/sites/types-publisher/App%20Services">Azure account (must have permission)</a></li>
-	</ul>
-</body>
-</html>
-`;
-    // tslint:enable:max-line-length
-}
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
-function listenToGithub(key, githubAccessToken, dry, onUpdate) {
+function listenToGithub(key, githubAccessToken, onUpdate) {
     const rollingLogs = rolling_logs_1.default.create("webhook-logs.md", 1000);
-    const webText = webResult(dry, util_1.currentTimeStamp());
     const server = http_1.createServer((req, resp) => {
         switch (req.method) {
-            case "GET":
-                resp.write(webText);
-                resp.end();
-                break;
             case "POST":
                 receiveUpdate(req, resp);
                 break;

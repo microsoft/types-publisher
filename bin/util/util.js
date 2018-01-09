@@ -318,6 +318,7 @@ function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, n
         const allChildren = [];
         for (let i = 0; i < nProcesses; i++) {
             if (inputIndex === inputs.length) {
+                processesLeft--;
                 continue;
             }
             const child = child_process_1.fork(workerFile, commandLineArgs, { cwd });
