@@ -162,9 +162,3 @@ async function generateRegistry(typings: ReadonlyArray<TypingsData>): Promise<Re
 	}
 	return { entries };
 }
-
-const hasOwnProperty = Object.prototype.hasOwnProperty;
-
-export function getProperty<T>(map: { [index: string]: T }, key: string): T | undefined {
-	return hasOwnProperty.call(map, key) ? map[key] : undefined;
-}
