@@ -155,10 +155,9 @@ function generatePackageJson(version: string, typesPublisherContentHash: string)
 interface Registry { readonly entries: { readonly [packageName: string]: { readonly [distTags: string]: string } }; }
 async function generateRegistry(typings: ReadonlyArray<TypingsData>): Promise<Registry> {
 	const entries: { [packageName: string]: { [distTags: string]: string } } = {};
-	await nAtATime(25, typings, getTags);
-	async function getTags(typing: TypingsData): Promise<void> {
+	await nAtATime(25, typings, async typing => {
 		const info = await fetchNpmInfo(typing.fullEscapedNpmName);
 		entries[typing.name] = info["dist-tags"];
-	}
+	});
 	return { entries };
 }

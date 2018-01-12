@@ -178,7 +178,6 @@ export interface ProcessedNpmInfo {
 	readonly version: Semver;
 	readonly highestSemverVersion: Semver;
 	readonly contentHash: string;
-	readonly distTags: { [tag: string]: string };
 }
 /** For use by publish-registry only. */
 export async function fetchAndProcessNpmInfo(escapedPackageName: string): Promise<ProcessedNpmInfo> {
@@ -188,7 +187,7 @@ export async function fetchAndProcessNpmInfo(escapedPackageName: string): Promis
 	const highestSemverVersion = getLatestVersion(versions);
 	assert.equal(highestSemverVersion.versionString, distTags.next);
 	const contentHash = versions[version.versionString].typesPublisherContentHash || "";
-	return { version, highestSemverVersion, contentHash, distTags };
+	return { version, highestSemverVersion, contentHash };
 }
 
 async function fetchVersionInfoFromNpm(
