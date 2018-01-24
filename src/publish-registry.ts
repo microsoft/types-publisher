@@ -32,7 +32,7 @@ export default async function main(options: Options, dry: boolean): Promise<void
 
 	// Don't include not-needed packages in the registry.
 	const typings = await AllPackages.readTypings();
-	const registry = JSON.stringify(await generateRegistry(typings), undefined, 4);
+	const registry = JSON.stringify(await generateRegistry(typings), undefined);
 	const newContentHash = computeHash(registry);
 
 	assert.equal(oldVersion.major, 0);
