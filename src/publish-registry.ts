@@ -157,7 +157,21 @@ async function generateRegistry(typings: ReadonlyArray<TypingsData>): Promise<Re
 	const entries: { [packageName: string]: { [distTags: string]: string } } = {};
 	await nAtATime(25, typings, async typing => {
 		const info = await fetchNpmInfo(typing.fullEscapedNpmName);
-		entries[typing.name] = info["dist-tags"];
+		const tags = info["dist-tags"];
+		if (tags) {
+			entries[typing.name] = tags;
+			filterTags(entries[typing.name]);
+		}
 	});
 	return { entries };
+
+	function filterTags(tags: { [tag: string]: string }): void {
+		const latestTag = "latest";
+		const latestVersion = tags[latestTag];
+		for (const tag in tags) {
+			if (tag !== latestTag && tags[tag] === latestVersion) {
+				delete tags[tag];
+			}
+		}
+	}
 }
