@@ -8,8 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const io_1 = require("../util/io");
-function createSearchRecord(pkg, skipDownloads) {
+const settings_1 = require("./settings");
+function createSearchRecord(pkg, skipDownloads, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         return {
             p: pkg.projectName,
@@ -27,8 +27,11 @@ function createSearchRecord(pkg, skipDownloads) {
                     return -1;
                 }
                 else {
-                    const url = `https://api.npmjs.org/downloads/point/last-month/${pkg.name}`;
-                    const json = yield io_1.fetchJson(url, { retries: true });
+                    const json = yield fetcher.fetchJson({
+                        hostname: settings_1.npmApi,
+                        path: `/downloads/point/last-month/${pkg.name}`,
+                        retries: true,
+                    });
                     // Json may contain "error" instead of "downloads", because some packages aren't available on NPM.
                     return json.downloads || 0;
                 }

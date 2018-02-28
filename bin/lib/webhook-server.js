@@ -18,16 +18,16 @@ const issue_updater_1 = require("./issue-updater");
 const npm_client_1 = require("./npm-client");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
-function server(key, githubAccessToken, dry, options) {
+function server(key, githubAccessToken, dry, fetcher, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = yield npm_client_1.default.create();
-        return listenToGithub(key, githubAccessToken, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
+        return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
             log.info("");
             log.info("");
             log.info(`# ${timeStamp}`);
             log.info("");
             log.info("Starting full...");
-            yield full_1.default(client, dry, timeStamp, options);
+            yield full_1.default(client, dry, timeStamp, options, fetcher);
         })));
     });
 }
@@ -36,7 +36,7 @@ function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
-function listenToGithub(key, githubAccessToken, onUpdate) {
+function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
     const rollingLogs = rolling_logs_1.default.create("webhook-logs.md", 1000);
     const server = http_1.createServer((req, resp) => {
         switch (req.method) {
@@ -59,7 +59,7 @@ function listenToGithub(key, githubAccessToken, onUpdate) {
         function onError(error) {
             server.close();
             // tslint:disable-next-line no-floating-promises
-            issue_updater_1.reopenIssue(githubAccessToken, timeStamp, error).catch(issueError => {
+            issue_updater_1.reopenIssue(githubAccessToken, timeStamp, error, fetcher).catch(issueError => {
                 console.error(util_1.errorDetails(issueError));
             }).then(() => {
                 console.error(util_1.errorDetails(error));

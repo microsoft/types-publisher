@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
-const node_fetch_1 = require("node-fetch");
+const https_1 = require("https");
 const path_1 = require("path");
 const stream = require("stream");
 const util_1 = require("./util");
@@ -24,14 +24,6 @@ function readJson(path) {
     });
 }
 exports.readJson = readJson;
-function fetchJson(url, init) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Cast needed: https://github.com/Microsoft/TypeScript/issues/10065
-        const response = yield (init && init.retries ? fetchWithRetries(url, init) : node_fetch_1.default(url, init));
-        return util_1.parseJson(yield response.text());
-    });
-}
-exports.fetchJson = fetchJson;
 function writeFile(path, content) {
     return fs_extra_1.writeFile(path, content, { encoding: "utf8" });
 }
@@ -64,23 +56,61 @@ function streamDone(stream) {
     });
 }
 exports.streamDone = streamDone;
-function fetchWithRetries(url, init) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const maxRetries = init.retries === true ? 10 : init.retries;
-        for (let retries = maxRetries; retries > 1; retries--) {
+class Fetcher {
+    constructor() {
+        this.agent = new https_1.Agent({ keepAlive: true });
+    }
+    fetchJson(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const text = yield this.fetch(options);
             try {
-                return yield node_fetch_1.default(url, init);
+                return JSON.parse(text);
             }
-            catch (err) {
-                if (!/EAI_AGAIN|ETIMEDOUT|ECONNRESET/.test(err.message)) {
-                    throw err;
+            catch (e) {
+                throw new Error(`Bad response from server:\n${text}`);
+            }
+        });
+    }
+    fetch(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const maxRetries = options.retries === false || options.retries === undefined ? 0 : options.retries === true ? 10 : options.retries;
+            for (let retries = maxRetries; retries > 1; retries--) {
+                try {
+                    return yield this.fetchOnce(options);
                 }
+                catch (err) {
+                    if (!/EAI_AGAIN|ETIMEDOUT|ECONNRESET/.test(err.message)) {
+                        throw err;
+                    }
+                }
+                yield sleep(1);
             }
-            yield sleep(1);
-        }
-        return node_fetch_1.default(url, init);
-    });
+            return this.fetchOnce(options);
+        });
+    }
+    fetchOnce(options) {
+        return new Promise((resolve, reject) => {
+            const req = https_1.request({
+                hostname: options.hostname,
+                port: options.port,
+                path: `/${options.path}`,
+                agent: this.agent,
+                method: options.method || "GET",
+                headers: options.headers,
+            }, res => {
+                let text = "";
+                res.on("data", (d) => { text += d; });
+                res.on("error", reject);
+                res.on("end", () => { resolve(text); });
+            });
+            if (options.body !== undefined) {
+                req.write(options.body);
+            }
+            req.end();
+        });
+    }
 }
+exports.Fetcher = Fetcher;
 function sleep(seconds) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise(resolve => setTimeout(resolve, seconds * 1000));

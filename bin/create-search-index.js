@@ -12,23 +12,24 @@ const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const search_index_generator_1 = require("./lib/search-index-generator");
+const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const skipDownloads = yargs.argv.skipDownloads;
     const single = yargs.argv.single;
     if (single) {
-        util_1.done(doSingle(single, skipDownloads));
+        util_1.done(doSingle(single, skipDownloads, new io_1.Fetcher()));
     }
     else {
         const full = yargs.argv.full;
-        util_1.done(main(skipDownloads, full, common_1.Options.defaults));
+        util_1.done(main(skipDownloads, full, new io_1.Fetcher(), common_1.Options.defaults));
     }
 }
-function main(skipDownloads, full, options) {
+function main(skipDownloads, full, fetcher, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         console.log("Generating search index...");
-        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads), {
+        const records = yield util_1.nAtATime(options.fetchParallelism, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, fetcher), {
             name: "Indexing...",
             flavor: pkg => pkg.desc,
             options
@@ -44,10 +45,10 @@ function main(skipDownloads, full, options) {
     });
 }
 exports.default = main;
-function doSingle(name, skipDownloads) {
+function doSingle(name, skipDownloads, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads);
+        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads, fetcher);
         console.log(verboseRecord(record));
     });
 }

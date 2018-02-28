@@ -12,12 +12,13 @@ const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
+const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main(true, common_1.Options.defaults));
+    util_1.done(main(true, common_1.Options.defaults, new io_1.Fetcher()));
 }
-function main(includeNpmChecks, options) {
+function main(includeNpmChecks, options, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
         const [log, logResult] = logging_1.logger();
@@ -38,7 +39,7 @@ function main(includeNpmChecks, options) {
             }
         }
         if (includeNpmChecks) {
-            yield util_1.nAtATime(10, allPackages.allTypings(), pkg => checkNpm(pkg, log, dependedOn), {
+            yield util_1.nAtATime(10, allPackages.allTypings(), pkg => checkNpm(pkg, log, dependedOn, fetcher), {
                 name: "Checking for typed packages...",
                 flavor: pkg => pkg.desc,
                 options,
@@ -96,12 +97,12 @@ function checkPathMappings(allPackages) {
         }
     }
 }
-function checkNpm({ major, minor, name, libraryName, projectName, contributors }, log, dependedOn) {
+function checkNpm({ major, minor, name, libraryName, projectName, contributors }, log, dependedOn, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         if (notNeededExceptions.has(name)) {
             return;
         }
-        const info = yield npm_client_1.fetchNpmInfo(name);
+        const info = yield npm_client_1.fetchNpmInfo(name, fetcher);
         const versions = getRegularVersions(info.versions);
         const firstTypedVersion = util_1.best(util_1.mapDefined(versions, ({ hasTypes, version }) => hasTypes ? version : undefined), (a, b) => b.greaterThan(a));
         // A package might have added types but removed them later, so check the latest version too
@@ -128,9 +129,9 @@ function checkNpm({ major, minor, name, libraryName, projectName, contributors }
         }
     });
 }
-function packageHasTypes(packageName) {
+function packageHasTypes(packageName, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(packageName);
+        const info = yield npm_client_1.fetchNpmInfo(packageName, fetcher);
         return hasTypes(info.versions[info.version]);
     });
 }
@@ -167,7 +168,7 @@ const notNeededExceptions = new Set([
     "node-mysql-wrapper",
     // raspi packages bundle types, but can only be installed on a Raspberry Pi, so they are duplicated to DefinitelyTyped.
     // See https://github.com/DefinitelyTyped/DefinitelyTyped/pull/21618
-    "raspi", "raspi-board", "raspi-peripheral",
+    "raspi", "raspi-board", "raspi-gpio", "raspi-i2c", "raspi-led", "raspi-onewire", "raspi-peripheral", "raspi-pwm", "raspi-serial", "raspi-soft-pwm",
     // Declare "typings" but don't actually have them yet (https://github.com/stampit-org/stampit/issues/245)
     "stampit",
 ]);

@@ -13,6 +13,7 @@ const common_1 = require("./lib/common");
 const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
 const webhook_server_1 = require("./lib/webhook-server");
+const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.done(main());
@@ -28,8 +29,9 @@ function main() {
         }
         else {
             console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-            const s = yield webhook_server_1.default(key, githubAccessToken, dry, common_1.Options.azure);
-            yield issue_updater_1.setIssueOk(githubAccessToken);
+            const fetcher = new io_1.Fetcher();
+            const s = yield webhook_server_1.default(key, githubAccessToken, dry, fetcher, common_1.Options.azure);
+            yield issue_updater_1.setIssueOk(githubAccessToken, fetcher);
             console.log(`Listening on port ${port}`);
             s.listen(port);
         }

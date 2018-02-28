@@ -21,25 +21,26 @@ exports.home = util_1.joinPaths(__dirname, "..", "..");
 /** Settings that may be determined dynamically. */
 class Options {
     constructor(
-        /**
-         * e.g. '../DefinitelyTyped'
-         * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
-         */
-        definitelyTypedPath, resetDefinitelyTyped, 
-        /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
-        progress, 
-        /** Disabled on azure since it has problems logging errors from other processes. */
-        parseInParallel) {
+    /**
+     * e.g. '../DefinitelyTyped'
+     * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
+     */
+    definitelyTypedPath, resetDefinitelyTyped, 
+    /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
+    progress, 
+    /** Disabled on azure since it has problems logging errors from other processes. */
+    parseInParallel) {
         this.definitelyTypedPath = definitelyTypedPath;
         this.resetDefinitelyTyped = resetDefinitelyTyped;
         this.progress = progress;
         this.parseInParallel = parseInParallel;
         this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
     }
+    get fetchParallelism() { return 25; }
 }
 /** Options for running locally. */
 Options.defaults = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ false, /*progress*/ true, /*parseInParallel*/ true);
-Options.azure = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false, /*parseInParallel*/ false);
+Options.azure = new Options("./DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false, /*parseInParallel*/ false);
 exports.Options = Options;
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));

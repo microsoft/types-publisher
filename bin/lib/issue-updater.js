@@ -8,18 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const settings_1 = require("./settings");
-function setIssueOk(githubAccessToken) {
+function setIssueOk(githubAccessToken, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield doUpdate(githubAccessToken, `Server has been up as of **${util_1.currentTimeStamp()}**`);
+        yield doUpdate(githubAccessToken, `Server has been up as of **${util_1.currentTimeStamp()}**`, fetcher);
     });
 }
 exports.setIssueOk = setIssueOk;
-function reopenIssue(githubAccessToken, timeStamp, error) {
+function reopenIssue(githubAccessToken, timeStamp, error, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield doUpdate(githubAccessToken, createContent());
+        yield doUpdate(githubAccessToken, createContent(), fetcher);
         function createContent() {
             const lines = [];
             const l = lines.push.bind(lines);
@@ -36,11 +35,19 @@ function reopenIssue(githubAccessToken, timeStamp, error) {
     });
 }
 exports.reopenIssue = reopenIssue;
-function doUpdate(accessToken, body) {
+function doUpdate(accessToken, body, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        const url = `https://api.github.com/repos/${settings_1.errorsIssue}?access_token=${accessToken}`;
         const message = { body, state: "open" };
-        const responseBody = (yield io_1.fetchJson(url, { method: "PATCH", body: JSON.stringify(message) }));
+        const responseBody = yield fetcher.fetchJson({
+            hostname: "api.github.com",
+            path: `repos/${settings_1.errorsIssue}?access_token=${accessToken}`,
+            body: JSON.stringify(message),
+            method: "PATCH",
+            headers: {
+                // arbitrary string, but something must be provided
+                "User-Agent": "types-publisher"
+            },
+        });
         if (responseBody.body !== body) {
             throw new Error(JSON.stringify(responseBody, undefined, 4));
         }

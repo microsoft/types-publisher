@@ -13,6 +13,7 @@ const oboe = require("oboe");
 const check_parse_results_1 = require("./check-parse-results");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
+const io_1 = require("./util/io");
 const progress_1 = require("./util/progress");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -23,7 +24,8 @@ function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const all = yield allNpmPackages();
         yield common_1.writeDataFile("all-npm-packages.json", all);
-        const allTyped = yield util_1.filterNAtATime(10, all, check_parse_results_1.packageHasTypes, {
+        const fetcher = new io_1.Fetcher();
+        const allTyped = yield util_1.filterNAtATime(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, fetcher), {
             name: "Checking for types...",
             flavor: (name, isTyped) => isTyped ? name : undefined,
             options

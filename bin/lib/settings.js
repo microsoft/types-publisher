@@ -2,7 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = require("path");
 /** URL of the NPM registry to upload to. */
-exports.npmRegistry = "https://registry.npmjs.org/";
+exports.npmRegistryHostName = "registry.npmjs.org";
+exports.npmRegistry = `https://${exports.npmRegistryHostName}/`;
+exports.npmApi = "api.npmjs.org";
 /** Note: this is 'types' and not '@types' */
 exports.scopeName = "types";
 exports.outputPath = "./output";

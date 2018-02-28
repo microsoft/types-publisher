@@ -37,15 +37,15 @@ class Versions {
     /**
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
      */
-    static determineFromNpm(allPackages, log, forceUpdate, options) {
+    static determineFromNpm(allPackages, log, forceUpdate, fetcher, options) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
             const data = {};
-            yield util_1.nAtATime(25, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
+            yield util_1.nAtATime(options.fetchParallelism, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
             function getTypingsVersion(pkg) {
                 return __awaiter(this, void 0, void 0, function* () {
                     const isPrerelease = definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
-                    const versionInfo = yield fetchTypesPackageVersionInfo(pkg, isPrerelease, pkg.majorMinor);
+                    const versionInfo = yield fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease, pkg.majorMinor);
                     if (!versionInfo) {
                         log(`Added: ${pkg.desc}`);
                     }
@@ -63,12 +63,16 @@ class Versions {
                     addToData(pkg.name, version, latestNonPrerelease);
                 });
             }
-            yield util_1.nAtATime(25, allPackages.allNotNeeded(), getNotNeededVersion, { name: "Versions for not-needed packages...", flavor, options });
+            yield util_1.nAtATime(options.fetchParallelism, allPackages.allNotNeeded(), getNotNeededVersion, {
+                name: "Versions for not-needed packages...",
+                flavor,
+                options,
+            });
             function getNotNeededVersion(pkg) {
                 return __awaiter(this, void 0, void 0, function* () {
                     const isPrerelease = false; // Not-needed packages are never prerelease.
                     // tslint:disable-next-line:prefer-const
-                    let { version, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, isPrerelease)) || defaultVersionInfo(isPrerelease);
+                    let { version, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease)) || defaultVersionInfo(isPrerelease);
                     if (!deprecated) {
                         log(`Now deprecated: ${pkg.name}`);
                         changes.push({ name: pkg.name, majorVersion: version.major });
@@ -122,11 +126,11 @@ exports.changedPackages = changedPackages;
 /** Version of a package published to NPM. */
 class Semver {
     constructor(major, minor, patch, 
-        /**
-         * If true, this is `major.minor.0-next.patch`.
-         * If false, this is `major.minor.patch`.
-         */
-        isPrerelease) {
+    /**
+     * If true, this is `major.minor.0-next.patch`.
+     * If false, this is `major.minor.patch`.
+     */
+    isPrerelease) {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
@@ -168,15 +172,15 @@ class Semver {
 }
 exports.Semver = Semver;
 /** Returns undefined if the package does not exist. */
-function fetchTypesPackageVersionInfo(pkg, isPrerelease, newMajorAndMinor) {
+function fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(pkg.fullEscapedNpmName, isPrerelease, newMajorAndMinor);
+        return fetchVersionInfoFromNpm(pkg.fullEscapedNpmName, fetcher, isPrerelease, newMajorAndMinor);
     });
 }
 /** For use by publish-registry only. */
-function fetchAndProcessNpmInfo(escapedPackageName) {
+function fetchAndProcessNpmInfo(escapedPackageName, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName);
+        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName, fetcher);
         const version = getVersionSemver(info, /*isPrerelease*/ false);
         const { "dist-tags": distTags, versions } = info;
         const highestSemverVersion = getLatestVersion(versions);
@@ -186,9 +190,9 @@ function fetchAndProcessNpmInfo(escapedPackageName) {
     });
 }
 exports.fetchAndProcessNpmInfo = fetchAndProcessNpmInfo;
-function fetchVersionInfoFromNpm(escapedPackageName, isPrerelease, newMajorAndMinor) {
+function fetchVersionInfoFromNpm(escapedPackageName, fetcher, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName);
+        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName, fetcher);
         if (!info["dist-tags"]) {
             // NPM returns `{}` for missing packages.
             return undefined;

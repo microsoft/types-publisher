@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const calculate_versions_1 = require("./calculate-versions");
-const check_parse_results_1 = require("./check-parse-results");
 const clean_1 = require("./clean");
 const create_search_index_1 = require("./create-search-index");
 const generate_packages_1 = require("./generate-packages");
@@ -21,24 +20,24 @@ const parse_definitions_1 = require("./parse-definitions");
 const publish_packages_1 = require("./publish-packages");
 const publish_registry_1 = require("./publish-registry");
 const upload_blobs_1 = require("./upload-blobs");
+const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     util_1.done(npm_client_1.default.create()
-        .then(client => full(client, dry, util_1.currentTimeStamp(), common_1.Options.defaults)));
+        .then(client => full(client, dry, util_1.currentTimeStamp(), common_1.Options.defaults, new io_1.Fetcher())));
 }
-function full(client, dry, timeStamp, options) {
+function full(client, dry, timeStamp, options, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
         yield get_definitely_typed_1.default(options);
         yield parse_definitions_1.default(options, /*nProcesses*/ util_1.numberOfOsProcesses);
-        yield check_parse_results_1.default(/*includeNpmChecks*/ false, options);
-        yield calculate_versions_1.default(/*forceUpdate*/ false, options);
+        yield calculate_versions_1.default(/*forceUpdate*/ false, fetcher, options);
         yield generate_packages_1.default(options);
-        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, options);
+        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, fetcher, options);
         yield publish_packages_1.default(client, dry, options);
-        yield publish_registry_1.default(options, dry);
+        yield publish_registry_1.default(options, dry, fetcher);
         yield validate_1.default(options);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);

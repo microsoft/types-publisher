@@ -12,16 +12,17 @@ const yargs = require("yargs");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const versions_1 = require("./lib/versions");
+const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const forceUpdate = yargs.argv.forceUpdate;
-    util_1.done(main(forceUpdate, common_1.Options.defaults));
+    util_1.done(main(forceUpdate, new io_1.Fetcher(), common_1.Options.defaults));
 }
-function main(forceUpdate, options) {
+function main(forceUpdate, fetcher, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("=== Calculating versions ===");
-        const { changes, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, forceUpdate, options);
+        const { changes, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, forceUpdate, fetcher, options);
         yield versions_1.writeChanges(changes);
         yield versions.save();
     });

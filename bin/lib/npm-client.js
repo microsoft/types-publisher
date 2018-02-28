@@ -8,7 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const assert = require("assert");
 const RegClient = require("npm-registry-client");
 const url = require("url");
 const io_1 = require("../util/io");
@@ -16,7 +15,6 @@ const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
-assert(settings_1.npmRegistry.endsWith("/"));
 function packageUrl(packageName) {
     return url.resolve(settings_1.npmRegistry, packageName);
 }
@@ -90,12 +88,15 @@ function promisifyVoid(callsBack) {
         });
     });
 }
-function fetchNpmInfo(escapedPackageName) {
+function fetchNpmInfo(escapedPackageName, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uri = settings_1.npmRegistry + escapedPackageName;
-        const info = (yield io_1.fetchJson(uri, { retries: true }));
+        const info = yield fetcher.fetchJson({
+            hostname: settings_1.npmRegistryHostName,
+            path: escapedPackageName,
+            retries: true,
+        });
         if ("error" in info) {
-            throw new Error(`Error getting version at ${uri}: ${info.error}`);
+            throw new Error(`Error getting version at ${escapedPackageName}: ${info.error}`);
         }
         return info;
     });
