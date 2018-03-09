@@ -22,11 +22,14 @@ function main(options) {
         const typings = allPackages.allTypings();
         const maxPathLen = Math.max(...typings.map(t => t.subDirectoryPath.length));
         const lines = util_1.mapDefined(typings, t => getEntry(t, maxPathLen));
-        const text = `${lines.join("\n")}\n`;
+        const text = `${header}\n\n${lines.join("\n")}\n`;
         const path = util_1.joinPaths(options.definitelyTypedPath, ".github", "CODEOWNERS");
         yield io_1.writeFile(path, text);
     });
 }
+const header = `# This file is generated.
+# Add yourself to the "Definitions by:" list instead.
+# See https://github.com/DefinitelyTyped/DefinitelyTyped#edit-an-existing-package`;
 function getEntry(pkg, maxPathLen) {
     const users = util_1.mapDefined(pkg.contributors, c => c.githubUsername);
     if (!users.length) {

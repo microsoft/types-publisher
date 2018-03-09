@@ -109,7 +109,7 @@ class AllPackages {
     /** Returns all of the dependences *that have typings*, ignoring others. */
     *dependencyTypings(pkg) {
         for (const { name, majorVersion } of pkg.dependencies) {
-            const versions = this.data.get(name);
+            const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.get(majorVersion);
             }
@@ -119,7 +119,7 @@ class AllPackages {
     *allDependencyTypings(pkg) {
         yield* this.dependencyTypings(pkg);
         for (const name of pkg.testDependencies) {
-            const versions = this.data.get(name);
+            const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.getLatest();
             }
@@ -127,6 +127,16 @@ class AllPackages {
     }
 }
 exports.AllPackages = AllPackages;
+// Same as the function in moduleNameResolver.ts in typescript
+function getMangledNameForScopedPackage(packageName) {
+    if (packageName.startsWith("@")) {
+        const replaceSlash = packageName.replace("/", "__");
+        if (replaceSlash !== packageName) {
+            return replaceSlash.slice(1); // Take off the "@"
+        }
+    }
+    return packageName;
+}
 exports.typesDataFilename = "definitions.json";
 function readData() {
     return __awaiter(this, void 0, void 0, function* () {
