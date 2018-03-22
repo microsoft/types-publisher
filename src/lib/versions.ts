@@ -72,6 +72,7 @@ export default class Versions {
 			const isPrerelease = false; // Not-needed packages are never prerelease.
 			// tslint:disable-next-line:prefer-const
 			let { version, deprecated } = await fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease) || defaultVersionInfo(isPrerelease);
+			deprecated = true; // TODO: npm randomly fails to return this property and we think it hasn't been deprecated yet.
 			if (!deprecated) {
 				log(`Now deprecated: ${pkg.name}`);
 				changes.push({ name: pkg.name, majorVersion: version.major });
