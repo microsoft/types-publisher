@@ -137,7 +137,7 @@ function checkPackageJsonDependencies(dependencies, path) {
     if (dependencies === undefined) {
         return [];
     }
-    if (dependencies === null || typeof dependencies !== "object") {
+    if (dependencies === null || typeof dependencies !== "object") { // tslint:disable-line strict-type-predicates
         throw new Error(`${path} should contain "dependencies" or not exist.`);
     }
     const deps = [];
@@ -151,7 +151,7 @@ If this is an external library that provides typings,  please make a pull reques
             throw new Error(`In ${path}: ${msg}`);
         }
         const version = dependencies[dependencyName];
-        if (typeof version !== "string") {
+        if (typeof version !== "string") { // tslint:disable-line strict-type-predicates
             throw new Error(`In ${path}: Dependency version for ${dependencyName} should be a string.`);
         }
         deps.push({ name: dependencyName, version });

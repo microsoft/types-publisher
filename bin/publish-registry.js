@@ -31,7 +31,11 @@ function main(options, dry, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         log("=== Publishing types-registry ===");
-        const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash } = yield versions_1.fetchAndProcessNpmInfo(packageName, fetcher);
+        const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } = yield versions_1.fetchAndProcessNpmInfo(packageName, fetcher);
+        if (!isAWeekAfter(lastModified)) {
+            log("Was modified less than a week ago, so do nothing.");
+            return;
+        }
         const client = yield npm_client_1.default.create({ defaultTag: "next" });
         // Don't include not-needed packages in the registry.
         const typings = yield packages_1.AllPackages.readTypings();
@@ -63,6 +67,12 @@ function main(options, dry, fetcher) {
     });
 }
 exports.default = main;
+const millisecondsPerDay = 1000 * 60 * 60 * 24;
+function isAWeekAfter(time) {
+    const diff = Date.now() - time.getTime();
+    const days = diff / millisecondsPerDay;
+    return days > 7;
+}
 function generate(registry, packageJson) {
     return __awaiter(this, void 0, void 0, function* () {
         yield fs_extra_1.emptyDir(registryOutputPath);

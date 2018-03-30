@@ -44,6 +44,7 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
                 receiveUpdate(req, resp);
                 break;
             default:
+            // Don't respond
         }
     });
     return server;

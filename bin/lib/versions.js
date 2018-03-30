@@ -182,11 +182,11 @@ function fetchAndProcessNpmInfo(escapedPackageName, fetcher) {
     return __awaiter(this, void 0, void 0, function* () {
         const info = yield npm_client_1.fetchNpmInfo(escapedPackageName, fetcher);
         const version = getVersionSemver(info, /*isPrerelease*/ false);
-        const { "dist-tags": distTags, versions } = info;
+        const { "dist-tags": distTags, versions, time } = info;
         const highestSemverVersion = getLatestVersion(versions);
         assert.equal(highestSemverVersion.versionString, distTags.next);
         const contentHash = versions[version.versionString].typesPublisherContentHash || "";
-        return { version, highestSemverVersion, contentHash };
+        return { version, highestSemverVersion, contentHash, lastModified: new Date(time.modified) };
     });
 }
 exports.fetchAndProcessNpmInfo = fetchAndProcessNpmInfo;
