@@ -47,6 +47,7 @@ smooth-scrollbar
 source-map
 styled-components
 typescript
+type-zoo
 tweetnacl
 vue
 vuex
