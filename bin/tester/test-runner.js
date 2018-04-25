@@ -92,7 +92,10 @@ function runTests(packages, changed, options, nProcesses) {
             cwd: options.typesPath,
             handleOutput(output) {
                 const { path, status } = output;
-                if (status !== "OK") {
+                if (status === "OK") {
+                    console.log(`${path} OK`);
+                }
+                else {
                     console.error(`${path} failing:`);
                     console.error(status);
                     allFailures.push([path, status]);
