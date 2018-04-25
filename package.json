@@ -31,6 +31,7 @@
     "@types/oboe": "^2.0.28",
     "@types/source-map-support": "^0.4.0",
     "@types/tar": "^1.0.27",
+    "@types/travis-fold": "^0.1.0",
     "@types/yargs": "^8.0.1",
     "tslint": "^5.8.0"
   },
