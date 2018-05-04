@@ -109,7 +109,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
                 throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
             }
         }
-        const sourceRepoURL = "https://www.github.com/DefinitelyTyped/DefinitelyTyped";
+        const sourceRepoURL = "https://github.com/DefinitelyTyped/DefinitelyTyped.git";
         const data = {
             contributors,
             dependencies,

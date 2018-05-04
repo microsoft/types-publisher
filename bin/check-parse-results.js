@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const fold = require("travis-fold");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
@@ -24,9 +25,15 @@ function main(includeNpmChecks, options, fetcher) {
         const [log, logResult] = logging_1.logger();
         checkTypeScriptVersions(allPackages);
         checkPathMappings(allPackages);
+        if (fold.isTravis()) {
+            console.log(fold.start("Duplicate packages"));
+        }
         const packages = allPackages.allPackages();
         checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
         checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
+        if (fold.isTravis()) {
+            console.log(fold.end("Duplicate packages"));
+        }
         const dependedOn = new Set();
         for (const pkg of packages) {
             if (pkg instanceof packages_1.TypingsData) {

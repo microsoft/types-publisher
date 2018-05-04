@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
+const fold = require("travis-fold");
 const yargs = require("yargs");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
@@ -84,6 +85,9 @@ function doInstalls(allPackages, packages, options, nProcesses) {
 function runTests(packages, changed, options, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
         const allFailures = [];
+        if (fold.isTravis()) {
+            console.log(fold.start("tests"));
+        }
         yield util_1.runWithListeningChildProcesses({
             inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p) })),
             commandLineArgs: ["--listen"],
@@ -102,6 +106,9 @@ function runTests(packages, changed, options, nProcesses) {
                 }
             },
         });
+        if (fold.isTravis()) {
+            console.log(fold.end("tests"));
+        }
         if (allFailures.length === 0) {
             return;
         }
