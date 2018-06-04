@@ -13,6 +13,7 @@ csstype
 decimal.js
 egg
 electron
+ethereum-types
 eventemitter2
 eventemitter3
 fast-glob
