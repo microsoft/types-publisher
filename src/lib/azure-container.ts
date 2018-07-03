@@ -1,6 +1,7 @@
 import { BlobService, common, createBlobService, ErrorOrResponse, ErrorOrResult } from "azure-storage";
 import * as fs from "fs";
 import * as https from "https";
+import * as mimeType from "mime-types";
 
 import { streamDone, streamOfString, stringOfStream } from "../util/io";
 import { gzip, unGzip } from "../util/tgz";
@@ -74,7 +75,7 @@ export default class BlobWriter {
 		const options: BlobService.CreateBlobRequestOptions =  {
 			contentSettings: {
 				contentEncoding: "GZIP",
-				contentType: "application/json; charset=utf-8"
+				contentType: mimeType.contentType(blobName) || "application/json; charset=utf-8"
 			}
 		};
 		// Remove `undefined!` once https://github.com/Azure/azure-storage-node/pull/267 is in
