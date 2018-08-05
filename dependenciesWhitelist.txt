@@ -48,6 +48,7 @@ redux-observable
 redux-persist
 redux-saga
 redux-thunk
+rethinkdb
 rethinkdbdash
 rxjs
 rollup
