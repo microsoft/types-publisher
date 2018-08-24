@@ -19,7 +19,10 @@ egg
 electron
 eventemitter2
 eventemitter3
+fast-copy
+fast-equals
 fast-glob
+fast-stringify
 flatpickr
 immutable
 indefinite-observable
@@ -29,7 +32,9 @@ levelup
 localforage
 magic-string
 meteor-typings
+micro-memoize
 mqtt
+moize
 moment
 monaco-editor
 objection
@@ -48,6 +53,7 @@ redux-observable
 redux-persist
 redux-saga
 redux-thunk
+reselect
 rxjs
 rollup
 should
