@@ -5,6 +5,7 @@
 		"comment-format": [true, "check-space"],
 		"indent": [true, "tabs"],
 		"max-line-length": [true, 150],
+		"object-literal-key-quotes": [true, "as-needed"],
 		"only-arrow-functions": [true, "allow-declarations"],
 
 		// TODO
@@ -19,6 +20,7 @@
 		"typedef": [true, "call-signature"],
 
 		"completed-docs": false,
+		"file-name-casing": false,
 		"forin": false,
 		"interface-name": false,
 		"linebreak-style": false,

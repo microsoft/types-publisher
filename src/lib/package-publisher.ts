@@ -6,11 +6,17 @@ import { updateLatestTag, updateTypeScriptVersionTags } from "../npmTags";
 import { Log, quietLogger } from "../util/logging";
 import { joinPaths } from "../util/util";
 
-import NpmClient from "./npm-client";
+import { NpmPublishClient } from "./npm-client";
 import { AnyPackage, NotNeededPackage } from "./packages";
 
 export default async function publishPackage(
-	client: NpmClient, pkg: AnyPackage, versions: Versions, latestVersion: AnyPackage, dry: boolean): Promise<Log> {
+	client: NpmPublishClient,
+	pkg: AnyPackage,
+	allPackagesBeingPublished: ReadonlyArray<AnyPackage>,
+	versions: Versions,
+	latestVersion: AnyPackage,
+	dry: boolean,
+): Promise<Log> {
 	assert(pkg.isLatest === (pkg === latestVersion));
 	const [log, logResult] = quietLogger();
 
@@ -26,10 +32,12 @@ export default async function publishPackage(
 	if (pkg.isLatest) {
 		await updateTypeScriptVersionTags(latestVersion, latestVersionString, client, log, dry);
 	}
-	// If this is an older version of the package, we still update tags for the *latest*.
-	// NPM will update "latest" even if we are publishing an older version of a package (https://github.com/npm/npm/issues/6778),
-	// so we must undo that by re-tagging latest.
-	await updateLatestTag(latestVersion, versions, client, log, dry);
+	if (pkg.isLatest || !allPackagesBeingPublished.includes(latestVersion)) {
+		// If this is an older version of the package, we still update tags for the *latest*.
+		// NPM will update "latest" even if we are publishing an older version of a package (https://github.com/npm/npm/issues/6778),
+		// so we must undo that by re-tagging latest.
+		await updateLatestTag(latestVersion, versions, client, log, dry);
+	}
 
 	if (pkg.isNotNeeded()) {
 		log(`Deprecating ${pkg.name}`);
@@ -41,10 +49,8 @@ export default async function publishPackage(
 	return logResult();
 }
 
-export async function deprecateNotNeededPackage(client: NpmClient, pkg: NotNeededPackage, dry = false): Promise<void> {
-	// Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
-	const message = pkg.readme(/*useNewline*/ false);
+export async function deprecateNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry = false): Promise<void> {
 	if (!dry) {
-		await client.deprecate(pkg.fullNpmName, pkg.version.versionString, message);
+		await client.deprecate(pkg.fullNpmName, pkg.version.versionString, pkg.deprecatedMessage());
 	}
 }

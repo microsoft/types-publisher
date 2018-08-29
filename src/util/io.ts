@@ -10,7 +10,7 @@ export function readFile(path: string): Promise<string> {
 	return readFileWithEncoding(path, { encoding: "utf8" });
 }
 
-export async function readJson(path: string): Promise<any> {
+export async function readJson(path: string): Promise<object> {
 	return parseJson(await readFile(path));
 }
 
@@ -18,7 +18,7 @@ export function writeFile(path: string, content: string): Promise<void> {
 	return writeFileWithEncoding(path, content, { encoding: "utf8" });
 }
 
-export function writeJson(path: string, content: any, formatted = true): Promise<void> {
+export function writeJson(path: string, content: unknown, formatted = true): Promise<void> {
 	return writeJsonRaw(path, content, { spaces: formatted ? 4 : 0 });
 }
 
@@ -63,7 +63,7 @@ export class Fetcher {
 		try {
 			return JSON.parse(text);
 		} catch (e) {
-			throw new Error(`Bad response from server:\n${text}`);
+			throw new Error(`Bad response from server:\noptions: ${options}\n\n${text}`);
 		}
 	}
 
