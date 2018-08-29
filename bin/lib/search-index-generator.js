@@ -8,8 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const settings_1 = require("./settings");
-function createSearchRecord(pkg, skipDownloads, fetcher) {
+function createSearchRecord(pkg, skipDownloads, client) {
     return __awaiter(this, void 0, void 0, function* () {
         return {
             p: pkg.projectName,
@@ -17,26 +16,9 @@ function createSearchRecord(pkg, skipDownloads, fetcher) {
             g: pkg.globals,
             t: pkg.name,
             m: pkg.declaredModules,
-            d: yield getDownloads(),
+            d: skipDownloads ? -1 : yield client.getDownloads(pkg.name),
             r: pkg.isNotNeeded() ? pkg.sourceRepoURL : undefined
         };
-        // See https://github.com/npm/download-counts
-        function getDownloads() {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (skipDownloads) {
-                    return -1;
-                }
-                else {
-                    const json = yield fetcher.fetchJson({
-                        hostname: settings_1.npmApi,
-                        path: `/downloads/point/last-month/${pkg.name}`,
-                        retries: true,
-                    });
-                    // Json may contain "error" instead of "downloads", because some packages aren't available on NPM.
-                    return json.downloads || 0;
-                }
-            });
-        }
     });
 }
 exports.createSearchRecord = createSearchRecord;

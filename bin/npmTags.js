@@ -27,7 +27,7 @@ if (!module.parent) {
 function tagAll(dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const versions = yield versions_1.default.load();
-        const client = yield npm_client_1.default.create();
+        const client = yield npm_client_1.NpmPublishClient.create();
         yield util_1.nAtATime(10, yield packages_1.AllPackages.readTypings(), (pkg) => __awaiter(this, void 0, void 0, function* () {
             // Only update tags for the latest version of the package.
             if (pkg.isLatest) {

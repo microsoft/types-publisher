@@ -12,7 +12,6 @@ const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
-const npm_client_1 = require("./npm-client");
 const versionsFilename = "versions.json";
 const changesFilename = "version-changes.json";
 class Versions {
@@ -37,51 +36,40 @@ class Versions {
     /**
      * Calculates versions and changed packages by comparing contentHash of parsed packages the NPM registry.
      */
-    static determineFromNpm(allPackages, log, forceUpdate, fetcher, options) {
+    static determineFromNpm(allPackages, log, forceUpdate, client) {
         return __awaiter(this, void 0, void 0, function* () {
             const changes = [];
             const data = {};
-            yield util_1.nAtATime(options.fetchParallelism, allPackages.allTypings(), getTypingsVersion, { name: "Versions for typings", flavor, options });
-            function getTypingsVersion(pkg) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    const isPrerelease = definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
-                    const versionInfo = yield fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease, pkg.majorMinor);
-                    if (!versionInfo) {
-                        log(`Added: ${pkg.desc}`);
-                    }
-                    // tslint:disable-next-line:prefer-const
-                    let { version, latestNonPrerelease, contentHash, deprecated } = versionInfo || defaultVersionInfo(isPrerelease);
-                    if (deprecated) {
-                        // https://github.com/DefinitelyTyped/DefinitelyTyped/pull/22306
-                        assert(pkg.name === "angular-ui-router" || pkg.name === "ui-router-extras", `Package ${pkg.name} has been deprecated, so we shouldn't have parsed it. Was it re-added?`);
-                    }
-                    if (forceUpdate || !versionInfo || pkg.major !== version.major || pkg.minor !== version.minor || pkg.contentHash !== contentHash) {
-                        log(`Changed: ${pkg.desc}`);
-                        changes.push(pkg.id);
-                        version = version.update(pkg.majorMinor, isPrerelease);
-                    }
-                    addToData(pkg.name, version, latestNonPrerelease);
-                });
+            for (const pkg of allPackages.allTypings()) {
+                const isPrerelease = definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(pkg.typeScriptVersion);
+                const versionInfo = yield fetchTypesPackageVersionInfo(pkg, client, isPrerelease, pkg.majorMinor);
+                if (!versionInfo) {
+                    log(`Added: ${pkg.desc}`);
+                }
+                // tslint:disable-next-line:prefer-const
+                let { version, latestNonPrerelease, contentHash, deprecated } = versionInfo || defaultVersionInfo(isPrerelease);
+                if (deprecated) {
+                    // https://github.com/DefinitelyTyped/DefinitelyTyped/pull/22306
+                    assert(pkg.name === "angular-ui-router" || pkg.name === "ui-router-extras", `Package ${pkg.name} has been deprecated, so we shouldn't have parsed it. Was it re-added?`);
+                }
+                if (forceUpdate || !versionInfo || pkg.major !== version.major || pkg.minor !== version.minor || pkg.contentHash !== contentHash) {
+                    log(`Changed: ${pkg.desc}`);
+                    changes.push(pkg.id);
+                    version = version.update(pkg.majorMinor, isPrerelease);
+                }
+                addToData(pkg.name, version, latestNonPrerelease);
             }
-            yield util_1.nAtATime(options.fetchParallelism, allPackages.allNotNeeded(), getNotNeededVersion, {
-                name: "Versions for not-needed packages...",
-                flavor,
-                options,
-            });
-            function getNotNeededVersion(pkg) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    const isPrerelease = false; // Not-needed packages are never prerelease.
-                    // tslint:disable-next-line:prefer-const
-                    let { version, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease)) || defaultVersionInfo(isPrerelease);
-                    if (!deprecated) {
-                        log(`Now deprecated: ${pkg.name}`);
-                        changes.push({ name: pkg.name, majorVersion: version.major });
-                        version = pkg.version;
-                    }
-                    addToData(pkg.name, version);
-                });
+            for (const pkg of allPackages.allNotNeeded()) {
+                const isPrerelease = false; // Not-needed packages are never prerelease.
+                // tslint:disable-next-line:prefer-const
+                let { version, deprecated } = (yield fetchTypesPackageVersionInfo(pkg, client, isPrerelease)) || defaultVersionInfo(isPrerelease);
+                if (!deprecated) {
+                    log(`Now deprecated: ${pkg.name}`);
+                    changes.push({ name: pkg.name, majorVersion: version.major });
+                    version = pkg.version;
+                }
+                addToData(pkg.name, version);
             }
-            function flavor(pkg) { return pkg.desc; }
             // Sort keys so that versions.json is easy to read
             return { changes, versions: new Versions(util_1.sortObjectKeys(data)) };
             function defaultVersionInfo(isPrerelease) {
@@ -172,45 +160,41 @@ class Semver {
 }
 exports.Semver = Semver;
 /** Returns undefined if the package does not exist. */
-function fetchTypesPackageVersionInfo(pkg, fetcher, isPrerelease, newMajorAndMinor) {
+function fetchTypesPackageVersionInfo(pkg, client, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(pkg.fullEscapedNpmName, fetcher, isPrerelease, newMajorAndMinor);
+        return fetchVersionInfoFromNpm(pkg.fullEscapedNpmName, pkg.isNotNeeded() ? undefined : pkg.contentHash, client, isPrerelease, newMajorAndMinor);
     });
 }
 /** For use by publish-registry only. */
-function fetchAndProcessNpmInfo(escapedPackageName, fetcher) {
+function fetchAndProcessNpmInfo(escapedPackageName, client) {
     return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName, fetcher);
+        const info = util_1.assertDefined(yield client.fetchNpmInfo(escapedPackageName));
         const version = getVersionSemver(info, /*isPrerelease*/ false);
-        const { "dist-tags": distTags, versions, time } = info;
-        const highestSemverVersion = getLatestVersion(versions);
-        assert.equal(highestSemverVersion.versionString, distTags.next);
-        const contentHash = versions[version.versionString].typesPublisherContentHash || "";
-        return { version, highestSemverVersion, contentHash, lastModified: new Date(time.modified) };
+        const { distTags, versions, timeModified } = info;
+        const highestSemverVersion = getLatestVersion(versions.keys());
+        assert.equal(highestSemverVersion.versionString, distTags.get("next"));
+        const contentHash = versions.get(version.versionString).typesPublisherContentHash || "";
+        return { version, highestSemverVersion, contentHash, lastModified: new Date(timeModified) };
     });
 }
 exports.fetchAndProcessNpmInfo = fetchAndProcessNpmInfo;
-function fetchVersionInfoFromNpm(escapedPackageName, fetcher, isPrerelease, newMajorAndMinor) {
+function fetchVersionInfoFromNpm(escapedPackageName, parsedContentHash, client, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        const info = yield npm_client_1.fetchNpmInfo(escapedPackageName, fetcher);
-        if (!info["dist-tags"]) {
-            // NPM returns `{}` for missing packages.
+        const info = yield client.getNpmInfo(escapedPackageName, parsedContentHash);
+        if (info === undefined) {
             return undefined;
         }
-        else {
-            const { versions } = info;
-            const latestNonPrerelease = !isPrerelease ? undefined : getLatestVersion(versions);
-            const version = getVersionSemver(info, isPrerelease, newMajorAndMinor);
-            const latestVersionInfo = versions[version.versionString];
-            assert(!!latestVersionInfo);
-            const contentHash = latestVersionInfo.typesPublisherContentHash || "";
-            const deprecated = !!latestVersionInfo.deprecated;
-            return { version, latestNonPrerelease, contentHash, deprecated };
-        }
+        const { versions } = info;
+        const latestNonPrerelease = !isPrerelease ? undefined : getLatestVersion(versions.keys());
+        const version = getVersionSemver(info, isPrerelease, newMajorAndMinor);
+        const latestVersionInfo = util_1.assertDefined(versions.get(version.versionString));
+        const contentHash = latestVersionInfo.typesPublisherContentHash || "";
+        const deprecated = !!latestVersionInfo.deprecated;
+        return { version, latestNonPrerelease, contentHash, deprecated };
     });
 }
 function getLatestVersion(versions) {
-    return util_1.best(Object.keys(versions).map(parseAnySemver), (a, b) => {
+    return util_1.best(util_1.map(versions, parseAnySemver), (a, b) => {
         if (a.isPrerelease && !b.isPrerelease) {
             return false;
         }
@@ -224,13 +208,13 @@ function getVersionSemver(info, isPrerelease, newMajorAndMinor) {
     // If there's already a published package with this version, look for that first.
     if (newMajorAndMinor) {
         const { major, minor } = newMajorAndMinor;
-        const patch = latestPatchMatchingMajorAndMinor(info.versions, major, minor, isPrerelease);
+        const patch = latestPatchMatchingMajorAndMinor(info.versions.keys(), major, minor, isPrerelease);
         if (patch !== undefined) {
             return new Semver(major, minor, patch, isPrerelease);
         }
     }
     // Usually latest version should never be a prerelease, but it may if we've only ever published prerelease versions.
-    return parseAnySemver(info["dist-tags"].latest);
+    return parseAnySemver(util_1.assertDefined(info.distTags.get("latest")));
 }
 /** Parse a semver that may not follow X.Y.Z format perfectly. */
 function parseAnySemver(s) {
@@ -248,14 +232,14 @@ function parseAnySemver(s) {
 }
 /** Finds the version with matching major/minor with the latest patch version. */
 function latestPatchMatchingMajorAndMinor(versions, newMajor, newMinor, isPrerelease) {
-    const versionsWithTypings = Object.keys(versions).map(v => {
+    const versionsWithTypings = util_1.mapDefined(versions, v => {
         const semver = Semver.tryParse(v, isPrerelease);
         if (!semver) {
             return undefined;
         }
         const { major, minor, patch } = semver;
         return major === newMajor && minor === newMinor ? patch : undefined;
-    }).filter(x => x !== undefined);
+    });
     return util_1.best(versionsWithTypings, (a, b) => a > b);
 }
 /** Read all changed packages. */

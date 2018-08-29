@@ -26,22 +26,21 @@ if (!module.parent) {
     util_1.done(go());
     function go() {
         return __awaiter(this, void 0, void 0, function* () {
-            const client = yield npm_client_1.default.create();
             if (deprecateName !== undefined) {
                 // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
                 // Normally this should not be needed.
-                yield package_publisher_1.deprecateNotNeededPackage(client, yield packages_1.AllPackages.readSingleNotNeeded(deprecateName, common_1.Options.defaults));
+                yield package_publisher_1.deprecateNotNeededPackage(yield npm_client_1.NpmPublishClient.create(), yield packages_1.AllPackages.readSingleNotNeeded(deprecateName, common_1.Options.defaults));
             }
             else if (singleName !== undefined) {
-                yield single(client, singleName, common_1.Options.defaults, dry);
+                yield single(singleName, common_1.Options.defaults, dry);
             }
             else {
-                yield main(client, dry, common_1.Options.defaults);
+                yield main(dry, common_1.Options.defaults);
             }
         });
     }
 }
-function main(client, dry, options) {
+function main(dry, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         if (dry) {
@@ -50,9 +49,10 @@ function main(client, dry, options) {
         const allPackages = yield packages_1.AllPackages.read(options);
         const versions = yield versions_1.default.load();
         const packagesShouldPublish = yield versions_1.changedPackages(allPackages);
+        const client = yield npm_client_1.NpmPublishClient.create();
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.desc}...`);
-            const publishLog = yield publish(pkg, client, allPackages, versions, dry);
+            const publishLog = yield package_publisher_1.default(client, pkg, packagesShouldPublish, versions, allPackages.getLatest(pkg), dry);
             writeLogs({ infos: publishLog, errors: [] });
         }
         function writeLogs(res) {
@@ -68,16 +68,13 @@ function main(client, dry, options) {
     });
 }
 exports.default = main;
-function single(client, name, options, dry) {
+function single(name, options, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const allPackages = yield packages_1.AllPackages.read(options);
         const versions = yield versions_1.default.load();
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const publishLog = yield publish(pkg, client, allPackages, versions, dry);
+        const publishLog = yield package_publisher_1.default(yield npm_client_1.NpmPublishClient.create(), pkg, [], versions, allPackages.getLatest(pkg), dry);
         console.log(publishLog);
     });
-}
-function publish(pkg, client, allPackages, versions, dry) {
-    return package_publisher_1.default(client, pkg, versions, allPackages.getLatest(pkg), dry);
 }
 //# sourceMappingURL=publish-packages.js.map

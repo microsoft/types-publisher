@@ -11,8 +11,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const check_parse_results_1 = require("../check-parse-results");
 const clean_1 = require("../clean");
+const npm_client_1 = require("../lib/npm-client");
 const parse_definitions_1 = require("../parse-definitions");
-const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const test_runner_1 = require("./test-runner");
 if (!module.parent) {
@@ -24,7 +24,7 @@ function main(options, nProcesses, all) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
         yield parse_definitions_1.default(options, nProcesses);
-        yield check_parse_results_1.default(/*includeNpmChecks*/ false, options, new io_1.Fetcher());
+        yield check_parse_results_1.default(/*includeNpmChecks*/ false, options, new npm_client_1.UncachedNpmInfoClient());
         yield test_runner_1.default(options, nProcesses, all ? "all" : "affected");
     });
 }

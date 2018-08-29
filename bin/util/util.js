@@ -156,7 +156,10 @@ exports.sortObjectKeys = sortObjectKeys;
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 function exec(cmd, cwd) {
     return new Promise(resolve => {
-        child_process_1.exec(cmd, { encoding: "utf8", cwd }, (error, stdout, stderr) => {
+        // Fix "stdout maxBuffer exceeded" error
+        // See https://github.com/DefinitelyTyped/DefinitelyTyped/pull/26545#issuecomment-402274021
+        const maxBuffer = 1024 * 1024 * 1; // Max = 1 MiB, default is 200 KiB
+        child_process_1.exec(cmd, { encoding: "utf8", cwd, maxBuffer }, (error, stdout, stderr) => {
             resolve({ error: error === null ? undefined : error, stdout: stdout.trim(), stderr: stderr.trim() });
         });
     });
@@ -182,14 +185,19 @@ exports.errorDetails = errorDetails;
  * @param isBetter Returns true if `a` should be preferred over `b`.
  */
 function best(inputs, isBetter) {
-    if (!inputs.length) {
+    const iter = inputs[Symbol.iterator]();
+    const first = iter.next();
+    if (first.done) {
         return undefined;
     }
-    let best = inputs[0];
-    for (let i = 1; i < inputs.length; i++) {
-        const candidate = inputs[i];
-        if (isBetter(candidate, best)) {
-            best = candidate;
+    let best = first.value;
+    while (true) {
+        const { value, done } = iter.next();
+        if (done) {
+            break;
+        }
+        if (isBetter(value, best)) {
+            best = value;
         }
     }
     return best;
@@ -249,6 +257,15 @@ function* flatMap(inputs, mapper) {
     }
 }
 exports.flatMap = flatMap;
+function some(iter, cb) {
+    for (const x of iter) {
+        if (cb(x)) {
+            return true;
+        }
+    }
+    return false;
+}
+exports.some = some;
 function sort(values, comparer) {
     return Array.from(values).sort(comparer);
 }
@@ -361,4 +378,20 @@ function assertNever(_) {
     throw new Error();
 }
 exports.assertNever = assertNever;
+function recordToMap(record, cb) {
+    const m = new Map();
+    for (const key in record) {
+        m.set(key, cb ? cb(record[key]) : record[key]);
+    }
+    return m;
+}
+exports.recordToMap = recordToMap;
+function mapToRecord(map, cb) {
+    const o = {};
+    map.forEach((value, key) => { o[key] = cb ? cb(value) : value; });
+    return o;
+}
+exports.mapToRecord = mapToRecord;
+function identity(t) { return t; }
+exports.identity = identity;
 //# sourceMappingURL=util.js.map

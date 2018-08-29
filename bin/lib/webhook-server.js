@@ -15,19 +15,17 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const issue_updater_1 = require("./issue-updater");
-const npm_client_1 = require("./npm-client");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 function server(key, githubAccessToken, dry, fetcher, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const client = yield npm_client_1.default.create();
         return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
             log.info("");
             log.info("");
             log.info(`# ${timeStamp}`);
             log.info("");
             log.info("Starting full...");
-            yield full_1.default(client, dry, timeStamp, options, fetcher);
+            yield full_1.default(dry, timeStamp, options);
         })));
     });
 }
@@ -125,7 +123,7 @@ function updateOneAtATime(doOnce) {
 function checkSignature(key, data, headers, log) {
     const signature = headers["x-hub-signature"];
     const expected = expectedSignature(key, data);
-    if (stringEqualsConstantTime(signature, expected)) {
+    if (typeof signature === "string" && stringEqualsConstantTime(signature, expected)) { // tslint:disable-line strict-type-predicates (TODO: tslint bug)
         return true;
     }
     log.error(`Invalid request: expected ${expected}, got ${signature}`);

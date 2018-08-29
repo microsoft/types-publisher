@@ -13,7 +13,7 @@ const common_1 = require("../lib/common");
 const npmTags_1 = require("../npmTags");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-function publishPackage(client, pkg, versions, latestVersion, dry) {
+function publishPackage(client, pkg, allPackagesBeingPublished, versions, latestVersion, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         assert(pkg.isLatest === (pkg === latestVersion));
         const [log, logResult] = logging_1.quietLogger();
@@ -25,10 +25,12 @@ function publishPackage(client, pkg, versions, latestVersion, dry) {
         if (pkg.isLatest) {
             yield npmTags_1.updateTypeScriptVersionTags(latestVersion, latestVersionString, client, log, dry);
         }
-        // If this is an older version of the package, we still update tags for the *latest*.
-        // NPM will update "latest" even if we are publishing an older version of a package (https://github.com/npm/npm/issues/6778),
-        // so we must undo that by re-tagging latest.
-        yield npmTags_1.updateLatestTag(latestVersion, versions, client, log, dry);
+        if (pkg.isLatest || !allPackagesBeingPublished.includes(latestVersion)) {
+            // If this is an older version of the package, we still update tags for the *latest*.
+            // NPM will update "latest" even if we are publishing an older version of a package (https://github.com/npm/npm/issues/6778),
+            // so we must undo that by re-tagging latest.
+            yield npmTags_1.updateLatestTag(latestVersion, versions, client, log, dry);
+        }
         if (pkg.isNotNeeded()) {
             log(`Deprecating ${pkg.name}`);
             assert(latestVersionString === pkg.version.versionString);
@@ -41,10 +43,8 @@ function publishPackage(client, pkg, versions, latestVersion, dry) {
 exports.default = publishPackage;
 function deprecateNotNeededPackage(client, pkg, dry = false) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
-        const message = pkg.readme(/*useNewline*/ false);
         if (!dry) {
-            yield client.deprecate(pkg.fullNpmName, pkg.version.versionString, message);
+            yield client.deprecate(pkg.fullNpmName, pkg.version.versionString, pkg.deprecatedMessage());
         }
     });
 }

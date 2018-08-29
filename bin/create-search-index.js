@@ -10,26 +10,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const common_1 = require("./lib/common");
+const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
 const search_index_generator_1 = require("./lib/search-index-generator");
-const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const skipDownloads = yargs.argv.skipDownloads;
     const single = yargs.argv.single;
     if (single) {
-        util_1.done(doSingle(single, skipDownloads, new io_1.Fetcher()));
+        util_1.done(doSingle(single, skipDownloads, new npm_client_1.UncachedNpmInfoClient()));
     }
     else {
         const full = yargs.argv.full;
-        util_1.done(main(skipDownloads, full, new io_1.Fetcher(), common_1.Options.defaults));
+        util_1.done(main(skipDownloads, full, new npm_client_1.UncachedNpmInfoClient(), common_1.Options.defaults));
     }
 }
-function main(skipDownloads, full, fetcher, options) {
+function main(skipDownloads, full, client, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         console.log("Generating search index...");
-        const records = yield util_1.nAtATime(options.fetchParallelism, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, fetcher), {
+        const records = yield util_1.nAtATime(options.fetchParallelism, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, client), {
             name: "Indexing...",
             flavor: pkg => pkg.desc,
             options
@@ -45,10 +45,10 @@ function main(skipDownloads, full, fetcher, options) {
     });
 }
 exports.default = main;
-function doSingle(name, skipDownloads, fetcher) {
+function doSingle(name, skipDownloads, client) {
     return __awaiter(this, void 0, void 0, function* () {
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads, fetcher);
+        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads, client);
         console.log(verboseRecord(record));
     });
 }

@@ -20,24 +20,23 @@ const parse_definitions_1 = require("./parse-definitions");
 const publish_packages_1 = require("./publish-packages");
 const publish_registry_1 = require("./publish-registry");
 const upload_blobs_1 = require("./upload-blobs");
-const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
-    util_1.done(npm_client_1.default.create()
-        .then(client => full(client, dry, util_1.currentTimeStamp(), common_1.Options.defaults, new io_1.Fetcher())));
+    util_1.done(full(dry, util_1.currentTimeStamp(), common_1.Options.defaults));
 }
-function full(client, dry, timeStamp, options, fetcher) {
+function full(dry, timeStamp, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const infoClient = new npm_client_1.UncachedNpmInfoClient();
         yield clean_1.default();
         yield get_definitely_typed_1.default(options);
         yield parse_definitions_1.default(options, /*nProcesses*/ util_1.numberOfOsProcesses);
-        yield calculate_versions_1.default(/*forceUpdate*/ false, fetcher, options);
+        yield calculate_versions_1.default(/*forceUpdate*/ false, options, infoClient);
         yield generate_packages_1.default(options);
-        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, fetcher, options);
-        yield publish_packages_1.default(client, dry, options);
-        yield publish_registry_1.default(options, dry, fetcher);
+        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, infoClient, options);
+        yield publish_packages_1.default(dry, options);
+        yield publish_registry_1.default(options, dry, infoClient);
         yield validate_1.default(options);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);

@@ -12,8 +12,8 @@ const assert = require("assert");
 const oboe = require("oboe");
 const check_parse_results_1 = require("./check-parse-results");
 const common_1 = require("./lib/common");
+const npm_client_1 = require("./lib/npm-client");
 const settings_1 = require("./lib/settings");
-const io_1 = require("./util/io");
 const progress_1 = require("./util/progress");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -24,8 +24,8 @@ function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const all = yield allNpmPackages();
         yield common_1.writeDataFile("all-npm-packages.json", all);
-        const fetcher = new io_1.Fetcher();
-        const allTyped = yield util_1.filterNAtATime(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, fetcher), {
+        const client = new npm_client_1.UncachedNpmInfoClient();
+        const allTyped = yield util_1.filterNAtATime(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, client), {
             name: "Checking for types...",
             flavor: (name, isTyped) => isTyped ? name : undefined,
             options
