@@ -25,14 +25,19 @@ function main(options) {
             if (actualBranch !== `refs/heads/${settings_1.sourceBranch}`) {
                 throw new Error(`Please checkout branch '${settings_1.sourceBranch}'`);
             }
-            console.log(`Fetching changes from ${settings_1.sourceBranch}`);
+            console.log(`Fetching changes from ${settings_1.sourceBranch}...`);
             if (options.resetDefinitelyTyped) {
                 const headCommit = yield repo.getHeadCommit();
+                console.log("Resetting...");
                 yield nodegit_1.Reset.reset(repo, headCommit, 3 /* HARD */, undefined);
             }
+            console.log("Checking status...");
             yield checkStatus(repo);
+            console.log("Fetching...");
             yield repo.fetch("origin");
+            console.log("Merging...");
             yield repo.mergeBranches(settings_1.sourceBranch, `origin/${settings_1.sourceBranch}`, undefined, undefined);
+            console.log("done");
         }
         else {
             console.log(`Cloning ${settings_1.sourceRepository} to ${dtPath}`);
