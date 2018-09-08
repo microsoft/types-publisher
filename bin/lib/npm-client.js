@@ -64,6 +64,7 @@ class UncachedNpmInfoClient {
     fetchNpmInfo(escapedPackageName) {
         return __awaiter(this, void 0, void 0, function* () {
             const raw = yield this.fetchRawNpmInfo(escapedPackageName);
+            yield io_1.sleep(0.01); // If we don't do this, npm resets the connection?
             return raw === undefined ? undefined : npmInfoFromJson(raw);
         });
     }

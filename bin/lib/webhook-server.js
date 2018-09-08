@@ -123,7 +123,8 @@ function updateOneAtATime(doOnce) {
 function checkSignature(key, data, headers, log) {
     const signature = headers["x-hub-signature"];
     const expected = expectedSignature(key, data);
-    if (typeof signature === "string" && stringEqualsConstantTime(signature, expected)) { // tslint:disable-line strict-type-predicates (TODO: tslint bug)
+    // tslint:disable-next-line strict-type-predicates (TODO: tslint bug)
+    if (typeof signature === "string" && stringEqualsConstantTime(signature, expected)) {
         return true;
     }
     log.error(`Invalid request: expected ${expected}, got ${signature}`);

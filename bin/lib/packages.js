@@ -211,7 +211,7 @@ class NotNeededPackage extends PackageBase {
 ${this.libraryName} provides its own type definitions, so you don't need ${fullNpmName(this.name)} installed!`;
     }
     deprecatedMessage() {
-        return `This is a stub types definition. ${this.name} provides its own type definitions, so you don't need this installed.`;
+        return `This is a stub types definition. ${this.name} provides its own type definitions, so you do not need this installed.`;
     }
 }
 exports.NotNeededPackage = NotNeededPackage;
