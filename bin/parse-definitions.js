@@ -8,9 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs_extra_1 = require("fs-extra");
-const path = require("path");
 const yargs = require("yargs");
+const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const definition_parser_1 = require("./lib/definition-parser");
 const definition_parser_worker_1 = require("./lib/definition-parser-worker");
@@ -20,29 +19,34 @@ const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const singleName = yargs.argv.single;
-    util_1.done((singleName ? single(singleName, common_1.Options.defaults) : main(common_1.Options.defaults, test_runner_1.parseNProcesses())));
+    const options = common_1.Options.defaults;
+    util_1.done(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => singleName ? single(singleName, dt)
+        : main(dt, options.parseInParallel
+            ? { nProcesses: test_runner_1.parseNProcesses(), definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
+            : undefined)));
 }
-function main(options, nProcesses) {
+function main(fs, parallel) {
     return __awaiter(this, void 0, void 0, function* () {
         const [summaryLog, summaryLogResult] = logging_1.logger();
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const packageNames = yield util_1.filterNAtATime(10, yield fs_extra_1.readdir(options.typesPath), (packageName) => __awaiter(this, void 0, void 0, function* () { return (yield fs_extra_1.stat(path.join(options.typesPath, packageName))).isDirectory(); }));
-        summaryLog(`Found ${packageNames.length} typings folders in ${options.typesPath}`);
+        const typesFS = fs.subDir("types");
+        const packageNames = yield util_1.filterNAtATime(parallel ? parallel.nProcesses : 1, yield typesFS.readdir(), name => typesFS.isDirectory(name));
+        summaryLog(`Found ${packageNames.length} typings folders`);
         const typings = {};
-        if (options.parseInParallel) {
+        if (parallel) {
             yield util_1.runWithChildProcesses({
                 inputs: packageNames,
-                commandLineArgs: [options.typesPath],
+                commandLineArgs: [`${parallel.definitelyTypedPath}/types`],
                 workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
-                nProcesses,
+                nProcesses: parallel.nProcesses,
                 handleOutput,
             });
         }
         else {
             for (const packageName of packageNames) {
-                handleOutput(Object.assign({}, yield definition_parser_1.getTypingInfo(packageName, options.typesPath), { packageName }));
+                handleOutput(Object.assign({}, yield definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName)), { packageName }));
             }
         }
         function handleOutput({ data, logs, packageName }) {
@@ -65,9 +69,9 @@ function sorted(obj) {
     }
     return out;
 }
-function single(singleName, options) {
+function single(singleName, dt) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield definition_parser_1.getTypingInfo(singleName, options.typesPath);
+        const result = yield definition_parser_1.getTypingInfo(singleName, dt.subDir(`types/${singleName}`));
         const typings = { [singleName]: result.data };
         yield common_1.writeDataFile(packages_1.typesDataFilename, typings);
         console.log(JSON.stringify(result, undefined, 4));

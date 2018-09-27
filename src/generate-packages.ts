@@ -1,6 +1,7 @@
 import { emptyDir } from "fs-extra";
 import * as yargs from "yargs";
 
+import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
 import generateAnyPackage from "./lib/package-generator";
 import { AllPackages, outputDir } from "./lib/packages";
@@ -16,13 +17,15 @@ if (!module.parent) {
 	if (all && singleName) {
 		throw new Error("Select only one of -single=foo or --all.");
 	}
-	done((singleName ? single(singleName, Options.defaults) : main(Options.defaults, all, tgz)));
+	done(getDefinitelyTyped(Options.defaults).then(dt => {
+		(singleName ? single(singleName, dt) : main(dt, all, tgz));
+	}));
 }
 
-export default async function main(options: Options, all = false, tgz = false): Promise<void> {
+export default async function main(dt: FS, all = false, tgz = false): Promise<void> {
 	const [log, logResult] = logger();
 	log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
-	const allPackages = await AllPackages.read(options);
+	const allPackages = await AllPackages.read(dt);
 	const versions = await Versions.load();
 
 	await emptyDir(outputDir);
@@ -30,7 +33,7 @@ export default async function main(options: Options, all = false, tgz = false): 
 	const packages = all ? allPackages.allPackages() : await changedPackages(allPackages);
 
 	await nAtATime(10, packages, async pkg => {
-		const logs = await generateAnyPackage(pkg, allPackages, versions, options);
+		const logs = await generateAnyPackage(pkg, allPackages, versions, dt);
 		if (tgz) {
 			await writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
 		}
@@ -41,11 +44,11 @@ export default async function main(options: Options, all = false, tgz = false): 
 	await writeLog("package-generator.md", logResult());
 }
 
-async function single(singleName: string, options: Options): Promise<void> {
+async function single(singleName: string, dt: FS): Promise<void> {
 	await emptyDir(outputDir);
-	const allPackages = await AllPackages.read(options);
+	const allPackages = await AllPackages.read(dt);
 	const pkg = allPackages.getSingle(singleName);
 	const versions = await Versions.load();
-	const logs = await generateAnyPackage(pkg, allPackages, versions, options);
+	const logs = await generateAnyPackage(pkg, allPackages, versions, dt);
 	console.log(logs.join("\n"));
 }

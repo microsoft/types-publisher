@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
 const fold = require("travis-fold");
 const yargs = require("yargs");
+const get_definitely_typed_1 = require("../get-definitely-typed");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
 const io_1 = require("../util/io");
@@ -19,7 +20,8 @@ const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
     const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
-    util_1.done(main(testerOptions(!!yargs.argv.runFromDefinitelyTyped), parseNProcesses(), selection));
+    const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
+    util_1.done(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => main(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
 }
 const pathToDtsLint = require.resolve("dtslint");
 function parseNProcesses() {
@@ -35,37 +37,35 @@ function parseNProcesses() {
 }
 exports.parseNProcesses = parseNProcesses;
 function testerOptions(runFromDefinitelyTyped) {
-    if (runFromDefinitelyTyped) {
-        return new common_1.Options(process.cwd(), /*resetDefinitelyTyped*/ false, /*progress*/ false, /*parseInParallel*/ true);
-    }
-    else {
-        return common_1.Options.defaults;
-    }
+    return runFromDefinitelyTyped
+        ? { definitelyTypedPath: process.cwd(), progress: false, parseInParallel: true }
+        : common_1.Options.defaults;
 }
 exports.testerOptions = testerOptions;
-function main(options, nProcesses, selection) {
+function main(dt, definitelyTypedPath, nProcesses, selection) {
     return __awaiter(this, void 0, void 0, function* () {
-        const allPackages = yield packages_1.AllPackages.read(options);
+        const allPackages = yield packages_1.AllPackages.read(dt);
         const { changedPackages, dependentPackages } = selection === "all"
             ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
             : selection === "affected"
-                ? yield get_affected_packages_1.default(allPackages, logging_1.consoleLogger.info, options)
+                ? yield get_affected_packages_1.default(allPackages, logging_1.consoleLogger.info, definitelyTypedPath)
                 : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
         console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
         console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
         console.log(`Running with ${nProcesses} processes.`);
-        yield doInstalls(allPackages, util_1.concat(changedPackages, dependentPackages), options, nProcesses);
+        const typesPath = `${definitelyTypedPath}/types`;
+        yield doInstalls(allPackages, util_1.concat(changedPackages, dependentPackages), typesPath, nProcesses);
         console.log("Testing...");
-        yield runTests([...changedPackages, ...dependentPackages], new Set(changedPackages), options, nProcesses);
+        yield runTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
     });
 }
 exports.default = main;
-function doInstalls(allPackages, packages, options, nProcesses) {
+function doInstalls(allPackages, packages, typesPath, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Installing NPM dependencies...");
         // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
         yield util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, packages), (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const cwd = pkg.directoryPath(options);
+            const cwd = directoryPath(typesPath, pkg);
             if (!(yield fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json")))) {
                 return;
             }
@@ -82,7 +82,10 @@ function doInstalls(allPackages, packages, options, nProcesses) {
         yield runCommand(console, undefined, pathToDtsLint, ["--installAll"]);
     });
 }
-function runTests(packages, changed, options, nProcesses) {
+function directoryPath(typesPath, pkg) {
+    return util_1.joinPaths(typesPath, pkg.subDirectoryPath);
+}
+function runTests(packages, changed, typesPath, nProcesses) {
     return __awaiter(this, void 0, void 0, function* () {
         const allFailures = [];
         if (fold.isTravis()) {
@@ -93,7 +96,7 @@ function runTests(packages, changed, options, nProcesses) {
             commandLineArgs: ["--listen"],
             workerFile: pathToDtsLint,
             nProcesses,
-            cwd: options.typesPath,
+            cwd: typesPath,
             handleOutput(output) {
                 const { path, status } = output;
                 if (status === "OK") {

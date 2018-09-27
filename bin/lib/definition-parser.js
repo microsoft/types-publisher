@@ -9,21 +9,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const fs_extra_1 = require("fs-extra");
-const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const module_info_1 = require("./module-info");
 const packages_1 = require("./packages");
-const dependenciesWhitelist = new Set(fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "dependenciesWhitelist.txt"), "utf-8").split(/\r?\n/));
-function getTypingInfo(packageName, typesPath) {
+const settings_1 = require("./settings");
+/** @param fs Rooted at the package's directory, e.g. `DefinitelyTyped/types/abs` */
+function getTypingInfo(packageName, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         if (packageName !== packageName.toLowerCase()) {
             throw new Error(`Package name \`${packageName}\` should be strictly lowercase`);
         }
-        const rootDirectory = util_1.joinPaths(typesPath, packageName);
-        const { rootDirectoryLs, olderVersionDirectories } = yield getOlderVersions(rootDirectory);
-        const { data: latestData, logs: latestLogs } = yield getTypingData(packageName, rootDirectory, rootDirectoryLs);
+        const { rootDirectoryLs, olderVersionDirectories } = yield getOlderVersions(fs);
+        const { data: latestData, logs: latestLogs } = yield getTypingData(packageName, rootDirectoryLs, fs);
         const latestVersion = latestData.libraryMajorVersion;
         const [log, logResult] = logging_1.quietLogger();
         logging_1.moveLogs(log, latestLogs);
@@ -31,13 +29,12 @@ function getTypingInfo(packageName, typesPath) {
             if (majorVersion === latestVersion) {
                 throw new Error(`The latest major version is ${latestVersion}, but a directory v${latestVersion} exists.`);
             }
-            const directory = util_1.joinPaths(rootDirectory, directoryName);
-            const files = yield fs_extra_1.readdir(directory);
-            const { data, logs } = yield getTypingData(packageName, directory, files, majorVersion);
+            const ls = yield fs.readdir(directoryName);
+            const { data, logs } = yield getTypingData(packageName, ls, fs.subDir(directoryName), majorVersion);
             log(`Parsing older version ${majorVersion}`);
             logging_1.moveLogs(log, logs, msg => `    ${msg}`);
             if (data.libraryMajorVersion !== majorVersion) {
-                throw new Error(`Directory ${directory} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
+                throw new Error(`Directory ${directoryName} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
             }
             return data;
         }));
@@ -50,9 +47,9 @@ function getTypingInfo(packageName, typesPath) {
     });
 }
 exports.getTypingInfo = getTypingInfo;
-function getOlderVersions(rootDirectory) {
+function getOlderVersions(fs) {
     return __awaiter(this, void 0, void 0, function* () {
-        const lsRootDirectory = yield fs_extra_1.readdir(rootDirectory);
+        const lsRootDirectory = yield fs.readdir();
         const rootDirectoryLs = [];
         const olderVersionDirectories = [];
         for (const fileOrDirectoryName of lsRootDirectory) {
@@ -78,31 +75,32 @@ exports.parseMajorVersionFromDirectoryName = parseMajorVersionFromDirectoryName;
  * @param directory Full path to the directory for this package; e.g. "../DefinitelyTyped/foo/v3".
  * @param ls All file/directory names in `directory`.
  */
-function getTypingData(packageName, directory, ls, oldMajorVersion) {
+function getTypingData(packageName, ls, fs, oldMajorVersion) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
-        log(`Reading contents of ${directory}`);
+        log(`Reading contents of ${packageName}`);
         // There is a *single* main file, containing metadata comments.
         // But there may be many entryFilenames, which are the starting points of inferring all files to be included.
         const mainFilename = "index.d.ts";
-        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFileAndThrowOnBOM(directory, mainFilename));
-        const tsconfig = yield fs_extra_1.readJSON(util_1.joinPaths(directory, "tsconfig.json"));
-        const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, directory, tsconfig);
-        const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, directory, typeFiles);
+        const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(yield readFileAndThrowOnBOM(mainFilename, fs));
+        const tsconfig = yield fs.readJson("tsconfig.json"); // tslint:disable-line await-promise (tslint bug)
+        const { typeFiles, testFiles } = yield entryFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
+        const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = yield module_info_1.default(packageName, typeFiles, fs);
         const declaredModulesSet = new Set(declaredModules);
         // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
         const removeDeclaredModules = (modules) => util_1.filter(modules, m => !declaredModulesSet.has(m));
         const dependenciesSet = new Set(removeDeclaredModules(dependenciesWithDeclaredModules));
-        const testDependencies = Array.from(removeDeclaredModules(yield module_info_1.getTestDependencies(packageName, directory, testFiles, dependenciesSet)));
+        const testDependencies = Array.from(removeDeclaredModules(yield module_info_1.getTestDependencies(packageName, testFiles, dependenciesSet, fs)));
         const { dependencies, pathMappings } = yield calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
-        const packageJsonPath = util_1.joinPaths(directory, "package.json");
-        const hasPackageJson = yield fs_extra_1.pathExists(packageJsonPath);
-        const packageJson = hasPackageJson ? yield io_1.readJson(packageJsonPath) : {};
+        const packageJsonPath = "package.json";
+        const hasPackageJson = (yield fs.readdir()).includes(packageJsonPath);
+        // tslint:disable-next-line await-promise (tslint bug)
+        const packageJson = hasPackageJson ? yield fs.readJson(packageJsonPath) : {};
         const license = packages_1.getLicenseFromPackageJson(packageJson.license);
         const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonPath);
         const allContentHashFiles = hasPackageJson ? declFiles.concat(["package.json"]) : declFiles;
         const allFiles = new Set(allContentHashFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
-        yield checkAllFilesUsed(directory, ls, allFiles);
+        yield checkAllFilesUsed(ls, allFiles, fs);
         // Double-check that no windows "\\" broke in.
         for (const fileName of allContentHashFiles) {
             if (util_1.hasWindowsSlashes(fileName)) {
@@ -128,7 +126,7 @@ function getTypingData(packageName, directory, ls, oldMajorVersion) {
             testFiles,
             license,
             packageJsonDependencies,
-            contentHash: yield hash(directory, allContentHashFiles, tsconfig.compilerOptions.paths)
+            contentHash: yield hash(allContentHashFiles, tsconfig.compilerOptions.paths, fs)
         };
         return { data, logs: logResult() };
     });
@@ -142,7 +140,7 @@ function checkPackageJsonDependencies(dependencies, path) {
     }
     const deps = [];
     for (const dependencyName in dependencies) {
-        if (!dependenciesWhitelist.has(dependencyName)) {
+        if (!settings_1.dependenciesWhitelist.has(dependencyName)) {
             const msg = dependencyName.startsWith("@types/")
                 ? "Don't use a 'package.json' for @types dependencies."
                 : `Dependency ${dependencyName} not in whitelist.
@@ -158,11 +156,11 @@ If this is an external library that provides typings,  please make a pull reques
     }
     return deps;
 }
-function entryFilesFromTsConfig(packageName, directory, tsconfig) {
+function entryFilesFromTsConfig(packageName, tsconfig, directoryPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const tsconfigPath = util_1.joinPaths(directory, "tsconfig.json");
+        const tsconfigPath = `${directoryPath}/tsconfig.json`;
         if (tsconfig.include) {
-            throw new Error(`${tsconfigPath}: Don't use "include", must use "files"`);
+            throw new Error(`In tsconfig, don't use "include", must use "files"`);
         }
         const files = tsconfig.files;
         if (!files) {
@@ -184,7 +182,7 @@ function entryFilesFromTsConfig(packageName, directory, tsconfig) {
                         const message = file.endsWith(".ts") || file.endsWith(".tsx")
                             ? `Expected file '${file}' to be named ${expectedName}`
                             : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files")`;
-                        throw new Error(`In ${directory}: ${message}`);
+                        throw new Error(message);
                     }
                 }
                 testFiles.push(file);
@@ -266,9 +264,9 @@ function withoutEnd(s, end) {
     }
     return undefined;
 }
-function hash(directory, files, tsconfigPaths) {
+function hash(files, tsconfigPaths, fs) {
     return __awaiter(this, void 0, void 0, function* () {
-        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return `${f}**${yield readFileAndThrowOnBOM(directory, f)}`; }));
+        const fileContents = yield util_1.mapAsyncOrdered(files, (f) => __awaiter(this, void 0, void 0, function* () { return `${f}**${yield readFileAndThrowOnBOM(f, fs)}`; }));
         let allContent = fileContents.join("||");
         if (tsconfigPaths) {
             allContent += JSON.stringify(tsconfigPaths);
@@ -276,33 +274,32 @@ function hash(directory, files, tsconfigPaths) {
         return util_1.computeHash(allContent);
     });
 }
-function readFileAndThrowOnBOM(directory, fileName) {
+function readFileAndThrowOnBOM(fileName, fs) {
     return __awaiter(this, void 0, void 0, function* () {
-        const full = util_1.joinPaths(directory, fileName);
-        const text = yield io_1.readFile(full);
+        const text = yield fs.readFile(fileName);
         if (text.charCodeAt(0) === 0xFEFF) {
             const commands = [
                 "npm install -g strip-bom-cli",
                 `strip-bom ${fileName} > fix`,
                 `mv fix ${fileName}`
             ];
-            throw new Error(`File '${full}' has a BOM. Try using:\n${commands.join("\n")}`);
+            throw new Error(`File '${fileName}' has a BOM. Try using:\n${commands.join("\n")}`);
         }
         return text;
     });
 }
 exports.readFileAndThrowOnBOM = readFileAndThrowOnBOM;
 const unusedFilesName = "UNUSED_FILES.txt";
-function checkAllFilesUsed(directory, ls, usedFiles) {
+function checkAllFilesUsed(ls, usedFiles, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         const lsSet = new Set(ls);
         const unusedFiles = lsSet.delete(unusedFilesName)
-            ? new Set((yield io_1.readFile(util_1.joinPaths(directory, unusedFilesName))).split(/\r?\n/g))
+            ? new Set((yield fs.readFile(unusedFilesName)).split(/\r?\n/g))
             : new Set();
-        yield checkAllUsedRecur(directory, lsSet, usedFiles, unusedFiles);
+        yield checkAllUsedRecur(lsSet, usedFiles, unusedFiles, fs);
     });
 }
-function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
+function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         for (const lsEntry of ls) {
             if (usedFiles.has(lsEntry)) {
@@ -312,13 +309,13 @@ function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
                 unusedFiles.delete(lsEntry);
                 continue;
             }
-            if (yield io_1.isDirectory(util_1.joinPaths(directory, lsEntry))) {
+            if (yield fs.isDirectory(lsEntry)) {
+                const subdir = fs.subDir(lsEntry);
                 // We allow a "scripts" directory to be used for scripts.
                 if (lsEntry === "node_modules" || lsEntry === "scripts") {
                     continue;
                 }
-                const subdir = util_1.joinPaths(directory, lsEntry);
-                const lssubdir = yield fs_extra_1.readdir(subdir);
+                const lssubdir = yield subdir.readdir();
                 if (lssubdir.length === 0) {
                     throw new Error(`Empty directory ${subdir} (${util_1.join(usedFiles)})`);
                 }
@@ -333,16 +330,16 @@ function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
                     }
                     return subdirSet;
                 }
-                yield checkAllUsedRecur(subdir, lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles));
+                yield checkAllUsedRecur(lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles), subdir);
             }
             else {
                 if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
-                    throw new Error(`Directory ${directory} has unused file ${lsEntry}`);
+                    throw new Error(`Unused file ${lsEntry}`); //msg
                 }
             }
         }
         for (const unusedFile of unusedFiles) {
-            throw new Error(`In ${directory}: file ${unusedFile} listed in ${unusedFilesName} does not exist.`);
+            throw new Error(`File ${unusedFile} listed in ${unusedFilesName} does not exist.`); //msg
         }
     });
 }

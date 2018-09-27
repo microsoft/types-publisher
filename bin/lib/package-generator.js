@@ -16,20 +16,21 @@ const util_1 = require("../util/util");
 const packages_1 = require("./packages");
 const settings_1 = require("./settings");
 /** Generates the package to disk */
-function generateAnyPackage(pkg, packages, versions, options) {
-    return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, options);
+function generateAnyPackage(pkg, packages, versions, fs) {
+    return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions, fs);
 }
 exports.default = generateAnyPackage;
 const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
-function generatePackage(typing, packages, versions, options) {
+function generatePackage(typing, packages, versions, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.quietLogger();
+        const packageFS = fs.subDir("types").subDir(typing.name);
         const packageJson = yield createPackageJSON(typing, versions.getVersion(typing), packages);
         log("Write metadata files to disk");
         yield writeCommonOutputs(typing, packageJson, createReadme(typing));
         yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
             log(`Copy ${file}`);
-            yield fs_extra_1.copy(typing.filePath(file, options), yield outputFilePath(typing, file));
+            yield io_1.writeFile(yield outputFilePath(typing, file), yield packageFS.readFile(file));
         })));
         return logResult();
     });

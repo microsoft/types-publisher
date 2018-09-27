@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs_1 = require("fs");
 const path_1 = require("path");
 /** URL of the NPM registry to upload to. */
 exports.npmRegistryHostName = "registry.npmjs.org";
@@ -22,4 +23,5 @@ exports.azureKeyvault = "https://types-publisher-keys.vault.azure.net";
 /** Issue in types-publisher that we will use to report webhook errors. */
 exports.errorsIssue = "Microsoft/types-publisher/issues/40";
 exports.typesDirectoryName = "types";
+exports.dependenciesWhitelist = new Set(fs_1.readFileSync(path_1.join(__dirname, "..", "..", "dependenciesWhitelist.txt"), "utf-8").split(/\r?\n/));
 //# sourceMappingURL=settings.js.map

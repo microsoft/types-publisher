@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
@@ -18,7 +19,7 @@ if (!module.parent) {
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const allPackages = yield packages_1.AllPackages.read(options);
+        const allPackages = yield packages_1.AllPackages.read(yield get_definitely_typed_1.getDefinitelyTyped(options));
         const typings = allPackages.allTypings();
         const maxPathLen = Math.max(...typings.map(t => t.subDirectoryPath.length));
         const lines = util_1.mapDefined(typings, t => getEntry(t, maxPathLen));

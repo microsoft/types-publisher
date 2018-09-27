@@ -29,7 +29,7 @@ function main(skipDownloads, full, client, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const packages = yield packages_1.AllPackages.readTypings();
         console.log("Generating search index...");
-        const records = yield util_1.nAtATime(options.fetchParallelism, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, client), {
+        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, client), {
             name: "Indexing...",
             flavor: pkg => pkg.desc,
             options

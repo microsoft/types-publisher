@@ -42,7 +42,7 @@ exports.streamOfString = streamOfString;
 function stringOfStream(stream) {
     let body = "";
     stream.on("data", (data) => {
-        body += data.toString("utf8");
+        body += data.toString();
     });
     return new Promise((resolve, reject) => {
         stream.on("error", reject);

@@ -13,9 +13,9 @@ const path = require("path");
 const ts = require("typescript");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
-function getModuleInfo(packageName, directory, allEntryFilenames) {
+function getModuleInfo(packageName, allEntryFilenames, fs) {
     return __awaiter(this, void 0, void 0, function* () {
-        const all = yield allReferencedFiles(directory, allEntryFilenames);
+        const all = yield allReferencedFiles(allEntryFilenames, fs);
         const dependencies = new Set();
         const declaredModules = [];
         const globals = new Set();
@@ -121,50 +121,36 @@ function withoutExtension(str, ext) {
     return str.slice(0, str.length - ext.length);
 }
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-function allReferencedFiles(directory, entryFilenames) {
+function allReferencedFiles(entryFilenames, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         const seenReferences = new Set();
         const all = new Map();
-        function recur(referencedFrom, { text, exact }) {
+        function recur({ text, exact }) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (seenReferences.has(text)) {
                     return;
                 }
                 seenReferences.add(text);
-                const { resolvedFilename, content } = exact
-                    ? { resolvedFilename: text, content: yield readFileAndReportErrors(referencedFrom, directory, text, text) }
-                    : yield resolveModule(referencedFrom, directory, text);
-                const src = createSourceFile(resolvedFilename, content);
+                const resolvedFilename = exact ? text : yield resolveModule(text, fs);
+                const src = createSourceFile(resolvedFilename, yield definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
                 all.set(resolvedFilename, src);
-                const refs = referencedFiles(src, path.dirname(resolvedFilename), directory);
-                yield Promise.all(Array.from(refs).map(ref => recur(resolvedFilename, ref)));
+                const refs = referencedFiles(src, path.dirname(resolvedFilename));
+                yield Promise.all(Array.from(refs).map(recur));
             });
         }
-        yield Promise.all(entryFilenames.map(filename => recur("tsconfig.json", { text: filename, exact: true })));
+        yield Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
         return all;
     });
 }
-function resolveModule(referencedFrom, directory, filename) {
+function resolveModule(importSpecifier, fs) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const dts = `${filename}.d.ts`;
-            return { resolvedFilename: dts, content: yield definition_parser_1.readFileAndThrowOnBOM(directory, dts) };
+        const dts = `${importSpecifier}.d.ts`;
+        if (![".", "..", "./", "../"].includes(importSpecifier) && (yield fs.exists(dts))) {
+            return dts;
         }
-        catch (_) {
-            const index = util_1.joinPaths(filename.endsWith("/") ? filename.slice(0, filename.length - 1) : filename, "index.d.ts");
-            const resolvedFilename = index === "./index.d.ts" ? "index.d.ts" : index;
-            return { resolvedFilename, content: yield readFileAndReportErrors(referencedFrom, directory, filename, index) };
-        }
-    });
-}
-function readFileAndReportErrors(referencedFrom, directory, referenceText, filename) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            return yield definition_parser_1.readFileAndThrowOnBOM(directory, filename);
-        }
-        catch (err) {
-            console.error(`In ${directory}, ${referencedFrom} references ${referenceText}, which can't be read.`);
-            throw err;
+        else {
+            const index = util_1.joinPaths(importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier, "index.d.ts");
+            return index === "./index.d.ts" ? "index.d.ts" : index;
         }
     });
 }
@@ -172,7 +158,7 @@ function readFileAndReportErrors(referencedFrom, directory, referenceText, filen
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function* referencedFiles(src, subDirectory, directory) {
+function* referencedFiles(src, subDirectory) {
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
         yield addReference({ text: ref.fileName, exact: true });
@@ -186,7 +172,7 @@ function* referencedFiles(src, subDirectory, directory) {
         // `path.normalize` may add windows slashes
         const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, text))));
         if (full.startsWith("..")) {
-            throw new Error(`In ${directory} ${src.fileName}: ` +
+            throw new Error(`${src.fileName}: ` +
                 'Definitions must use global references to other packages, not parent ("../xxx") references.' +
                 `(Based on reference '${text}')`);
         }
@@ -262,11 +248,11 @@ function assertNoWindowsSlashes(packageName, fileName) {
     }
     return fileName;
 }
-function getTestDependencies(pkgName, directory, testFiles, dependencies) {
+function getTestDependencies(pkgName, testFiles, dependencies, fs) {
     return __awaiter(this, void 0, void 0, function* () {
         const testDependencies = new Set();
         for (const filename of testFiles) {
-            const content = yield definition_parser_1.readFileAndThrowOnBOM(directory, filename);
+            const content = yield definition_parser_1.readFileAndThrowOnBOM(filename, fs);
             const sourceFile = createSourceFile(filename, content);
             const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
             const filePath = () => path.join(pkgName, fileName);

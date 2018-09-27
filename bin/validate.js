@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
+const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
@@ -32,12 +33,12 @@ if (!module.parent) {
         util_1.done(doValidate(packageNames));
     }
     else {
-        util_1.done(main(common_1.Options.defaults));
+        util_1.done(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(main));
     }
 }
-function main(options) {
+function main(dt) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(options));
+        const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(dt));
         yield doValidate(changed.map(c => c.name));
     });
 }

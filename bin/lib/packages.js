@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 const common_1 = require("./common");
 const settings_1 = require("./settings");
@@ -20,10 +19,10 @@ class AllPackages {
         this.data = data;
         this.notNeeded = notNeeded;
     }
-    static read(options) {
+    static read(dt) {
         return __awaiter(this, void 0, void 0, function* () {
             const map = yield readData();
-            const notNeeded = yield readNotNeededPackages(options);
+            const notNeeded = yield readNotNeededPackages(dt);
             return new AllPackages(map, notNeeded);
         });
     }
@@ -47,9 +46,9 @@ class AllPackages {
             return new TypingsData(raw[versions[0]], /*isLatest*/ true);
         });
     }
-    static readSingleNotNeeded(name, options) {
+    static readSingleNotNeeded(name, dt) {
         return __awaiter(this, void 0, void 0, function* () {
-            const notNeeded = yield readNotNeededPackages(options);
+            const notNeeded = yield readNotNeededPackages(dt);
             const pkg = notNeeded.find(p => p.name === name);
             if (pkg === undefined) {
                 throw new Error(`Cannot find not-needed package ${name}`);
@@ -297,24 +296,15 @@ class TypingsData extends PackageBase {
     get subDirectoryPath() {
         return this.isLatest ? this.name : `${this.name}/v${this.data.libraryMajorVersion}`;
     }
-    directoryPath(options) {
-        return util_1.joinPaths(options.typesPath, this.subDirectoryPath);
-    }
-    filePath(fileName, options) {
-        return util_1.joinPaths(this.directoryPath(options), fileName);
-    }
 }
 exports.TypingsData = TypingsData;
 function readTypesDataFile() {
     return common_1.readDataFile("parse-definitions", exports.typesDataFilename);
 }
-function notNeededPackagesPath(options) {
-    return util_1.joinPaths(options.definitelyTypedPath, "notNeededPackages.json");
-}
-function readNotNeededPackages(options) {
+function readNotNeededPackages(dt) {
     return __awaiter(this, void 0, void 0, function* () {
-        const raw = yield io_1.readJson(notNeededPackagesPath(options));
-        return raw.packages.map(raw => new NotNeededPackage(raw));
+        const rawJson = yield dt.readJson("notNeededPackages.json"); // tslint:disable-line await-promise (tslint bug)
+        return rawJson.packages.map(raw => new NotNeededPackage(raw));
     });
 }
 exports.readNotNeededPackages = readNotNeededPackages;

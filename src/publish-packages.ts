@@ -1,5 +1,6 @@
 import * as yargs from "yargs";
 
+import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
 import { NpmPublishClient } from "./lib/npm-client";
 import publishPackage, { deprecateNotNeededPackage } from "./lib/package-publisher";
@@ -20,25 +21,26 @@ if (!module.parent) {
 	done(go());
 
 	async function go(): Promise<void> {
+		const dt = await getDefinitelyTyped(Options.defaults);
 		if (deprecateName !== undefined) {
 			// A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
 			// Normally this should not be needed.
-			await deprecateNotNeededPackage(await NpmPublishClient.create(), await AllPackages.readSingleNotNeeded(deprecateName, Options.defaults));
+			await deprecateNotNeededPackage(await NpmPublishClient.create(), await AllPackages.readSingleNotNeeded(deprecateName, dt));
 		} else if (singleName !== undefined) {
-			await single(singleName, Options.defaults, dry);
+			await single(singleName, dt, dry);
 		} else {
-			await main(dry, Options.defaults);
+			await main(dry, dt);
 		}
 	}
 }
 
-export default async function main(dry: boolean, options: Options): Promise<void> {
+export default async function main(dry: boolean, dt: FS): Promise<void> {
 	const [log, logResult] = logger();
 	if (dry) {
 		log("=== DRY RUN ===");
 	}
 
-	const allPackages = await AllPackages.read(options);
+	const allPackages = await AllPackages.read(dt);
 	const versions = await Versions.load();
 	const packagesShouldPublish = await changedPackages(allPackages);
 
@@ -63,8 +65,8 @@ export default async function main(dry: boolean, options: Options): Promise<void
 	console.log("Done!");
 }
 
-async function single(name: string, options: Options, dry: boolean): Promise<void> {
-	const allPackages = await AllPackages.read(options);
+async function single(name: string, dt: FS, dry: boolean): Promise<void> {
+	const allPackages = await AllPackages.read(dt);
 	const versions = await Versions.load();
 	const pkg = await AllPackages.readSingle(name);
 	const publishLog = await publishPackage(await NpmPublishClient.create(), pkg, [], versions, allPackages.getLatest(pkg), dry);

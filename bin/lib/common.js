@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
-const settings_1 = require("../lib/settings");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
 if (process.env.LONGJOHN) {
@@ -19,35 +18,12 @@ if (process.env.LONGJOHN) {
 }
 exports.home = util_1.joinPaths(__dirname, "..", "..");
 exports.dataDir = util_1.joinPaths(exports.home, "data");
-/** Settings that may be determined dynamically. */
-class Options {
-    constructor(
-    /**
-     * e.g. '../DefinitelyTyped'
-     * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
-     */
-    definitelyTypedPath, 
-    /**
-     * If true, downloads DefinitelyTyped from a zip and writes to definitelyTypedPath.
-     * If false, definitelyTypedPath should be a repository, and will verify that there's no diff.
-     */
-    downloadDefinitelyTyped, 
-    /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
-    progress, 
-    /** Disabled on azure since it has problems logging errors from other processes. */
-    parseInParallel) {
-        this.definitelyTypedPath = definitelyTypedPath;
-        this.downloadDefinitelyTyped = downloadDefinitelyTyped;
-        this.progress = progress;
-        this.parseInParallel = parseInParallel;
-        this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
-    }
-    get fetchParallelism() { return 25; }
-}
-/** Options for running locally. */
-Options.defaults = new Options("../DefinitelyTyped", /*downloadDefinitelyTyped*/ false, /*progress*/ true, /*parseInParallel*/ true);
-Options.azure = new Options(dataFilePath("DefinitelyTyped"), true, /*progress*/ false, /*parseInParallel*/ false);
-exports.Options = Options;
+var Options;
+(function (Options) {
+    /** Options for running locally. */
+    Options.defaults = { definitelyTypedPath: "../DefinitelyTyped", progress: true, parseInParallel: true };
+    Options.azure = { definitelyTypedPath: undefined, progress: false, parseInParallel: false };
+})(Options = exports.Options || (exports.Options = {}));
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));
 }

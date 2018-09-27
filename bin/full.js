@@ -24,20 +24,22 @@ const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
-    util_1.done(full(dry, util_1.currentTimeStamp(), common_1.Options.defaults));
+    util_1.done(full(dry, util_1.currentTimeStamp(), common_1.Options.azure)); //->defaults
 }
 function full(dry, timeStamp, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const infoClient = new npm_client_1.UncachedNpmInfoClient();
         yield clean_1.default();
-        yield get_definitely_typed_1.default(options);
-        yield parse_definitions_1.default(options, /*nProcesses*/ util_1.numberOfOsProcesses);
-        yield calculate_versions_1.default(/*forceUpdate*/ false, options, infoClient);
-        yield generate_packages_1.default(options);
+        const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
+        yield parse_definitions_1.default(dt, options.parseInParallel
+            ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
+            : undefined);
+        yield calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
+        yield generate_packages_1.default(dt);
         yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, infoClient, options);
-        yield publish_packages_1.default(dry, options);
-        yield publish_registry_1.default(options, dry, infoClient);
-        yield validate_1.default(options);
+        yield publish_packages_1.default(dry, dt);
+        yield publish_registry_1.default(dt, dry, infoClient);
+        yield validate_1.default(dt);
         if (!dry) {
             yield upload_blobs_1.default(timeStamp);
         }

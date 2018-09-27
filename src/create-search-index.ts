@@ -21,7 +21,7 @@ export default async function main(skipDownloads: boolean, full: boolean, client
 	const packages = await AllPackages.readTypings();
 	console.log("Generating search index...");
 
-	const records = await nAtATime(options.fetchParallelism, packages, pkg => createSearchRecord(pkg, skipDownloads, client), {
+	const records = await nAtATime(25, packages, pkg => createSearchRecord(pkg, skipDownloads, client), {
 		name: "Indexing...",
 		flavor: pkg => pkg.desc,
 		options

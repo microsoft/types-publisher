@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const process = require("process");
+const get_definitely_typed_1 = require("../get-definitely-typed");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
 if (!module.parent) {
@@ -23,7 +24,7 @@ exports.definitionParserWorkerFilename = __filename;
 function go(packageNames, typesPath) {
     return __awaiter(this, void 0, void 0, function* () {
         for (const packageName of packageNames) {
-            const info = yield definition_parser_1.getTypingInfo(packageName, typesPath);
+            const info = yield definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
             const result = Object.assign({}, info, { packageName });
             process.send(result);
         }

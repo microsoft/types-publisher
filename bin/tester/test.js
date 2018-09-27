@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const check_parse_results_1 = require("../check-parse-results");
 const clean_1 = require("../clean");
+const get_definitely_typed_1 = require("../get-definitely-typed");
 const npm_client_1 = require("../lib/npm-client");
 const parse_definitions_1 = require("../parse-definitions");
 const util_1 = require("../util/util");
@@ -23,9 +24,10 @@ if (!module.parent) {
 function main(options, nProcesses, all) {
     return __awaiter(this, void 0, void 0, function* () {
         yield clean_1.default();
-        yield parse_definitions_1.default(options, nProcesses);
-        yield check_parse_results_1.default(/*includeNpmChecks*/ false, options, new npm_client_1.UncachedNpmInfoClient());
-        yield test_runner_1.default(options, nProcesses, all ? "all" : "affected");
+        const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
+        yield parse_definitions_1.default(dt, { nProcesses, definitelyTypedPath: options.definitelyTypedPath });
+        yield check_parse_results_1.default(/*includeNpmChecks*/ false, dt, options, new npm_client_1.UncachedNpmInfoClient());
+        yield test_runner_1.default(dt, options.definitelyTypedPath, nProcesses, all ? "all" : "affected");
     });
 }
 //# sourceMappingURL=test.js.map

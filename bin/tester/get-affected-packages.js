@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const get_definitely_typed_1 = require("../get-definitely-typed");
 const common_1 = require("../lib/common");
 const definition_parser_1 = require("../lib/definition-parser");
 const packages_1 = require("../lib/packages");
@@ -19,14 +20,14 @@ if (!module.parent) {
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(options), logging_1.consoleLogger.info, options);
+        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(yield get_definitely_typed_1.getDefinitelyTyped(options)), logging_1.consoleLogger.info, options.definitelyTypedPath);
         console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
     });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-function getAffectedPackages(allPackages, log, options) {
+function getAffectedPackages(allPackages, log, definitelyTypedPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changedPackageIds = yield gitChanges(log, options);
+        const changedPackageIds = yield gitChanges(log, definitelyTypedPath);
         // If a package doesn't exist, that's because it was deleted.
         const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
         const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
@@ -85,10 +86,10 @@ function getReverseDependencies(allPackages) {
     return map;
 }
 /** Returns all immediate subdirectories of the root directory that have changed. */
-function gitChanges(log, options) {
+function gitChanges(log, definitelyTypedPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const changedPackages = new Map();
-        for (const fileName of yield gitDiff(log, options)) {
+        for (const fileName of yield gitDiff(log, definitelyTypedPath)) {
             const dep = getDependencyFromFile(fileName);
             if (dep) {
                 const versions = changedPackages.get(dep.name);
@@ -114,7 +115,7 @@ Travis runs:
 
 If editing this code, be sure to test on both full and shallow clones.
 */
-function gitDiff(log, options) {
+function gitDiff(log, definitelyTypedPath) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield run(`git rev-parse --verify ${settings_1.sourceBranch}`);
@@ -136,7 +137,7 @@ function gitDiff(log, options) {
         function run(cmd) {
             return __awaiter(this, void 0, void 0, function* () {
                 log(`Running: ${cmd}`);
-                const stdout = yield util_1.execAndThrowErrors(cmd, options.definitelyTypedPath);
+                const stdout = yield util_1.execAndThrowErrors(cmd, definitelyTypedPath);
                 log(stdout);
                 return stdout;
             });
