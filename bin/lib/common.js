@@ -18,6 +18,7 @@ if (process.env.LONGJOHN) {
     longjohn.async_trace_limit = -1; // unlimited
 }
 exports.home = util_1.joinPaths(__dirname, "..", "..");
+const dataDir = util_1.joinPaths(exports.home, "data");
 /** Settings that may be determined dynamically. */
 class Options {
     constructor(
@@ -25,13 +26,18 @@ class Options {
      * e.g. '../DefinitelyTyped'
      * This is overridden to `cwd` when running the tester, as that is run from within DefinitelyTyped.
      */
-    definitelyTypedPath, resetDefinitelyTyped, 
+    definitelyTypedPath, 
+    /**
+     * If true, downloads DefinitelyTyped from a zip and writes to definitelyTypedPath.
+     * If false, definitelyTypedPath should be a repository, and will verify that there's no diff.
+     */
+    downloadDefinitelyTyped, 
     /** Whether to show progress bars. Good when running locally, bad when running on travis / azure. */
     progress, 
     /** Disabled on azure since it has problems logging errors from other processes. */
     parseInParallel) {
         this.definitelyTypedPath = definitelyTypedPath;
-        this.resetDefinitelyTyped = resetDefinitelyTyped;
+        this.downloadDefinitelyTyped = downloadDefinitelyTyped;
         this.progress = progress;
         this.parseInParallel = parseInParallel;
         this.typesPath = util_1.joinPaths(definitelyTypedPath, settings_1.typesDirectoryName);
@@ -39,8 +45,8 @@ class Options {
     get fetchParallelism() { return 25; }
 }
 /** Options for running locally. */
-Options.defaults = new Options("../DefinitelyTyped", /*resetDefinitelyTyped*/ false, /*progress*/ true, /*parseInParallel*/ true);
-Options.azure = new Options("./DefinitelyTyped", /*resetDefinitelyTyped*/ true, /*progress*/ false, /*parseInParallel*/ false);
+Options.defaults = new Options("../DefinitelyTyped", /*downloadDefinitelyTyped*/ false, /*progress*/ true, /*parseInParallel*/ true);
+Options.azure = new Options(dataFilePath("DefinitelyTyped"), true, /*progress*/ false, /*parseInParallel*/ false);
 exports.Options = Options;
 function readDataFile(generatedBy, fileName) {
     return readFileAndWarn(generatedBy, dataFilePath(fileName));
@@ -66,8 +72,8 @@ function writeDataFile(filename, content, formatted = true) {
     });
 }
 exports.writeDataFile = writeDataFile;
-const dataDir = util_1.joinPaths(exports.home, "data");
 function dataFilePath(filename) {
     return util_1.joinPaths(dataDir, filename);
 }
+exports.dataFilePath = dataFilePath;
 //# sourceMappingURL=common.js.map

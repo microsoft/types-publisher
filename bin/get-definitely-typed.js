@@ -8,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require("fs");
 const fs_extra_1 = require("fs-extra");
-const nodegit_1 = require("nodegit");
+const https = require("https");
+const StreamZip = require("node-stream-zip");
 const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const util_1 = require("./util/util");
@@ -18,42 +20,55 @@ if (!module.parent) {
 }
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const dtPath = options.definitelyTypedPath;
-        if (yield fs_extra_1.pathExists(options.definitelyTypedPath)) {
-            const repo = yield nodegit_1.Repository.open(options.definitelyTypedPath);
-            const actualBranch = (yield repo.getCurrentBranch()).name();
-            if (actualBranch !== `refs/heads/${settings_1.sourceBranch}`) {
-                throw new Error(`Please checkout branch '${settings_1.sourceBranch}'`);
-            }
-            console.log(`Fetching changes from ${settings_1.sourceBranch}...`);
-            if (options.resetDefinitelyTyped) {
-                const headCommit = yield repo.getHeadCommit();
-                console.log("Resetting...");
-                yield nodegit_1.Reset.reset(repo, headCommit, 3 /* HARD */, undefined);
-            }
-            console.log("Checking status...");
-            yield checkStatus(repo);
-            console.log("Fetching...");
-            yield repo.fetch("origin");
-            console.log("Merging...");
-            yield repo.mergeBranches(settings_1.sourceBranch, `origin/${settings_1.sourceBranch}`, undefined, undefined);
-            console.log("done");
+        if (options.downloadDefinitelyTyped) {
+            const zipPath = `${options.definitelyTypedPath}.zip`;
+            yield downloadFile(settings_1.definitelyTypedZipUrl, zipPath);
+            yield fs_extra_1.remove(options.definitelyTypedPath);
+            yield extract(zipPath, options.definitelyTypedPath);
         }
         else {
-            console.log(`Cloning ${settings_1.sourceRepository} to ${dtPath}`);
-            const repo = yield nodegit_1.Clone.clone(settings_1.sourceRepository, dtPath);
-            yield repo.checkoutBranch(settings_1.sourceBranch);
+            const { error, stderr, stdout } = yield util_1.exec("git diff --name-only", options.definitelyTypedPath);
+            if (error) {
+                throw error;
+            }
+            if (stderr) {
+                throw new Error(stderr);
+            }
+            if (stdout) {
+                throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
+            }
         }
     });
 }
 exports.default = main;
-function checkStatus(repo) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const statuses = yield repo.getStatus();
-        const changedFiles = yield util_1.filterNAtATime(1, statuses.map(s => s.path()), (path) => __awaiter(this, void 0, void 0, function* () { return !(yield nodegit_1.Ignore.pathIsIgnored(repo, path)); }));
-        if (changedFiles.length) {
-            throw new Error(`The following files are dirty: ${changedFiles}`);
-        }
+function downloadFile(url, outFilePath) {
+    const file = fs.createWriteStream(outFilePath);
+    return new Promise((resolve, reject) => {
+        https.get(url, response => {
+            response.pipe(file);
+            file.on("finish", () => {
+                file.close();
+                resolve();
+            });
+        }).on("error", reject);
+    });
+}
+function extract(zipFilePath, outDirectoryPath) {
+    return new Promise((resolve, reject) => {
+        const zip = new StreamZip({ file: zipFilePath });
+        zip.on("error", reject);
+        zip.on("ready", () => {
+            fs.mkdirSync(outDirectoryPath);
+            zip.extract(undefined, outDirectoryPath, err => {
+                zip.close();
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
     });
 }
 //# sourceMappingURL=get-definitely-typed.js.map
