@@ -253,18 +253,12 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
 }
 // e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
 function parseDependencyVersionFromPath(packageName, dependencyName, dependencyPath) {
-    const versionString = withoutStart(dependencyPath, `${dependencyName}/`);
+    const versionString = util_1.withoutStart(dependencyPath, `${dependencyName}/`);
     const version = versionString === undefined ? undefined : parseMajorVersionFromDirectoryName(versionString);
     if (version === undefined) {
         throw new Error(`In ${packageName}, unexpected path mapping for ${dependencyName}: '${dependencyPath}'`);
     }
     return version;
-}
-function withoutStart(s, start) {
-    if (s.startsWith(start)) {
-        return s.slice(start.length);
-    }
-    return undefined;
 }
 function withoutEnd(s, end) {
     if (s.endsWith(end)) {
@@ -331,7 +325,7 @@ function checkAllUsedRecur(directory, ls, usedFiles, unusedFiles) {
                 function takeSubdirectoryOutOfSet(originalSet) {
                     const subdirSet = new Set();
                     for (const file of originalSet) {
-                        const sub = withoutStart(file, `${lsEntry}/`);
+                        const sub = util_1.withoutStart(file, `${lsEntry}/`);
                         if (sub !== undefined) {
                             originalSet.delete(file);
                             subdirSet.add(sub);

@@ -9,8 +9,8 @@ exports.npmApi = "api.npmjs.org";
 exports.scopeName = "types";
 exports.outputPath = "./output";
 exports.validateOutputPath = path_1.join(__dirname, "..", "..", "validateOutput");
-/** URL to download the repository ZIP from. */
-exports.definitelyTypedZipUrl = "https://codeload.github.com/DefinitelyTyped/DefinitelyTyped/zip/master";
+/** URL to download the repository from. */
+exports.definitelyTypedZipUrl = "https://codeload.github.com/DefinitelyTyped/DefinitelyTyped/tar.gz/master";
 /** The branch that DefinitelyTyped is sourced from. */
 exports.sourceBranch = "master";
 /** Name of the azure storage account. Used for uploading data and logs. */

@@ -394,4 +394,8 @@ function mapToRecord(map, cb) {
 exports.mapToRecord = mapToRecord;
 function identity(t) { return t; }
 exports.identity = identity;
+function withoutStart(s, start) {
+    return s.startsWith(start) ? s.slice(start.length) : undefined;
+}
+exports.withoutStart = withoutStart;
 //# sourceMappingURL=util.js.map
