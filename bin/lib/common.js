@@ -18,7 +18,7 @@ if (process.env.LONGJOHN) {
     longjohn.async_trace_limit = -1; // unlimited
 }
 exports.home = util_1.joinPaths(__dirname, "..", "..");
-const dataDir = util_1.joinPaths(exports.home, "data");
+exports.dataDir = util_1.joinPaths(exports.home, "data");
 /** Settings that may be determined dynamically. */
 class Options {
     constructor(
@@ -67,13 +67,13 @@ function readFileAndWarn(generatedBy, filePath) {
 exports.readFileAndWarn = readFileAndWarn;
 function writeDataFile(filename, content, formatted = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield fs_extra_1.ensureDir(dataDir);
+        yield fs_extra_1.ensureDir(exports.dataDir);
         yield io_1.writeJson(dataFilePath(filename), content, formatted);
     });
 }
 exports.writeDataFile = writeDataFile;
 function dataFilePath(filename) {
-    return util_1.joinPaths(dataDir, filename);
+    return util_1.joinPaths(exports.dataDir, filename);
 }
 exports.dataFilePath = dataFilePath;
 //# sourceMappingURL=common.js.map

@@ -21,6 +21,7 @@ if (!module.parent) {
 function main(options) {
     return __awaiter(this, void 0, void 0, function* () {
         if (options.downloadDefinitelyTyped) {
+            yield fs_extra_1.ensureDir(common_1.dataDir);
             const zipPath = `${options.definitelyTypedPath}.zip`;
             yield downloadFile(settings_1.definitelyTypedZipUrl, zipPath);
             yield fs_extra_1.remove(options.definitelyTypedPath);
