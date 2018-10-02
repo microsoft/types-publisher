@@ -15,21 +15,19 @@ const packages_1 = require("./lib/packages");
 const search_index_generator_1 = require("./lib/search-index-generator");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    const skipDownloads = yargs.argv.skipDownloads;
     const single = yargs.argv.single;
     if (single) {
-        util_1.done(doSingle(single, skipDownloads, new npm_client_1.UncachedNpmInfoClient()));
+        util_1.done(doSingle(single, new npm_client_1.UncachedNpmInfoClient()));
     }
     else {
         const full = yargs.argv.full;
-        util_1.done(main(skipDownloads, full, new npm_client_1.UncachedNpmInfoClient(), common_1.Options.defaults));
+        util_1.done(() => __awaiter(this, void 0, void 0, function* () { return main(yield packages_1.AllPackages.readTypings(), full, new npm_client_1.UncachedNpmInfoClient(), common_1.Options.defaults); }));
     }
 }
-function main(skipDownloads, full, client, options) {
+function main(packages, full, client, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const packages = yield packages_1.AllPackages.readTypings();
         console.log("Generating search index...");
-        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, skipDownloads, client), {
+        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, client), {
             name: "Indexing...",
             flavor: pkg => pkg.desc,
             options
@@ -45,10 +43,10 @@ function main(skipDownloads, full, client, options) {
     });
 }
 exports.default = main;
-function doSingle(name, skipDownloads, client) {
+function doSingle(name, client) {
     return __awaiter(this, void 0, void 0, function* () {
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const record = yield search_index_generator_1.createSearchRecord(pkg, skipDownloads, client);
+        const record = yield search_index_generator_1.createSearchRecord(pkg, client);
         console.log(verboseRecord(record));
     });
 }

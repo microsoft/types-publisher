@@ -18,15 +18,16 @@ const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const forceUpdate = yargs.argv.forceUpdate;
-    util_1.done(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(dt => main(forceUpdate, dt, new npm_client_1.UncachedNpmInfoClient())));
+    util_1.done(() => __awaiter(this, void 0, void 0, function* () { return main(forceUpdate, yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), new npm_client_1.UncachedNpmInfoClient()); }));
 }
 function main(forceUpdate, dt, uncachedClient) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("=== Calculating versions ===");
-        yield npm_client_1.CachedNpmInfoClient.with(uncachedClient, (client) => __awaiter(this, void 0, void 0, function* () {
-            const { changes, versions } = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(dt), logging_1.consoleLogger.info, forceUpdate, client);
-            yield versions_1.writeChanges(changes);
-            yield versions.save();
+        return npm_client_1.CachedNpmInfoClient.with(uncachedClient, (client) => __awaiter(this, void 0, void 0, function* () {
+            const ver = yield versions_1.default.determineFromNpm(yield packages_1.AllPackages.read(dt), logging_1.consoleLogger.info, forceUpdate, client);
+            yield versions_1.writeChanges(ver.changes);
+            yield ver.versions.save();
+            return ver;
         }));
     });
 }

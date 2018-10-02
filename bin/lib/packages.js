@@ -21,14 +21,15 @@ class AllPackages {
     }
     static read(dt) {
         return __awaiter(this, void 0, void 0, function* () {
-            const map = yield readData();
-            const notNeeded = yield readNotNeededPackages(dt);
-            return new AllPackages(map, notNeeded);
+            return AllPackages.from(yield readTypesDataFile(), yield readNotNeededPackages(dt));
         });
+    }
+    static from(data, notNeeded) {
+        return new AllPackages(util_1.mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw)), notNeeded);
     }
     static readTypings() {
         return __awaiter(this, void 0, void 0, function* () {
-            return Array.from(flattenData(yield readData()));
+            return AllPackages.from(yield readTypesDataFile(), []).allTypings();
         });
     }
     /** Use for `--single` tasks only. Do *not* call this in a loop! */
@@ -137,12 +138,6 @@ function getMangledNameForScopedPackage(packageName) {
     return packageName;
 }
 exports.typesDataFilename = "definitions.json";
-function readData() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const data = yield readTypesDataFile();
-        return util_1.mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw));
-    });
-}
 function* flattenData(data) {
     for (const versions of data.values()) {
         yield* versions.getAll();

@@ -31,13 +31,13 @@ function full(dry, timeStamp, options) {
         const infoClient = new npm_client_1.UncachedNpmInfoClient();
         yield clean_1.default();
         const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
-        yield parse_definitions_1.default(dt, options.parseInParallel
+        const allPackages = yield parse_definitions_1.default(dt, options.parseInParallel
             ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
             : undefined);
-        yield calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
-        yield generate_packages_1.default(dt);
-        yield create_search_index_1.default(/*skipDownloads*/ false, /*full*/ false, infoClient, options);
-        yield publish_packages_1.default(dry, dt);
+        const versions = yield calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
+        yield generate_packages_1.default(dt, allPackages, versions);
+        yield create_search_index_1.default(allPackages.allTypings(), /*full*/ false, infoClient, options);
+        yield publish_packages_1.default(allPackages, versions, dry);
         yield publish_registry_1.default(dt, dry, infoClient);
         yield validate_1.default(dt);
         if (!dry) {

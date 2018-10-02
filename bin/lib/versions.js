@@ -71,7 +71,7 @@ class Versions {
                 addToData(pkg.name, version);
             }
             // Sort keys so that versions.json is easy to read
-            return { changes, versions: new Versions(util_1.sortObjectKeys(data)) };
+            return { versions: new Versions(util_1.sortObjectKeys(data)), changes };
             function defaultVersionInfo(isPrerelease) {
                 return { version: new Semver(-1, -1, -1, isPrerelease), latestNonPrerelease: undefined, contentHash: "", deprecated: false };
             }
@@ -104,9 +104,8 @@ class Versions {
     }
 }
 exports.default = Versions;
-function changedPackages(allPackages) {
+function changedPackages(allPackages, changes) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield readChanges();
         return changes.map(changedPackageName => allPackages.getAnyPackage(changedPackageName));
     });
 }
@@ -242,6 +241,12 @@ function latestPatchMatchingMajorAndMinor(versions, newMajor, newMinor, isPrerel
     });
     return util_1.best(versionsWithTypings, (a, b) => a > b);
 }
+function readVersionsAndChanges() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return { versions: yield Versions.load(), changes: yield readChanges() };
+    });
+}
+exports.readVersionsAndChanges = readVersionsAndChanges;
 /** Read all changed packages. */
 function readChanges() {
     return common_1.readDataFile("calculate-versions", changesFilename);

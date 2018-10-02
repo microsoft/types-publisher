@@ -334,12 +334,12 @@ function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
             }
             else {
                 if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
-                    throw new Error(`Unused file ${lsEntry}`); //msg
+                    throw new Error(`Unused file ${fs.debugPath()}/${lsEntry}`);
                 }
             }
         }
         for (const unusedFile of unusedFiles) {
-            throw new Error(`File ${unusedFile} listed in ${unusedFilesName} does not exist.`); //msg
+            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
         }
     });
 }

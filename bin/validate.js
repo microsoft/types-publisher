@@ -38,7 +38,7 @@ if (!module.parent) {
 }
 function main(dt) {
     return __awaiter(this, void 0, void 0, function* () {
-        const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(dt));
+        const changed = yield versions_1.changedPackages(yield packages_1.AllPackages.read(dt), yield versions_1.readChanges());
         yield doValidate(changed.map(c => c.name));
     });
 }

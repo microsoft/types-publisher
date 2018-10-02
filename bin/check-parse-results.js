@@ -17,7 +17,7 @@ const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(dt => main(true, dt, common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient())));
+    util_1.done(() => __awaiter(this, void 0, void 0, function* () { return main(true, yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient()); }));
 }
 function main(includeNpmChecks, dt, options, client) {
     return __awaiter(this, void 0, void 0, function* () {

@@ -24,33 +24,28 @@ if (!module.parent) {
     if (singleName !== undefined && deprecateName !== undefined) {
         throw new Error("Select only one of --single=foo or --deprecate=foo or --shouldUnpublish");
     }
-    util_1.done(go());
-    function go() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const dt = yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
-            if (deprecateName !== undefined) {
-                // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
-                // Normally this should not be needed.
-                yield package_publisher_1.deprecateNotNeededPackage(yield npm_client_1.NpmPublishClient.create(), yield packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt));
-            }
-            else if (singleName !== undefined) {
-                yield single(singleName, dt, dry);
-            }
-            else {
-                yield main(dry, dt);
-            }
-        });
-    }
+    util_1.done(() => __awaiter(this, void 0, void 0, function* () {
+        const dt = yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
+        if (deprecateName !== undefined) {
+            // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
+            // Normally this should not be needed.
+            yield package_publisher_1.deprecateNotNeededPackage(yield npm_client_1.NpmPublishClient.create(), yield packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt));
+        }
+        else if (singleName !== undefined) {
+            yield single(singleName, dt, dry);
+        }
+        else {
+            yield main(yield packages_1.AllPackages.read(dt), yield versions_1.readVersionsAndChanges(), dry);
+        }
+    }));
 }
-function main(dry, dt) {
+function main(allPackages, { versions, changes }, dry) {
     return __awaiter(this, void 0, void 0, function* () {
         const [log, logResult] = logging_1.logger();
         if (dry) {
             log("=== DRY RUN ===");
         }
-        const allPackages = yield packages_1.AllPackages.read(dt);
-        const versions = yield versions_1.default.load();
-        const packagesShouldPublish = yield versions_1.changedPackages(allPackages);
+        const packagesShouldPublish = yield versions_1.changedPackages(allPackages, changes);
         const client = yield npm_client_1.NpmPublishClient.create();
         for (const pkg of packagesShouldPublish) {
             console.log(`Publishing ${pkg.desc}...`);

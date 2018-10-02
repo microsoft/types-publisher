@@ -106,7 +106,7 @@ function unique(arr) {
 }
 exports.unique = unique;
 function done(promise) {
-    promise.catch(error => {
+    (typeof promise === "function" ? promise() : promise).catch(error => {
         console.error(error);
         process.exit(1);
     });

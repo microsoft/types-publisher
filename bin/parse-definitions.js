@@ -20,18 +20,25 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const singleName = yargs.argv.single;
     const options = common_1.Options.defaults;
-    util_1.done(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => singleName ? single(singleName, dt)
-        : main(dt, options.parseInParallel
-            ? { nProcesses: test_runner_1.parseNProcesses(), definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
-            : undefined)));
+    util_1.done(() => __awaiter(this, void 0, void 0, function* () {
+        const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
+        if (singleName) {
+            yield single(singleName, dt);
+        }
+        else {
+            yield main(dt, options.parseInParallel
+                ? { nProcesses: test_runner_1.parseNProcesses(), definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
+                : undefined);
+        }
+    }));
 }
-function main(fs, parallel) {
+function main(dt, parallel) {
     return __awaiter(this, void 0, void 0, function* () {
         const [summaryLog, summaryLogResult] = logging_1.logger();
         const [detailedLog, detailedLogResult] = logging_1.quietLogger();
         summaryLog("# Typing Publish Report Summary");
         summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const typesFS = fs.subDir("types");
+        const typesFS = dt.subDir("types");
         const packageNames = yield util_1.filterNAtATime(parallel ? parallel.nProcesses : 1, yield typesFS.readdir(), name => typesFS.isDirectory(name));
         summaryLog(`Found ${packageNames.length} typings folders`);
         const typings = {};
@@ -59,6 +66,7 @@ function main(fs, parallel) {
             logging_1.writeLog("parser-log-details.md", detailedLogResult()),
             common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings)),
         ]);
+        return packages_1.AllPackages.from(typings, yield packages_1.readNotNeededPackages(dt));
     });
 }
 exports.default = main;
