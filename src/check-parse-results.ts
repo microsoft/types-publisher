@@ -9,7 +9,7 @@ import { Logger, logger, writeLog } from "./util/logging";
 import { assertDefined, best, done, mapDefined, multiMapAdd, nAtATime } from "./util/util";
 
 if (!module.parent) {
-	done(getDefinitelyTyped(Options.defaults).then(dt => main(true, dt, Options.defaults, new UncachedNpmInfoClient())));
+	done(async () => main(true, await getDefinitelyTyped(Options.defaults), Options.defaults, new UncachedNpmInfoClient()));
 }
 
 export default async function main(includeNpmChecks: boolean, dt: FS, options: Options, client: UncachedNpmInfoClient): Promise<void> {

@@ -109,8 +109,8 @@ export function unique<T>(arr: ReadonlyArray<T>): T[] {
 	return [...new Set(arr)];
 }
 
-export function done(promise: Promise<void>): void {
-	promise.catch(error => {
+export function done(promise: Promise<unknown> | (() => Promise<unknown>)): void {
+	(typeof promise === "function" ? promise() : promise).catch(error => {
 		console.error(error);
 		process.exit(1);
 	});

@@ -23,13 +23,13 @@ export default async function full(dry: boolean, timeStamp: string, options: Opt
 	const infoClient = new UncachedNpmInfoClient();
 	await clean();
 	const dt = await getDefinitelyTyped(options);
-	await parseDefinitions(dt, options.parseInParallel
+	const allPackages = await parseDefinitions(dt, options.parseInParallel
 			? { nProcesses: numberOfOsProcesses, definitelyTypedPath: assertDefined(options.definitelyTypedPath) }
 			: undefined);
-	await calculateVersions(/*forceUpdate*/ false, dt, infoClient);
-	await generatePackages(dt);
-	await createSearchIndex(/*skipDownloads*/ false, /*full*/ false, infoClient, options);
-	await publishPackages(dry, dt);
+	const versions = await calculateVersions(/*forceUpdate*/ false, dt, infoClient);
+	await generatePackages(dt, allPackages, versions);
+	await createSearchIndex(allPackages.allTypings(), /*full*/ false, infoClient, options);
+	await publishPackages(allPackages, versions, dry);
 	await publishRegistry(dt, dry, infoClient);
 	await validate(dt);
 	if (!dry) {

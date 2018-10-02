@@ -5,7 +5,7 @@ import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
 import generateAnyPackage from "./lib/package-generator";
 import { AllPackages, outputDir } from "./lib/packages";
-import Versions, { changedPackages } from "./lib/versions";
+import Versions, { changedPackages, readVersionsAndChanges, VersionsAndChanges } from "./lib/versions";
 import { logger, moveLogs, writeLog } from "./util/logging";
 import { writeTgz } from "./util/tgz";
 import { done, nAtATime } from "./util/util";
@@ -17,20 +17,25 @@ if (!module.parent) {
 	if (all && singleName) {
 		throw new Error("Select only one of -single=foo or --all.");
 	}
-	done(getDefinitelyTyped(Options.defaults).then(dt => {
-		(singleName ? single(singleName, dt) : main(dt, all, tgz));
-	}));
+	done(async () => {
+		const dt = await getDefinitelyTyped(Options.defaults);
+		await (singleName ? single(singleName, dt) : main(dt, await AllPackages.read(dt), await readVersionsAndChanges(), all, tgz));
+	});
 }
 
-export default async function main(dt: FS, all = false, tgz = false): Promise<void> {
+export default async function main(
+	dt: FS,
+	allPackages: AllPackages,
+	{ versions, changes }: VersionsAndChanges,
+	all = false,
+	tgz = false,
+): Promise<void> {
 	const [log, logResult] = logger();
 	log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
-	const allPackages = await AllPackages.read(dt);
-	const versions = await Versions.load();
 
 	await emptyDir(outputDir);
 
-	const packages = all ? allPackages.allPackages() : await changedPackages(allPackages);
+	const packages = all ? allPackages.allPackages() : await changedPackages(allPackages, changes);
 
 	await nAtATime(10, packages, async pkg => {
 		const logs = await generateAnyPackage(pkg, allPackages, versions, dt);

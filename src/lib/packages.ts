@@ -10,13 +10,15 @@ import { Semver } from "./versions";
 
 export class AllPackages {
 	static async read(dt: FS): Promise<AllPackages> {
-		const map = await readData();
-		const notNeeded = await readNotNeededPackages(dt);
-		return new AllPackages(map, notNeeded);
+		return AllPackages.from(await readTypesDataFile(), await readNotNeededPackages(dt));
 	}
 
-	static async readTypings(): Promise<TypingsData[]> {
-		return Array.from(flattenData(await readData()));
+	static from(data: TypesDataFile, notNeeded: ReadonlyArray<NotNeededPackage>): AllPackages {
+		return new AllPackages(mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw)), notNeeded);
+	}
+
+	static async readTypings(): Promise<ReadonlyArray<TypingsData>> {
+		return AllPackages.from(await readTypesDataFile(), []).allTypings();
 	}
 
 	/** Use for `--single` tasks only. Do *not* call this in a loop! */
@@ -141,11 +143,6 @@ function getMangledNameForScopedPackage(packageName: string): string {
 }
 
 export const typesDataFilename = "definitions.json";
-
-async function readData(): Promise<Map<string, TypingsVersions>> {
-	const data = await readTypesDataFile();
-	return mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw));
-}
 
 function* flattenData(data: ReadonlyMap<string, TypingsVersions>): Iterable<TypingsData> {
 	for (const versions of data.values()) {

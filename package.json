@@ -29,7 +29,7 @@
     "@types/charm": "^1.0.0",
     "@types/fs-extra": "4.0.0",
     "@types/mz": "^0.0.31",
-    "@types/node": "^8.0.15",
+    "@types/node": "^10.11.3",
     "@types/oboe": "^2.0.28",
     "@types/source-map-support": "^0.4.0",
     "@types/tar": "^1.0.27",

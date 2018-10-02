@@ -4,7 +4,7 @@ import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options, writeDataFile } from "./lib/common";
 import { getTypingInfo } from "./lib/definition-parser";
 import { definitionParserWorkerFilename, TypingInfoWithPackageName } from "./lib/definition-parser-worker";
-import { typesDataFilename, TypingsVersionsRaw } from "./lib/packages";
+import { AllPackages, readNotNeededPackages, typesDataFilename, TypingsVersionsRaw } from "./lib/packages";
 import { parseNProcesses } from "./tester/test-runner";
 import { logger, moveLogs, quietLogger, writeLog } from "./util/logging";
 import { assertDefined, done, filterNAtATime, runWithChildProcesses } from "./util/util";
@@ -12,21 +12,26 @@ import { assertDefined, done, filterNAtATime, runWithChildProcesses } from "./ut
 if (!module.parent) {
 	const singleName = yargs.argv.single;
 	const options = Options.defaults;
-	done(getDefinitelyTyped(options).then(dt =>
-		singleName ? single(singleName, dt)
-		: main(dt, options.parseInParallel
-			? { nProcesses: parseNProcesses(), definitelyTypedPath: assertDefined(options.definitelyTypedPath) }
-			: undefined)));
+	done(async () => {
+		const dt = await getDefinitelyTyped(options);
+		if (singleName)  {
+			await single(singleName, dt);
+		} else {
+			await main(dt, options.parseInParallel
+				? { nProcesses: parseNProcesses(), definitelyTypedPath: assertDefined(options.definitelyTypedPath) }
+				: undefined);
+		}
+	});
 }
 
-export default async function main(fs: FS, parallel?: { readonly nProcesses: number; readonly definitelyTypedPath: string }): Promise<void> {
+export default async function main(dt: FS, parallel?: { readonly nProcesses: number; readonly definitelyTypedPath: string }): Promise<AllPackages> {
 	const [summaryLog, summaryLogResult] = logger();
 	const [detailedLog, detailedLogResult] = quietLogger();
 
 	summaryLog("# Typing Publish Report Summary");
 	summaryLog(`Started at ${(new Date()).toUTCString()}`);
 
-	const typesFS = fs.subDir("types");
+	const typesFS = dt.subDir("types");
 	const packageNames = await filterNAtATime(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
 
 	summaryLog(`Found ${packageNames.length} typings folders`);
@@ -58,6 +63,8 @@ export default async function main(fs: FS, parallel?: { readonly nProcesses: num
 		writeLog("parser-log-details.md", detailedLogResult()),
 		writeDataFile(typesDataFilename, sorted(typings)),
 	]);
+
+	return AllPackages.from(typings, await readNotNeededPackages(dt));
 }
 
 function sorted<T>(obj: { [name: string]: T }): { [name: string]: T } {
