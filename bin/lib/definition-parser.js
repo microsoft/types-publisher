@@ -211,11 +211,10 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorV
                 throw new Error(`In ${packageName}: Path mapping for ${dependencyName} may only have 1 entry.`);
             }
             const pathMapping = pathMappingList[0];
-            // Path mapping may be for "@foo/bar" -> "foo__bar". Based on `getPackageNameFromAtTypesDirectory` in TypeScript.
-            const mangledScopedPackageSeparator = "__";
-            if (pathMapping.indexOf(mangledScopedPackageSeparator) !== -1) {
-                const expected = `@${pathMapping.replace(mangledScopedPackageSeparator, "/")}`;
-                if (dependencyName !== expected) {
+            // Path mapping may be for "@foo/bar" -> "foo__bar".
+            const scopedPackageName = util_1.unmangleScopedPackage(pathMapping);
+            if (scopedPackageName !== undefined) {
+                if (dependencyName !== scopedPackageName) {
                     throw new Error(`Expected directory ${pathMapping} to be the path mapping for ${dependencyName}`);
                 }
                 continue;

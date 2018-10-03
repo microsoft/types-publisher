@@ -9,10 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
+const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
-const search_index_generator_1 = require("./lib/search-index-generator");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const single = yargs.argv.single;
@@ -20,52 +20,38 @@ if (!module.parent) {
         util_1.done(doSingle(single, new npm_client_1.UncachedNpmInfoClient()));
     }
     else {
-        const full = yargs.argv.full;
-        util_1.done(() => __awaiter(this, void 0, void 0, function* () { return main(yield packages_1.AllPackages.readTypings(), full, new npm_client_1.UncachedNpmInfoClient(), common_1.Options.defaults); }));
+        util_1.done(() => __awaiter(this, void 0, void 0, function* () { return main(yield packages_1.AllPackages.read(yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults)), new npm_client_1.UncachedNpmInfoClient()); }));
     }
 }
-function main(packages, full, client, options) {
+function main(packages, client) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Generating search index...");
-        const records = yield util_1.nAtATime(25, packages, pkg => search_index_generator_1.createSearchRecord(pkg, client), {
-            name: "Indexing...",
-            flavor: pkg => pkg.desc,
-            options
-        });
-        // Most downloads first
-        records.sort((a, b) => b.d - a.d);
-        console.log("Done generating search index");
-        console.log("Writing out data files");
+        const records = yield createSearchRecords(packages.allLatestTypings(), client);
+        console.log("Done generating search index. Writing out data files...");
         yield common_1.writeDataFile("search-index-min.json", records, false);
-        if (full) {
-            yield common_1.writeDataFile("search-index-full.json", records.map(verboseRecord), true);
-        }
     });
 }
 exports.default = main;
 function doSingle(name, client) {
     return __awaiter(this, void 0, void 0, function* () {
         const pkg = yield packages_1.AllPackages.readSingle(name);
-        const record = yield search_index_generator_1.createSearchRecord(pkg, client);
-        console.log(verboseRecord(record));
+        const record = (yield createSearchRecords([pkg], client))[0];
+        console.log(record);
     });
 }
-function verboseRecord(r) {
-    return renameProperties(r, {
-        t: "typePackageName",
-        g: "globals",
-        m: "declaredExternalModules",
-        p: "projectName",
-        l: "libraryName",
-        d: "downloads",
-        r: "redirect"
+function createSearchRecords(packages, client) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // TODO: Would like to just use pkg.unescapedName unconditionally, but npm doesn't allow scoped packages.
+        const dl = yield client.getDownloads(packages.map((pkg, i) => pkg.name === pkg.unescapedName ? pkg.name : `dummy${i}`));
+        return packages.map((pkg, i) => ({
+            p: pkg.projectName,
+            l: pkg.libraryName,
+            g: pkg.globals,
+            t: pkg.name,
+            m: pkg.declaredModules,
+            d: dl[i],
+            r: pkg.isNotNeeded() ? pkg.sourceRepoURL : undefined
+        })).sort((a, b) => b.d - a.d);
     });
-}
-function renameProperties(obj, replacers) {
-    const out = {};
-    for (const key of Object.getOwnPropertyNames(obj)) {
-        out[replacers[key]] = obj[key];
-    }
-    return out;
 }
 //# sourceMappingURL=create-search-index.js.map

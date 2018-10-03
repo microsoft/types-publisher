@@ -103,6 +103,9 @@ class AllPackages {
     allTypings() {
         return Array.from(flattenData(this.data));
     }
+    allLatestTypings() {
+        return Array.from(this.data.values()).map(versions => versions.getLatest());
+    }
     allNotNeeded() {
         return this.notNeeded;
     }
@@ -146,6 +149,9 @@ function* flattenData(data) {
 /** Prefer to use `AnyPackage` instead of this. */
 class PackageBase {
     static compare(a, b) { return a.name.localeCompare(b.name); }
+    get unescapedName() {
+        return util_1.unmangleScopedPackage(this.name) || this.name;
+    }
     /** Short description for debug output. */
     get desc() {
         return this.isLatest ? this.name : `${this.name} v${this.major}`;

@@ -36,7 +36,7 @@ function full(dry, timeStamp, options) {
             : undefined);
         const versions = yield calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
         yield generate_packages_1.default(dt, allPackages, versions);
-        yield create_search_index_1.default(allPackages.allTypings(), /*full*/ false, infoClient, options);
+        yield create_search_index_1.default(allPackages, infoClient);
         yield publish_packages_1.default(allPackages, versions, dry);
         yield publish_registry_1.default(dt, dry, infoClient);
         yield validate_1.default(dt);

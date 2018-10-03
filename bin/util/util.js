@@ -398,4 +398,10 @@ function withoutStart(s, start) {
     return s.startsWith(start) ? s.slice(start.length) : undefined;
 }
 exports.withoutStart = withoutStart;
+// Based on `getPackageNameFromAtTypesDirectory` in TypeScript.
+function unmangleScopedPackage(packageName) {
+    const separator = "__";
+    return packageName.includes(separator) ? `@${packageName.replace(separator, "/")}` : undefined;
+}
+exports.unmangleScopedPackage = unmangleScopedPackage;
 //# sourceMappingURL=util.js.map

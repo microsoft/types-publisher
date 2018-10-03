@@ -203,7 +203,7 @@ function* imports({ statements }) {
             }
             case ts.SyntaxKind.ModuleDeclaration: {
                 const { name, body } = node;
-                if (name.kind === ts.SyntaxKind.StringLiteral) {
+                if (name.kind === ts.SyntaxKind.StringLiteral && body) {
                     yield* imports(body);
                 }
             }

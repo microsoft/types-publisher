@@ -136,9 +136,9 @@ function checkSignature(key, data, headers, log) {
 // Use a constant-time compare to prevent timing attacks
 function stringEqualsConstantTime(actual, expected) {
     // `timingSafeEqual` throws if they don't have the same length.
-    const actualBuffer = new Buffer(expected.length);
+    const actualBuffer = Buffer.alloc(expected.length);
     actualBuffer.write(actual);
-    return crypto_1.timingSafeEqual(actualBuffer, new Buffer(expected));
+    return crypto_1.timingSafeEqual(actualBuffer, Buffer.from(expected));
 }
 function expectedSignature(key, data) {
     const hmac = crypto_1.createHmac("sha1", key);

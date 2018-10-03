@@ -141,7 +141,7 @@ function assertDirectoriesEqual(expected, actual, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const expectedLs = yield fs_extra_1.readdir(expected);
         const actualLs = yield fs_extra_1.readdir(actual);
-        assert.deepEqual(expectedLs, actualLs);
+        assert.deepStrictEqual(expectedLs, actualLs);
         for (const name of expectedLs) {
             if (options.ignore(name)) {
                 continue;
@@ -150,12 +150,12 @@ function assertDirectoriesEqual(expected, actual, options) {
             const actualFile = path_1.join(actual, name);
             const expectedStat = yield fs_extra_1.stat(expectedFile);
             const actualStat = yield fs_extra_1.stat(actualFile);
-            assert.equal(expectedStat.isDirectory(), actualStat.isDirectory());
+            assert.strictEqual(expectedStat.isDirectory(), actualStat.isDirectory());
             if (expectedStat.isDirectory()) {
                 yield assertDirectoriesEqual(expectedFile, actualFile, options);
             }
             else {
-                assert.equal(yield readFile(actualFile), yield readFile(expectedFile));
+                assert.strictEqual(yield readFile(actualFile), yield readFile(expectedFile));
             }
         }
     });

@@ -176,7 +176,9 @@ class DiskFS {
         }
     }
     readdir(dirPath) {
-        return fs_extra_1.readdir(this.getPath(dirPath));
+        return __awaiter(this, void 0, void 0, function* () {
+            return (yield fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
+        });
     }
     isDirectory(dirPath) {
         return __awaiter(this, void 0, void 0, function* () {

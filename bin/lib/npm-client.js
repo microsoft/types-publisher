@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");
 const url = require("url");
@@ -86,19 +87,38 @@ class UncachedNpmInfoClient {
         });
     }
     // See https://github.com/npm/download-counts
-    getDownloads(packageName) {
+    getDownloads(packageNames) {
         return __awaiter(this, void 0, void 0, function* () {
-            const json = yield this.fetcher.fetchJson({
-                hostname: settings_1.npmApi,
-                path: `/downloads/point/last-month/${packageName}`,
-                retries: true,
-            });
-            // Json may contain "error" instead of "downloads", because some packages aren't available on NPM.
-            return json.downloads || 0;
+            // NPM uses a different API if there's only a single name, so ensure there's at least 2.
+            const names = packageNames.length === 1 ? [...packageNames, "dummy"] : packageNames;
+            const nameGroups = Array.from(splitToFixedSizeGroups(names, 128)); // NPM has a limit of 128 packages at a time.
+            const out = [];
+            for (const nameGroup of nameGroups) {
+                const data = yield this.fetcher.fetchJson({
+                    hostname: settings_1.npmApi,
+                    path: `/downloads/point/last-month/${nameGroup.join(",")}`,
+                    retries: true,
+                });
+                if ("error" in data) {
+                    throw new Error(data.error);
+                }
+                for (const key in data) {
+                    assert(key === names[out.length]);
+                    out.push(data[key] ? data[key].downloads : 0);
+                }
+            }
+            return out;
         });
     }
 }
 exports.UncachedNpmInfoClient = UncachedNpmInfoClient;
+function splitToFixedSizeGroups(names, chunkSize) {
+    const out = [];
+    for (let i = 0; i < names.length; i += chunkSize) {
+        out.push(names.slice(i, i + chunkSize));
+    }
+    return out;
+}
 class NpmPublishClient {
     constructor(client, auth) {
         this.client = client;
