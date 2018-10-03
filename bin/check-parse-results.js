@@ -139,7 +139,7 @@ function checkNpm({ major, minor, name, libraryName, projectName, contributors }
 function packageHasTypes(packageName, client) {
     return __awaiter(this, void 0, void 0, function* () {
         const info = util_1.assertDefined(yield client.fetchRawNpmInfo(packageName));
-        return hasTypes(info.versions[info.version]);
+        return hasTypes(info.versions[info["dist-tags"].latest]);
     });
 }
 exports.packageHasTypes = packageHasTypes;

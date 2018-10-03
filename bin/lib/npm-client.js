@@ -39,7 +39,8 @@ class CachedNpmInfoClient {
     getNpmInfo(escapedPackageName, contentHash) {
         return __awaiter(this, void 0, void 0, function* () {
             const cached = this.cache.get(escapedPackageName);
-            if (cached !== undefined && contentHash !== undefined && util_1.some(cached.versions.values(), v => v.typesPublisherContentHash === contentHash)) {
+            if (cached !== undefined && contentHash !== undefined &&
+                cached.versions.get(cached.distTags.get("latest")).typesPublisherContentHash === contentHash) {
                 return cached;
             }
             const info = yield this.uncachedClient.fetchNpmInfo(escapedPackageName);
@@ -115,35 +116,14 @@ class NpmPublishClient {
             return new Promise((resolve, reject) => {
                 const body = tgz_1.createTgz(publishedDirectory, reject);
                 const metadata = Object.assign({ readme }, packageJson);
-                const params = {
-                    access: "public",
-                    auth: this.auth,
-                    metadata,
-                    body,
-                };
-                if (dry) {
-                    resolve();
-                }
-                else {
-                    this.client.publish(settings_1.npmRegistry, params, err => {
-                        if (err) {
-                            reject(err);
-                        }
-                        else {
-                            resolve();
-                        }
-                    });
-                }
+                resolve(dry ? undefined : promisifyVoid(cb => {
+                    this.client.publish(settings_1.npmRegistry, { access: "public", auth: this.auth, metadata, body }, cb);
+                }));
             });
         });
     }
     tag(packageName, version, tag) {
-        const params = {
-            version,
-            tag,
-            auth: this.auth
-        };
-        return promisifyVoid(cb => { this.client.tag(packageUrl(packageName), params, cb); });
+        return promisifyVoid(cb => { this.client.tag(packageUrl(packageName), { version, tag, auth: this.auth }, cb); });
     }
     deprecate(packageName, version, message) {
         const url = packageUrl(packageName.replace("/", "%2f"));
@@ -158,7 +138,6 @@ class NpmPublishClient {
 exports.NpmPublishClient = NpmPublishClient;
 function npmInfoFromJson(n) {
     return {
-        version: n.version,
         distTags: util_1.recordToMap(n["dist-tags"], util_1.identity),
         // Callback ensures we remove any other properties
         versions: util_1.recordToMap(n.versions, ({ typesPublisherContentHash, deprecated }) => ({ typesPublisherContentHash, deprecated })),
@@ -167,7 +146,6 @@ function npmInfoFromJson(n) {
 }
 function jsonFromNpmInfo(n) {
     return {
-        version: n.version,
         "dist-tags": util_1.mapToRecord(n.distTags),
         versions: util_1.mapToRecord(n.versions),
         time: { modified: n.timeModified },

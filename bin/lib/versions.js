@@ -161,7 +161,17 @@ exports.Semver = Semver;
 /** Returns undefined if the package does not exist. */
 function fetchTypesPackageVersionInfo(pkg, client, isPrerelease, newMajorAndMinor) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fetchVersionInfoFromNpm(pkg.fullEscapedNpmName, pkg.isNotNeeded() ? undefined : pkg.contentHash, client, isPrerelease, newMajorAndMinor);
+        const info = yield client.getNpmInfo(pkg.fullEscapedNpmName, pkg.isNotNeeded() ? undefined : pkg.contentHash);
+        if (info === undefined) {
+            return undefined;
+        }
+        const { versions } = info;
+        const latestNonPrerelease = !isPrerelease ? undefined : getLatestVersion(versions.keys());
+        const version = getVersionSemver(info, isPrerelease, newMajorAndMinor);
+        const latestVersionInfo = util_1.assertDefined(versions.get(version.versionString));
+        const contentHash = latestVersionInfo.typesPublisherContentHash || "";
+        const deprecated = !!latestVersionInfo.deprecated;
+        return { version, latestNonPrerelease, contentHash, deprecated };
     });
 }
 /** For use by publish-registry only. */
@@ -177,21 +187,6 @@ function fetchAndProcessNpmInfo(escapedPackageName, client) {
     });
 }
 exports.fetchAndProcessNpmInfo = fetchAndProcessNpmInfo;
-function fetchVersionInfoFromNpm(escapedPackageName, parsedContentHash, client, isPrerelease, newMajorAndMinor) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const info = yield client.getNpmInfo(escapedPackageName, parsedContentHash);
-        if (info === undefined) {
-            return undefined;
-        }
-        const { versions } = info;
-        const latestNonPrerelease = !isPrerelease ? undefined : getLatestVersion(versions.keys());
-        const version = getVersionSemver(info, isPrerelease, newMajorAndMinor);
-        const latestVersionInfo = util_1.assertDefined(versions.get(version.versionString));
-        const contentHash = latestVersionInfo.typesPublisherContentHash || "";
-        const deprecated = !!latestVersionInfo.deprecated;
-        return { version, latestNonPrerelease, contentHash, deprecated };
-    });
-}
 function getLatestVersion(versions) {
     return util_1.best(util_1.map(versions, parseAnySemver), (a, b) => {
         if (a.isPrerelease && !b.isPrerelease) {
