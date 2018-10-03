@@ -13,9 +13,16 @@ const fs_extra_1 = require("fs-extra");
 const https_1 = require("https");
 const path_1 = require("path");
 const stream = require("stream");
+const string_decoder_1 = require("string_decoder");
 const util_1 = require("./util");
 function readFile(path) {
-    return fs_extra_1.readFile(path, { encoding: "utf8" });
+    return __awaiter(this, void 0, void 0, function* () {
+        const res = yield fs_extra_1.readFile(path, { encoding: "utf8" });
+        if (res.includes("�")) {
+            throw new Error(`Bad character in ${path}`);
+        }
+        return res;
+    });
 }
 exports.readFile = readFile;
 function readJson(path) {
@@ -39,14 +46,21 @@ function streamOfString(text) {
     return s;
 }
 exports.streamOfString = streamOfString;
-function stringOfStream(stream) {
+function stringOfStream(stream, description) {
+    const decoder = new string_decoder_1.StringDecoder("utf8");
     let body = "";
     stream.on("data", (data) => {
-        body += data.toString();
+        body += decoder.write(data);
     });
     return new Promise((resolve, reject) => {
         stream.on("error", reject);
-        stream.on("end", () => { resolve(body); });
+        stream.on("end", () => {
+            body += decoder.end();
+            if (body.includes("�")) {
+                throw new Error(`Bad character decode in ${description}`);
+            }
+            resolve(body);
+        });
     });
 }
 exports.stringOfStream = stringOfStream;

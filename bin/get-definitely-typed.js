@@ -62,7 +62,7 @@ function downloadAndExtractFile(url) {
                 const name = util_1.assertDefined(util_1.withoutStart(header.name, "DefinitelyTyped-master/"));
                 switch (header.type) {
                     case "file":
-                        io_1.stringOfStream(stream).then(s => {
+                        io_1.stringOfStream(stream, name).then(s => {
                             insertFile(name, s);
                             next();
                         }).catch(reject);
