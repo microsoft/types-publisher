@@ -34,7 +34,7 @@ export function streamOfString(text: string): NodeJS.ReadableStream {
 	return s;
 }
 
-export function stringOfStream(stream: NodeJS.ReadableStream, description?: string): Promise<string> {
+export function stringOfStream(stream: NodeJS.ReadableStream, description: string): Promise<string> {
 	const decoder = new StringDecoder("utf8");
 	let body = "";
 	stream.on("data", (data: Buffer) => {

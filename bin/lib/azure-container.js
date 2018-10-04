@@ -95,7 +95,7 @@ function readBlob(blobName) {
                             reject(new Error(`${url} is not gzipped`));
                         }
                         else {
-                            resolve(io_1.stringOfStream(tgz_1.unGzip(res)));
+                            resolve(io_1.stringOfStream(tgz_1.unGzip(res), blobName));
                         }
                         break;
                     default:

@@ -67,7 +67,7 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
         }
         function work() {
             return __awaiter(this, void 0, void 0, function* () {
-                const data = yield io_1.stringOfStream(req);
+                const data = yield io_1.stringOfStream(req, "Request to webhook");
                 if (!checkSignature(key, data, req.headers, log)) {
                     return;
                 }
