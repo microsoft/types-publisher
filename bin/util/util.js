@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const child_process_1 = require("child_process");
@@ -39,30 +31,28 @@ function currentTimeStamp() {
 }
 exports.currentTimeStamp = currentTimeStamp;
 exports.numberOfOsProcesses = process.env.TRAVIS === "true" ? 2 : os.cpus().length;
-function nAtATime(n, inputs, use, progressOptions) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const progress = progressOptions && progressOptions.options.progress ? new progress_1.default({ name: progressOptions.name }) : undefined;
-        const results = new Array(inputs.length);
-        // We have n "threads" which each run `continuouslyWork`.
-        // They all share `nextIndex`, so each work item is done only once.
-        let nextIndex = 0;
-        yield Promise.all(initArray(n, () => __awaiter(this, void 0, void 0, function* () {
-            while (nextIndex !== inputs.length) {
-                const index = nextIndex;
-                nextIndex++;
-                const input = inputs[index];
-                const output = yield use(input);
-                results[index] = output;
-                if (progress) {
-                    progress.update(index / inputs.length, progressOptions.flavor(input, output));
-                }
+async function nAtATime(n, inputs, use, progressOptions) {
+    const progress = progressOptions && progressOptions.options.progress ? new progress_1.default({ name: progressOptions.name }) : undefined;
+    const results = new Array(inputs.length);
+    // We have n "threads" which each run `continuouslyWork`.
+    // They all share `nextIndex`, so each work item is done only once.
+    let nextIndex = 0;
+    await Promise.all(initArray(n, async () => {
+        while (nextIndex !== inputs.length) {
+            const index = nextIndex;
+            nextIndex++;
+            const input = inputs[index];
+            const output = await use(input);
+            results[index] = output;
+            if (progress) {
+                progress.update(index / inputs.length, progressOptions.flavor(input, output));
             }
-        })));
-        if (progress) {
-            progress.done();
         }
-        return results;
-    });
+    }));
+    if (progress) {
+        progress.done();
+    }
+    return results;
 }
 exports.nAtATime = nAtATime;
 function filter(iterable, predicate) {
@@ -80,21 +70,17 @@ function filter(iterable, predicate) {
     };
 }
 exports.filter = filter;
-function filterNAtATime(n, inputs, shouldKeep, progress) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const shouldKeeps = yield nAtATime(n, inputs, shouldKeep, progress);
-        return inputs.filter((_, idx) => shouldKeeps[idx]);
-    });
+async function filterNAtATime(n, inputs, shouldKeep, progress) {
+    const shouldKeeps = await nAtATime(n, inputs, shouldKeep, progress);
+    return inputs.filter((_, idx) => shouldKeeps[idx]);
 }
 exports.filterNAtATime = filterNAtATime;
-function mapAsyncOrdered(arr, mapper) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const out = new Array(arr.length);
-        yield Promise.all(arr.map((em, idx) => __awaiter(this, void 0, void 0, function* () {
-            out[idx] = yield mapper(em);
-        })));
-        return out;
-    });
+async function mapAsyncOrdered(arr, mapper) {
+    const out = new Array(arr.length);
+    await Promise.all(arr.map(async (em, idx) => {
+        out[idx] = await mapper(em);
+    }));
+    return out;
 }
 exports.mapAsyncOrdered = mapAsyncOrdered;
 function indent(str) {
@@ -166,14 +152,12 @@ function exec(cmd, cwd) {
 }
 exports.exec = exec;
 /** Run a command and return the stdout, or if there was an error, throw. */
-function execAndThrowErrors(cmd, cwd) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { error, stdout, stderr } = yield exec(cmd, cwd);
-        if (error) {
-            throw new Error(`${error.stack}\n${stderr}`);
-        }
-        return stdout + stderr;
-    });
+async function execAndThrowErrors(cmd, cwd) {
+    const { error, stdout, stderr } = await exec(cmd, cwd);
+    if (error) {
+        throw new Error(`${error.stack}\n${stderr}`);
+    }
+    return stdout + stderr;
 }
 exports.execAndThrowErrors = execAndThrowErrors;
 function errorDetails(error) {
@@ -404,4 +388,20 @@ function unmangleScopedPackage(packageName) {
     return packageName.includes(separator) ? `@${packageName.replace(separator, "/")}` : undefined;
 }
 exports.unmangleScopedPackage = unmangleScopedPackage;
+/** Returns [values that cb returned undefined for, defined results of cb]. */
+function split(inputs, cb) {
+    const keep = [];
+    const splitOut = [];
+    for (const input of inputs) {
+        const res = cb(input);
+        if (res === undefined) {
+            keep.push(input);
+        }
+        else {
+            splitOut.push(res);
+        }
+    }
+    return [keep, splitOut];
+}
+exports.split = split;
 //# sourceMappingURL=util.js.map

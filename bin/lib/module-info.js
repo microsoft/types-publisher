@@ -1,84 +1,74 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const path = require("path");
 const ts = require("typescript");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
-function getModuleInfo(packageName, allEntryFilenames, fs) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const all = yield allReferencedFiles(allEntryFilenames, fs);
-        const dependencies = new Set();
-        const declaredModules = [];
-        const globals = new Set();
-        function addDependency(dependency) {
-            if (dependency !== packageName) {
-                dependencies.add(dependency);
-            }
-            // TODO: else throw new Error(`Package ${packageName} references itself. (via ${src.fileName})`);
+async function getModuleInfo(packageName, allEntryFilenames, fs) {
+    const all = await allReferencedFiles(allEntryFilenames, fs);
+    const dependencies = new Set();
+    const declaredModules = [];
+    const globals = new Set();
+    function addDependency(dependency) {
+        if (dependency !== packageName) {
+            dependencies.add(dependency);
         }
-        for (const sourceFile of all.values()) {
-            for (const ref of imports(sourceFile)) {
-                if (!ref.startsWith(".")) {
-                    addDependency(rootName(ref));
+        // TODO: else throw new Error(`Package ${packageName} references itself. (via ${src.fileName})`);
+    }
+    for (const sourceFile of all.values()) {
+        for (const ref of imports(sourceFile)) {
+            if (!ref.startsWith(".")) {
+                addDependency(rootName(ref));
+            }
+        }
+        for (const ref of sourceFile.typeReferenceDirectives) {
+            addDependency(ref.fileName);
+        }
+        if (ts.isExternalModule(sourceFile)) {
+            if (sourceFileExportsSomething(sourceFile)) {
+                declaredModules.push(properModuleName(packageName, sourceFile.fileName));
+                const namespaceExport = sourceFile.statements.find(ts.isNamespaceExportDeclaration);
+                if (namespaceExport) {
+                    globals.add(namespaceExport.name.text);
                 }
             }
-            for (const ref of sourceFile.typeReferenceDirectives) {
-                addDependency(ref.fileName);
-            }
-            if (ts.isExternalModule(sourceFile)) {
-                if (sourceFileExportsSomething(sourceFile)) {
-                    declaredModules.push(properModuleName(packageName, sourceFile.fileName));
-                    const namespaceExport = sourceFile.statements.find(ts.isNamespaceExportDeclaration);
-                    if (namespaceExport) {
-                        globals.add(namespaceExport.name.text);
-                    }
-                }
-            }
-            else {
-                for (const node of sourceFile.statements) {
-                    switch (node.kind) {
-                        case ts.SyntaxKind.ModuleDeclaration: {
-                            const decl = node;
-                            const name = decl.name.text;
-                            if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
-                                declaredModules.push(assertNoWindowsSlashes(packageName, name));
-                            }
-                            else if (isValueNamespace(decl)) {
-                                globals.add(name);
-                            }
-                            break;
+        }
+        else {
+            for (const node of sourceFile.statements) {
+                switch (node.kind) {
+                    case ts.SyntaxKind.ModuleDeclaration: {
+                        const decl = node;
+                        const name = decl.name.text;
+                        if (decl.name.kind === ts.SyntaxKind.StringLiteral) {
+                            declaredModules.push(assertNoWindowsSlashes(packageName, name));
                         }
-                        case ts.SyntaxKind.VariableStatement:
-                            for (const decl of node.declarationList.declarations) {
-                                if (decl.name.kind === ts.SyntaxKind.Identifier) {
-                                    globals.add(decl.name.text);
-                                }
+                        else if (isValueNamespace(decl)) {
+                            globals.add(name);
+                        }
+                        break;
+                    }
+                    case ts.SyntaxKind.VariableStatement:
+                        for (const decl of node.declarationList.declarations) {
+                            if (decl.name.kind === ts.SyntaxKind.Identifier) {
+                                globals.add(decl.name.text);
                             }
-                            break;
-                        case ts.SyntaxKind.EnumDeclaration:
-                        case ts.SyntaxKind.ClassDeclaration:
-                        case ts.SyntaxKind.FunctionDeclaration: {
-                            // Deliberately not doing this for types, because those won't show up in JS code and can't be used for ATA
-                            const nameNode = node.name;
-                            if (nameNode) {
-                                globals.add(nameNode.text);
-                            }
+                        }
+                        break;
+                    case ts.SyntaxKind.EnumDeclaration:
+                    case ts.SyntaxKind.ClassDeclaration:
+                    case ts.SyntaxKind.FunctionDeclaration: {
+                        // Deliberately not doing this for types, because those won't show up in JS code and can't be used for ATA
+                        const nameNode = node.name;
+                        if (nameNode) {
+                            globals.add(nameNode.text);
                         }
                     }
                 }
             }
         }
-        return { declFiles: util_1.sort(all.keys()), dependencies, declaredModules, globals: util_1.sort(globals) };
-    });
+    }
+    return { declFiles: util_1.sort(all.keys()), dependencies, declaredModules, globals: util_1.sort(globals) };
 }
 exports.default = getModuleInfo;
 /**
@@ -121,38 +111,32 @@ function withoutExtension(str, ext) {
     return str.slice(0, str.length - ext.length);
 }
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-function allReferencedFiles(entryFilenames, fs) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const seenReferences = new Set();
-        const all = new Map();
-        function recur({ text, exact }) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (seenReferences.has(text)) {
-                    return;
-                }
-                seenReferences.add(text);
-                const resolvedFilename = exact ? text : yield resolveModule(text, fs);
-                const src = createSourceFile(resolvedFilename, yield definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
-                all.set(resolvedFilename, src);
-                const refs = referencedFiles(src, path.dirname(resolvedFilename));
-                yield Promise.all(Array.from(refs).map(recur));
-            });
+async function allReferencedFiles(entryFilenames, fs) {
+    const seenReferences = new Set();
+    const all = new Map();
+    async function recur({ text, exact }) {
+        if (seenReferences.has(text)) {
+            return;
         }
-        yield Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
-        return all;
-    });
+        seenReferences.add(text);
+        const resolvedFilename = exact ? text : await resolveModule(text, fs);
+        const src = createSourceFile(resolvedFilename, await definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
+        all.set(resolvedFilename, src);
+        const refs = referencedFiles(src, path.dirname(resolvedFilename));
+        await Promise.all(Array.from(refs).map(recur));
+    }
+    await Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
+    return all;
 }
-function resolveModule(importSpecifier, fs) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const dts = `${importSpecifier}.d.ts`;
-        if (![".", "..", "./", "../"].includes(importSpecifier) && (yield fs.exists(dts))) {
-            return dts;
-        }
-        else {
-            const index = util_1.joinPaths(importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier, "index.d.ts");
-            return index === "./index.d.ts" ? "index.d.ts" : index;
-        }
-    });
+async function resolveModule(importSpecifier, fs) {
+    const dts = `${importSpecifier}.d.ts`;
+    if (![".", "..", "./", "../"].includes(importSpecifier) && await fs.exists(dts)) {
+        return dts;
+    }
+    else {
+        const index = util_1.joinPaths(importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier, "index.d.ts");
+        return index === "./index.d.ts" ? "index.d.ts" : index;
+    }
 }
 /**
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
@@ -248,34 +232,32 @@ function assertNoWindowsSlashes(packageName, fileName) {
     }
     return fileName;
 }
-function getTestDependencies(pkgName, testFiles, dependencies, fs) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const testDependencies = new Set();
-        for (const filename of testFiles) {
-            const content = yield definition_parser_1.readFileAndThrowOnBOM(filename, fs);
-            const sourceFile = createSourceFile(filename, content);
-            const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
-            const filePath = () => path.join(pkgName, fileName);
-            for (const { fileName: ref } of referencedFiles) {
-                throw new Error(`Test files should not use '<reference path="" />'. '${filePath()}' references '${ref}'.`);
+async function getTestDependencies(pkgName, testFiles, dependencies, fs) {
+    const testDependencies = new Set();
+    for (const filename of testFiles) {
+        const content = await definition_parser_1.readFileAndThrowOnBOM(filename, fs);
+        const sourceFile = createSourceFile(filename, content);
+        const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
+        const filePath = () => path.join(pkgName, fileName);
+        for (const { fileName: ref } of referencedFiles) {
+            throw new Error(`Test files should not use '<reference path="" />'. '${filePath()}' references '${ref}'.`);
+        }
+        for (const { fileName: referencedPackage } of typeReferenceDirectives) {
+            if (dependencies.has(referencedPackage)) {
+                throw new Error(`'${filePath()}' unnecessarily references '${referencedPackage}', which is already referenced in the type definition.`);
             }
-            for (const { fileName: referencedPackage } of typeReferenceDirectives) {
-                if (dependencies.has(referencedPackage)) {
-                    throw new Error(`'${filePath()}' unnecessarily references '${referencedPackage}', which is already referenced in the type definition.`);
-                }
-                if (referencedPackage === pkgName) {
-                    throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
-                }
-                testDependencies.add(referencedPackage);
+            if (referencedPackage === pkgName) {
+                throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
             }
-            for (const imported of imports(sourceFile)) {
-                if (!imported.startsWith(".") && !dependencies.has(imported) && imported !== pkgName) {
-                    testDependencies.add(imported);
-                }
+            testDependencies.add(referencedPackage);
+        }
+        for (const imported of imports(sourceFile)) {
+            if (!imported.startsWith(".") && !dependencies.has(imported) && imported !== pkgName) {
+                testDependencies.add(imported);
             }
         }
-        return testDependencies;
-    });
+    }
+    return testDependencies;
 }
 exports.getTestDependencies = getTestDependencies;
 function createSourceFile(filename, content) {

@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const process = require("process");
@@ -21,13 +13,11 @@ if (!module.parent) {
     });
 }
 exports.definitionParserWorkerFilename = __filename;
-function go(packageNames, typesPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const packageName of packageNames) {
-            const info = yield definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
-            const result = Object.assign({}, info, { packageName });
-            process.send(result);
-        }
-    });
+async function go(packageNames, typesPath) {
+    for (const packageName of packageNames) {
+        const data = await definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
+        const result = { data, packageName };
+        process.send(result);
+    }
 }
 //# sourceMappingURL=definition-parser-worker.js.map

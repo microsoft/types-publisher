@@ -1,13 +1,6 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const fs_extra_1 = require("fs-extra");
 const path = require("path");
 const io_1 = require("../util/io");
@@ -21,82 +14,73 @@ function generateAnyPackage(pkg, packages, versions, dt) {
 }
 exports.default = generateAnyPackage;
 const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
-function generatePackage(typing, packages, version, dt) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.quietLogger();
-        const typesDirectory = dt.subDir("types").subDir(typing.name);
-        const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${version.major}`);
-        const packageJson = yield createPackageJSON(typing, version, packages);
-        log("Write metadata files to disk");
-        yield writeCommonOutputs(typing, packageJson, createReadme(typing));
-        yield Promise.all(typing.files.map((file) => __awaiter(this, void 0, void 0, function* () {
-            log(`Copy ${file}`);
-            yield io_1.writeFile(yield outputFilePath(typing, file), yield packageFS.readFile(file));
-        })));
-        return logResult();
-    });
+async function generatePackage(typing, packages, version, dt) {
+    const [log, logResult] = logging_1.quietLogger();
+    const typesDirectory = dt.subDir("types").subDir(typing.name);
+    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${version.major}`);
+    const packageJson = await createPackageJSON(typing, version, packages);
+    log("Write metadata files to disk");
+    await writeCommonOutputs(typing, packageJson, createReadme(typing));
+    await Promise.all(typing.files.map(async (file) => {
+        log(`Copy ${file}`);
+        await io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file));
+    }));
+    return logResult();
 }
-function generateNotNeededPackage(pkg, versions) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.quietLogger();
-        const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
-        log("Write metadata files to disk");
-        yield writeCommonOutputs(pkg, packageJson, pkg.readme());
-        return logResult();
-    });
+async function generateNotNeededPackage(pkg, versions) {
+    const [log, logResult] = logging_1.quietLogger();
+    const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
+    log("Write metadata files to disk");
+    await writeCommonOutputs(pkg, packageJson, pkg.readme());
+    return logResult();
 }
-function writeCommonOutputs(pkg, packageJson, readme) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield fs_extra_1.mkdir(pkg.outputDirectory);
-        yield Promise.all([
-            writeOutputFile("package.json", packageJson),
-            writeOutputFile("README.md", readme),
-            writeOutputFile("LICENSE", getLicenseFileText(pkg)),
-        ]);
-        function writeOutputFile(filename, content) {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield io_1.writeFile(yield outputFilePath(pkg, filename), content);
-            });
-        }
-    });
+async function writeCommonOutputs(pkg, packageJson, readme) {
+    await fs_extra_1.mkdir(pkg.outputDirectory);
+    await Promise.all([
+        writeOutputFile("package.json", packageJson),
+        writeOutputFile("README.md", readme),
+        writeOutputFile("LICENSE", getLicenseFileText(pkg)),
+    ]);
+    async function writeOutputFile(filename, content) {
+        await io_1.writeFile(await outputFilePath(pkg, filename), content);
+    }
 }
-function outputFilePath(pkg, filename) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const full = util_1.joinPaths(pkg.outputDirectory, filename);
-        const dir = path.dirname(full);
-        if (dir !== pkg.outputDirectory) {
-            yield fs_extra_1.mkdirp(dir);
-        }
-        return full;
-    });
+async function outputFilePath(pkg, filename) {
+    const full = util_1.joinPaths(pkg.outputDirectory, filename);
+    const dir = path.dirname(full);
+    if (dir !== pkg.outputDirectory) {
+        await fs_extra_1.mkdirp(dir);
+    }
+    return full;
 }
-function createPackageJSON(typing, version, packages) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // typing may provide a partial `package.json` for us to complete
-        const dependencies = getDependencies(typing.packageJsonDependencies, typing, packages);
-        // Use the ordering of fields from https://docs.npmjs.com/files/package.json
-        const out = {
-            name: typing.fullNpmName,
-            version: version.versionString,
-            description: `TypeScript definitions for ${typing.libraryName}`,
-            // keywords,
-            // homepage,
-            // bugs,
-            license: typing.license,
-            contributors: typing.contributors,
-            main: "",
-            repository: {
-                type: "git",
-                url: `${typing.sourceRepoURL}.git`
-            },
-            scripts: {},
-            dependencies,
-            typesPublisherContentHash: typing.contentHash,
-            typeScriptVersion: typing.typeScriptVersion
-        };
-        return JSON.stringify(out, undefined, 4);
-    });
+async function createPackageJSON(typing, version, packages) {
+    // typing may provide a partial `package.json` for us to complete
+    const dependencies = getDependencies(typing.packageJsonDependencies, typing, packages);
+    // Use the ordering of fields from https://docs.npmjs.com/files/package.json
+    const out = {
+        name: typing.fullNpmName,
+        version: version.versionString,
+        description: `TypeScript definitions for ${typing.libraryName}`,
+        // keywords,
+        // homepage,
+        // bugs,
+        license: typing.license,
+        contributors: typing.contributors,
+        main: "",
+        types: "",
+        typesVersions: definitelytyped_header_parser_1.makeTypesVersionsForPackageJson(typing.typesVersions),
+        repository: {
+            type: "git",
+            url: `${definitelyTypedURL}.git`
+        },
+        scripts: {},
+        dependencies,
+        typesPublisherContentHash: typing.contentHash,
+        typeScriptVersion: typing.minTypeScriptVersion
+    };
+    return JSON.stringify(out, undefined, 4);
 }
+const definitelyTypedURL = "https://github.com/DefinitelyTyped/DefinitelyTyped";
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
 function getDependencies(packageJsonDependencies, typing, allPackages) {
     const dependencies = {};
@@ -149,7 +133,7 @@ function createReadme(typing) {
     }
     lines.push("");
     lines.push("# Details");
-    lines.push(`Files were exported from ${typing.sourceRepoURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}`);
+    lines.push(`Files were exported from ${definitelyTypedURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}`);
     lines.push("");
     lines.push("Additional Details");
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);

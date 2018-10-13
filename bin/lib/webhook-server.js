@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
@@ -17,17 +9,15 @@ const util_1 = require("../util/util");
 const issue_updater_1 = require("./issue-updater");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
-function server(key, githubAccessToken, dry, fetcher, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime((log, timeStamp) => __awaiter(this, void 0, void 0, function* () {
-            log.info("");
-            log.info("");
-            log.info(`# ${timeStamp}`);
-            log.info("");
-            log.info("Starting full...");
-            yield full_1.default(dry, timeStamp, options);
-        })));
-    });
+async function server(key, githubAccessToken, dry, fetcher, options) {
+    return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
+        log.info("");
+        log.info("");
+        log.info(`# ${timeStamp}`);
+        log.info("");
+        log.info("Starting full...");
+        await full_1.default(dry, timeStamp, options);
+    }));
 }
 exports.default = server;
 function writeLog(rollingLogs, logs) {
@@ -65,25 +55,23 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
                 process.exit(1);
             });
         }
-        function work() {
-            return __awaiter(this, void 0, void 0, function* () {
-                const data = yield io_1.stringOfStream(req, "Request to webhook");
-                if (!checkSignature(key, data, req.headers, log)) {
-                    return;
-                }
-                log.info(`Message from github: ${data}`);
-                const expectedRef = `refs/heads/${settings_1.sourceBranch}`;
-                const actualRef = util_1.parseJson(data).ref;
-                if (actualRef === expectedRef) {
-                    respond("Thanks for the update! Running full.");
-                    yield onUpdate(log, timeStamp);
-                }
-                else {
-                    const text = `Ignoring push to ${actualRef}, expected ${expectedRef}.`;
-                    respond(text);
-                    log.info(text);
-                }
-            });
+        async function work() {
+            const data = await io_1.stringOfStream(req, "Request to webhook");
+            if (!checkSignature(key, data, req.headers, log)) {
+                return;
+            }
+            log.info(`Message from github: ${data}`);
+            const expectedRef = `refs/heads/${settings_1.sourceBranch}`;
+            const actualRef = util_1.parseJson(data).ref;
+            if (actualRef === expectedRef) {
+                respond("Thanks for the update! Running full.");
+                await onUpdate(log, timeStamp);
+            }
+            else {
+                const text = `Ignoring push to ${actualRef}, expected ${expectedRef}.`;
+                respond(text);
+                log.info(text);
+            }
         }
         // This is for the benefit of `npm run make-[production-]server-run`. GitHub ignores this.
         function respond(text) {
@@ -107,16 +95,14 @@ function updateOneAtATime(doOnce) {
             anyUpdatesWhileWorking = false;
             return work();
         }
-        function work() {
-            return __awaiter(this, void 0, void 0, function* () {
-                log.info("Starting update");
-                working = true;
-                anyUpdatesWhileWorking = false;
-                do {
-                    yield doOnce(log, timeStamp);
-                    working = false;
-                } while (anyUpdatesWhileWorking);
-            });
+        async function work() {
+            log.info("Starting update");
+            working = true;
+            anyUpdatesWhileWorking = false;
+            do {
+                await doOnce(log, timeStamp);
+                working = false;
+            } while (anyUpdatesWhileWorking);
         }
     };
 }

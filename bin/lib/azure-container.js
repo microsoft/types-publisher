@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
@@ -20,10 +12,8 @@ class BlobWriter {
     constructor(service) {
         this.service = service;
     }
-    static create() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new BlobWriter(azure_storage_1.createBlobService(settings_1.azureStorageAccount, yield secrets_1.getSecret(secrets_1.Secret.AZURE_STORAGE_ACCESS_KEY)));
-        });
+    static async create() {
+        return new BlobWriter(azure_storage_1.createBlobService(settings_1.azureStorageAccount, await secrets_1.getSecret(secrets_1.Secret.AZURE_STORAGE_ACCESS_KEY)));
     }
     setCorsProperties() {
         const properties = {
@@ -52,20 +42,18 @@ class BlobWriter {
     createBlobFromText(blobName, text) {
         return this.createBlobFromStream(blobName, io_1.streamOfString(text));
     }
-    listBlobs(prefix) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const once = (token) => promisifyErrorOrResult(cb => {
-                this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb);
-            });
-            const out = [];
-            let token;
-            do {
-                const { entries, continuationToken } = yield once(token);
-                out.push(...entries);
-                token = continuationToken;
-            } while (token);
-            return out;
+    async listBlobs(prefix) {
+        const once = (token) => promisifyErrorOrResult(cb => {
+            this.service.listBlobsSegmentedWithPrefix(settings_1.azureContainer, prefix, token, cb);
         });
+        const out = [];
+        let token;
+        do {
+            const { entries, continuationToken } = await once(token);
+            out.push(...entries);
+            token = continuationToken;
+        } while (token);
+        return out;
     }
     deleteBlob(blobName) {
         return promisifyErrorOrResponse(cb => {
@@ -84,33 +72,29 @@ class BlobWriter {
     }
 }
 exports.default = BlobWriter;
-function readBlob(blobName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve, reject) => {
-            const url = urlOfBlob(blobName);
-            const req = https.get(url, res => {
-                switch (res.statusCode) {
-                    case 200:
-                        if (res.headers["content-encoding"] !== "GZIP") {
-                            reject(new Error(`${url} is not gzipped`));
-                        }
-                        else {
-                            resolve(io_1.stringOfStream(tgz_1.unGzip(res), blobName));
-                        }
-                        break;
-                    default:
-                        reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
-                }
-            });
-            req.on("error", reject);
+async function readBlob(blobName) {
+    return new Promise((resolve, reject) => {
+        const url = urlOfBlob(blobName);
+        const req = https.get(url, res => {
+            switch (res.statusCode) {
+                case 200:
+                    if (res.headers["content-encoding"] !== "GZIP") {
+                        reject(new Error(`${url} is not gzipped`));
+                    }
+                    else {
+                        resolve(io_1.stringOfStream(tgz_1.unGzip(res), blobName));
+                    }
+                    break;
+                default:
+                    reject(new Error(`Can't get ${url}: ${res.statusCode} error`));
+            }
         });
+        req.on("error", reject);
     });
 }
 exports.readBlob = readBlob;
-function readJsonBlob(blobName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return util_1.parseJson(yield readBlob(blobName));
-    });
+async function readJsonBlob(blobName) {
+    return util_1.parseJson(await readBlob(blobName));
 }
 exports.readJsonBlob = readJsonBlob;
 function urlOfBlob(blobName) {

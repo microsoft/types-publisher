@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
@@ -19,43 +11,35 @@ class AllPackages {
         this.data = data;
         this.notNeeded = notNeeded;
     }
-    static read(dt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return AllPackages.from(yield readTypesDataFile(), yield readNotNeededPackages(dt));
-        });
+    static async read(dt) {
+        return AllPackages.from(await readTypesDataFile(), await readNotNeededPackages(dt));
     }
     static from(data, notNeeded) {
         return new AllPackages(util_1.mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw)), notNeeded);
     }
-    static readTypings() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return AllPackages.from(yield readTypesDataFile(), []).allTypings();
-        });
+    static async readTypings() {
+        return AllPackages.from(await readTypesDataFile(), []).allTypings();
     }
     /** Use for `--single` tasks only. Do *not* call this in a loop! */
-    static readSingle(name) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield readTypesDataFile();
-            const raw = data[name];
-            if (!raw) {
-                throw new Error(`Can't find package ${name}`);
-            }
-            const versions = Object.keys(raw);
-            if (versions.length > 1) {
-                throw new Error(`Package ${name} has multiple versions.`);
-            }
-            return new TypingsData(raw[versions[0]], /*isLatest*/ true);
-        });
+    static async readSingle(name) {
+        const data = await readTypesDataFile();
+        const raw = data[name];
+        if (!raw) {
+            throw new Error(`Can't find package ${name}`);
+        }
+        const versions = Object.keys(raw);
+        if (versions.length > 1) {
+            throw new Error(`Package ${name} has multiple versions.`);
+        }
+        return new TypingsData(raw[versions[0]], /*isLatest*/ true);
     }
-    static readSingleNotNeeded(name, dt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const notNeeded = yield readNotNeededPackages(dt);
-            const pkg = notNeeded.find(p => p.name === name);
-            if (pkg === undefined) {
-                throw new Error(`Cannot find not-needed package ${name}`);
-            }
-            return pkg;
-        });
+    static async readSingleNotNeeded(name, dt) {
+        const notNeeded = await readNotNeededPackages(dt);
+        const pkg = notNeeded.find(p => p.name === name);
+        if (pkg === undefined) {
+            throw new Error(`Cannot find not-needed package ${name}`);
+        }
+        return pkg;
     }
     getAnyPackage(id) {
         const pkg = this.tryGetTypingsData(id) || this.notNeeded.find(p => p.name === id.name);
@@ -159,7 +143,6 @@ class PackageBase {
     constructor(data) {
         this.name = data.typingsPackageName;
         this.libraryName = data.libraryName;
-        this.sourceRepoURL = data.sourceRepoURL;
     }
     isNotNeeded() {
         return this instanceof NotNeededPackage;
@@ -189,23 +172,23 @@ class NotNeededPackage extends PackageBase {
     get license() { return "MIT" /* MIT */; }
     constructor(raw) {
         super(raw);
+        this.sourceRepoURL = raw.sourceRepoURL;
         for (const key in raw) {
             if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
                 throw new Error(`Unexpected key in not-needed package: ${key}`);
             }
         }
         assert(raw.libraryName && raw.typingsPackageName && raw.sourceRepoURL && raw.asOfVersion);
-        this.version = versions_1.Semver.parse(raw.asOfVersion, /*isPrerelease*/ false);
+        this.version = versions_1.Semver.parse(raw.asOfVersion);
     }
     get major() { return this.version.major; }
     get minor() { return this.version.minor; }
     // A not-needed package has no other versions. (TODO: allow that?)
     get isLatest() { return true; }
-    get isPrerelease() { return false; }
     get projectName() { return this.sourceRepoURL; }
     get declaredModules() { return []; }
     get globals() { return this.globals; }
-    get typeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.lowest; }
+    get minTypeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.lowest; }
     readme() {
         return `This is a stub types definition for ${this.libraryName} (${this.sourceRepoURL}).\n
 ${this.libraryName} provides its own type definitions, so you don't need ${fullNpmName(this.name)} installed!`;
@@ -269,29 +252,18 @@ class TypingsData extends PackageBase {
     get major() { return this.data.libraryMajorVersion; }
     get minor() { return this.data.libraryMinorVersion; }
     get majorMinor() { return { major: this.major, minor: this.minor }; }
-    get typeScriptVersion() { return this.data.typeScriptVersion; }
+    get minTypeScriptVersion() { return this.data.minTsVersion; }
+    get typesVersions() { return this.data.typesVersions; }
     get files() { return this.data.files; }
-    get testFiles() { return this.data.testFiles; }
     get license() { return this.data.license; }
     get packageJsonDependencies() { return this.data.packageJsonDependencies; }
     get contentHash() { return this.data.contentHash; }
     get declaredModules() { return this.data.declaredModules; }
     get projectName() { return this.data.projectName; }
     get globals() { return this.data.globals; }
-    get pathMappings() {
-        return Object.entries(this.data.pathMappings);
-    }
-    get isPrerelease() {
-        return definitelytyped_header_parser_1.TypeScriptVersion.isPrerelease(this.typeScriptVersion);
-    }
+    get pathMappings() { return this.data.pathMappings; }
     get dependencies() {
-        return this.deps();
-    }
-    *deps() {
-        const raw = this.data.dependencies;
-        for (const name in raw) {
-            yield { name, majorVersion: raw[name] };
-        }
+        return this.data.dependencies;
     }
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
     get subDirectoryPath() {
@@ -302,11 +274,9 @@ exports.TypingsData = TypingsData;
 function readTypesDataFile() {
     return common_1.readDataFile("parse-definitions", exports.typesDataFilename);
 }
-function readNotNeededPackages(dt) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const rawJson = yield dt.readJson("notNeededPackages.json"); // tslint:disable-line await-promise (tslint bug)
-        return rawJson.packages.map(raw => new NotNeededPackage(raw));
-    });
+async function readNotNeededPackages(dt) {
+    const rawJson = await dt.readJson("notNeededPackages.json"); // tslint:disable-line await-promise (tslint bug)
+    return rawJson.packages.map(raw => new NotNeededPackage(raw));
 }
 exports.readNotNeededPackages = readNotNeededPackages;
 //# sourceMappingURL=packages.js.map

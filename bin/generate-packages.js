@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
 const yargs = require("yargs");
@@ -25,37 +17,33 @@ if (!module.parent) {
     if (all && singleName) {
         throw new Error("Select only one of -single=foo or --all.");
     }
-    util_1.done(() => __awaiter(this, void 0, void 0, function* () {
-        const dt = yield get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
-        yield (singleName ? single(singleName, dt) : main(dt, yield packages_1.AllPackages.read(dt), yield versions_1.readVersionsAndChanges(), all, tgz));
-    }));
-}
-function main(dt, allPackages, { versions, changes }, all = false, tgz = false) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const [log, logResult] = logging_1.logger();
-        log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
-        yield fs_extra_1.emptyDir(packages_1.outputDir);
-        const packages = all ? allPackages.allPackages() : yield versions_1.changedPackages(allPackages, changes);
-        yield util_1.nAtATime(10, packages, (pkg) => __awaiter(this, void 0, void 0, function* () {
-            const logs = yield package_generator_1.default(pkg, allPackages, versions, dt);
-            if (tgz) {
-                yield tgz_1.writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
-            }
-            log(` * ${pkg.libraryName}`);
-            logging_1.moveLogs(log, logs, line => `   * ${line}`);
-        }));
-        yield logging_1.writeLog("package-generator.md", logResult());
+    util_1.done(async () => {
+        const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
+        await (singleName ? single(singleName, dt) : main(dt, await packages_1.AllPackages.read(dt), await versions_1.readVersionsAndChanges(), all, tgz));
     });
+}
+async function main(dt, allPackages, { versions, changes }, all = false, tgz = false) {
+    const [log, logResult] = logging_1.logger();
+    log(`\n## Generating ${all ? "all" : "changed"} packages\n`);
+    await fs_extra_1.emptyDir(packages_1.outputDir);
+    const packages = all ? allPackages.allPackages() : await versions_1.changedPackages(allPackages, changes);
+    await util_1.nAtATime(10, packages, async (pkg) => {
+        const logs = await package_generator_1.default(pkg, allPackages, versions, dt);
+        if (tgz) {
+            await tgz_1.writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
+        }
+        log(` * ${pkg.libraryName}`);
+        logging_1.moveLogs(log, logs, line => `   * ${line}`);
+    });
+    await logging_1.writeLog("package-generator.md", logResult());
 }
 exports.default = main;
-function single(singleName, dt) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield fs_extra_1.emptyDir(packages_1.outputDir);
-        const allPackages = yield packages_1.AllPackages.read(dt);
-        const pkg = allPackages.getSingle(singleName);
-        const versions = yield versions_1.default.load();
-        const logs = yield package_generator_1.default(pkg, allPackages, versions, dt);
-        console.log(logs.join("\n"));
-    });
+async function single(singleName, dt) {
+    await fs_extra_1.emptyDir(packages_1.outputDir);
+    const allPackages = await packages_1.AllPackages.read(dt);
+    const pkg = allPackages.getSingle(singleName);
+    const versions = await versions_1.default.load();
+    const logs = await package_generator_1.default(pkg, allPackages, versions, dt);
+    console.log(logs.join("\n"));
 }
 //# sourceMappingURL=generate-packages.js.map

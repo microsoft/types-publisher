@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const azure_container_1 = require("./azure-container");
 class RollingLogs {
@@ -15,30 +7,24 @@ class RollingLogs {
         this.maxLines = maxLines;
         this.container = container;
     }
-    static create(name, maxLines) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new RollingLogs(name, maxLines, yield azure_container_1.default.create());
-        });
+    static async create(name, maxLines) {
+        return new RollingLogs(name, maxLines, await azure_container_1.default.create());
     }
-    write(lines) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const logs = this.allLogs || (this.allLogs = yield this.readAllLogs());
-            const totalLines = logs.length + lines.length;
-            logs.splice(0, totalLines - this.maxLines);
-            logs.push(...lines);
-            yield this.container.createBlobFromText(this.name, logs.join("\n"));
-        });
+    async write(lines) {
+        const logs = this.allLogs || (this.allLogs = await this.readAllLogs());
+        const totalLines = logs.length + lines.length;
+        logs.splice(0, totalLines - this.maxLines);
+        logs.push(...lines);
+        await this.container.createBlobFromText(this.name, logs.join("\n"));
     }
-    readAllLogs() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                return (yield azure_container_1.readBlob(this.name)).split("\n");
-            }
-            catch (err) {
-                // 404
-                return [];
-            }
-        });
+    async readAllLogs() {
+        try {
+            return (await azure_container_1.readBlob(this.name)).split("\n");
+        }
+        catch (err) {
+            // 404
+            return [];
+        }
     }
 }
 exports.default = RollingLogs;

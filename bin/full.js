@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const calculate_versions_1 = require("./calculate-versions");
@@ -26,24 +18,22 @@ if (!module.parent) {
     const dry = !!yargs.argv.dry;
     util_1.done(full(dry, util_1.currentTimeStamp(), common_1.Options.azure)); //->defaults
 }
-function full(dry, timeStamp, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const infoClient = new npm_client_1.UncachedNpmInfoClient();
-        yield clean_1.default();
-        const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
-        const allPackages = yield parse_definitions_1.default(dt, options.parseInParallel
-            ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
-            : undefined);
-        const versions = yield calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
-        yield generate_packages_1.default(dt, allPackages, versions);
-        yield create_search_index_1.default(allPackages, infoClient);
-        yield publish_packages_1.default(allPackages, versions, dry);
-        yield publish_registry_1.default(dt, dry, infoClient);
-        yield validate_1.default(dt);
-        if (!dry) {
-            yield upload_blobs_1.default(timeStamp);
-        }
-    });
+async function full(dry, timeStamp, options) {
+    const infoClient = new npm_client_1.UncachedNpmInfoClient();
+    await clean_1.default();
+    const dt = await get_definitely_typed_1.getDefinitelyTyped(options);
+    const allPackages = await parse_definitions_1.default(dt, options.parseInParallel
+        ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
+        : undefined);
+    const versions = await calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
+    await generate_packages_1.default(dt, allPackages, versions);
+    await create_search_index_1.default(allPackages, infoClient);
+    await publish_packages_1.default(allPackages, versions, dry);
+    await publish_registry_1.default(dt, dry, infoClient);
+    await validate_1.default(dt);
+    if (!dry) {
+        await upload_blobs_1.default(timeStamp);
+    }
 }
 exports.default = full;
 //# sourceMappingURL=full.js.map

@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const get_definitely_typed_1 = require("../get-definitely-typed");
 const common_1 = require("../lib/common");
@@ -18,21 +10,17 @@ const util_1 = require("../util/util");
 if (!module.parent) {
     util_1.done(main(common_1.Options.defaults));
 }
-function main(options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const changes = yield getAffectedPackages(yield packages_1.AllPackages.read(yield get_definitely_typed_1.getDefinitelyTyped(options)), logging_1.consoleLogger.info, options.definitelyTypedPath);
-        console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
-    });
+async function main(options) {
+    const changes = await getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options)), logging_1.consoleLogger.info, options.definitelyTypedPath);
+    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-function getAffectedPackages(allPackages, log, definitelyTypedPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const changedPackageIds = yield gitChanges(log, definitelyTypedPath);
-        // If a package doesn't exist, that's because it was deleted.
-        const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-        const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
-        return { changedPackages, dependentPackages };
-    });
+async function getAffectedPackages(allPackages, log, definitelyTypedPath) {
+    const changedPackageIds = await gitChanges(log, definitelyTypedPath);
+    // If a package doesn't exist, that's because it was deleted.
+    const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
+    const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
+    return { changedPackages, dependentPackages };
 }
 exports.default = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
@@ -86,23 +74,21 @@ function getReverseDependencies(allPackages) {
     return map;
 }
 /** Returns all immediate subdirectories of the root directory that have changed. */
-function gitChanges(log, definitelyTypedPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const changedPackages = new Map();
-        for (const fileName of yield gitDiff(log, definitelyTypedPath)) {
-            const dep = getDependencyFromFile(fileName);
-            if (dep) {
-                const versions = changedPackages.get(dep.name);
-                if (!versions) {
-                    changedPackages.set(dep.name, new Set([dep.majorVersion]));
-                }
-                else {
-                    versions.add(dep.majorVersion);
-                }
+async function gitChanges(log, definitelyTypedPath) {
+    const changedPackages = new Map();
+    for (const fileName of await gitDiff(log, definitelyTypedPath)) {
+        const dep = getDependencyFromFile(fileName);
+        if (dep) {
+            const versions = changedPackages.get(dep.name);
+            if (!versions) {
+                changedPackages.set(dep.name, new Set([dep.majorVersion]));
+            }
+            else {
+                versions.add(dep.majorVersion);
             }
         }
-        return util_1.flatMap(changedPackages, ([name, versions]) => util_1.map(versions, majorVersion => ({ name, majorVersion })));
-    });
+    }
+    return util_1.flatMap(changedPackages, ([name, versions]) => util_1.map(versions, majorVersion => ({ name, majorVersion })));
 }
 /*
 We have to be careful about how we get the diff because travis uses a shallow clone.
@@ -115,34 +101,30 @@ Travis runs:
 
 If editing this code, be sure to test on both full and shallow clones.
 */
-function gitDiff(log, definitelyTypedPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield run(`git rev-parse --verify ${settings_1.sourceBranch}`);
-            // If this succeeds, we got the full clone.
-        }
-        catch (_) {
-            // This is a shallow clone.
-            yield run(`git fetch origin ${settings_1.sourceBranch}`);
-            yield run(`git branch ${settings_1.sourceBranch} FETCH_HEAD`);
-        }
-        // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
-        // Source: https://git-scm.com/docs/git-diff
-        let diff = (yield run(`git diff ${settings_1.sourceBranch} --name-only`)).trim();
-        if (diff === "") {
-            // We are probably already on master, so compare to the last commit.
-            diff = (yield run(`git diff ${settings_1.sourceBranch}~1 --name-only`)).trim();
-        }
-        return diff.split("\n");
-        function run(cmd) {
-            return __awaiter(this, void 0, void 0, function* () {
-                log(`Running: ${cmd}`);
-                const stdout = yield util_1.execAndThrowErrors(cmd, definitelyTypedPath);
-                log(stdout);
-                return stdout;
-            });
-        }
-    });
+async function gitDiff(log, definitelyTypedPath) {
+    try {
+        await run(`git rev-parse --verify ${settings_1.sourceBranch}`);
+        // If this succeeds, we got the full clone.
+    }
+    catch (_) {
+        // This is a shallow clone.
+        await run(`git fetch origin ${settings_1.sourceBranch}`);
+        await run(`git branch ${settings_1.sourceBranch} FETCH_HEAD`);
+    }
+    // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
+    // Source: https://git-scm.com/docs/git-diff
+    let diff = (await run(`git diff ${settings_1.sourceBranch} --name-only`)).trim();
+    if (diff === "") {
+        // We are probably already on master, so compare to the last commit.
+        diff = (await run(`git diff ${settings_1.sourceBranch}~1 --name-only`)).trim();
+    }
+    return diff.split("\n");
+    async function run(cmd) {
+        log(`Running: ${cmd}`);
+        const stdout = await util_1.execAndThrowErrors(cmd, definitelyTypedPath);
+        log(stdout);
+        return stdout;
+    }
 }
 /**
  * For "types/a/b/c", returns { name: "a", version: "latest" }.

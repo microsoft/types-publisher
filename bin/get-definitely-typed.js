@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
@@ -17,26 +9,24 @@ const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
-function getDefinitelyTyped(options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (options.definitelyTypedPath === undefined) {
-            yield fs_extra_1.ensureDir(common_1.dataDir);
-            return downloadAndExtractFile(settings_1.definitelyTypedZipUrl);
+async function getDefinitelyTyped(options) {
+    if (options.definitelyTypedPath === undefined) {
+        await fs_extra_1.ensureDir(common_1.dataDir);
+        return downloadAndExtractFile(settings_1.definitelyTypedZipUrl);
+    }
+    else {
+        const { error, stderr, stdout } = await util_1.exec("git diff --name-only", options.definitelyTypedPath);
+        if (error) {
+            throw error;
         }
-        else {
-            const { error, stderr, stdout } = yield util_1.exec("git diff --name-only", options.definitelyTypedPath);
-            if (error) {
-                throw error;
-            }
-            if (stderr) {
-                throw new Error(stderr);
-            }
-            if (stdout) {
-                throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
-            }
-            return new DiskFS(`${options.definitelyTypedPath}/`);
+        if (stderr) {
+            throw new Error(stderr);
         }
-    });
+        if (stdout) {
+            throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
+        }
+        return new DiskFS(`${options.definitelyTypedPath}/`);
+    }
 }
 exports.getDefinitelyTyped = getDefinitelyTyped;
 function getLocallyInstalledDefinitelyTyped(path) {
@@ -175,15 +165,11 @@ class DiskFS {
             return this.rootPrefix + path;
         }
     }
-    readdir(dirPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return (yield fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
-        });
+    async readdir(dirPath) {
+        return (await fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
     }
-    isDirectory(dirPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return (yield fs_extra_1.stat(this.getPath(dirPath))).isDirectory();
-        });
+    async isDirectory(dirPath) {
+        return (await fs_extra_1.stat(this.getPath(dirPath))).isDirectory();
     }
     readJson(path) {
         return io_1.readJson(this.getPath(path));
@@ -198,7 +184,7 @@ class DiskFS {
         return new DiskFS(`${this.rootPrefix}${path}/`);
     }
     debugPath() {
-        return this.rootPrefix;
+        return this.rootPrefix.slice(0, this.rootPrefix.length - 1); // remove trailing '/'
     }
 }
 /** FS only handles simple paths like `foo/bar` or `../foo`. No `./foo` or `/foo`. */

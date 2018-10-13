@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const get_definitely_typed_1 = require("./get-definitely-typed");
@@ -15,59 +7,45 @@ const definition_parser_1 = require("./lib/definition-parser");
 const definition_parser_worker_1 = require("./lib/definition-parser-worker");
 const packages_1 = require("./lib/packages");
 const test_runner_1 = require("./tester/test-runner");
-const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const singleName = yargs.argv.single;
     const options = common_1.Options.defaults;
-    util_1.done(() => __awaiter(this, void 0, void 0, function* () {
-        const dt = yield get_definitely_typed_1.getDefinitelyTyped(options);
+    util_1.done(async () => {
+        const dt = await get_definitely_typed_1.getDefinitelyTyped(options);
         if (singleName) {
-            yield single(singleName, dt);
+            await single(singleName, dt);
         }
         else {
-            yield main(dt, options.parseInParallel
+            await main(dt, options.parseInParallel
                 ? { nProcesses: test_runner_1.parseNProcesses(), definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
                 : undefined);
         }
-    }));
-}
-function main(dt, parallel) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const [summaryLog, summaryLogResult] = logging_1.logger();
-        const [detailedLog, detailedLogResult] = logging_1.quietLogger();
-        summaryLog("# Typing Publish Report Summary");
-        summaryLog(`Started at ${(new Date()).toUTCString()}`);
-        const typesFS = dt.subDir("types");
-        const packageNames = yield util_1.filterNAtATime(parallel ? parallel.nProcesses : 1, yield typesFS.readdir(), name => typesFS.isDirectory(name));
-        summaryLog(`Found ${packageNames.length} typings folders`);
-        const typings = {};
-        if (parallel) {
-            yield util_1.runWithChildProcesses({
-                inputs: packageNames,
-                commandLineArgs: [`${parallel.definitelyTypedPath}/types`],
-                workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
-                nProcesses: parallel.nProcesses,
-                handleOutput,
-            });
-        }
-        else {
-            for (const packageName of packageNames) {
-                handleOutput(Object.assign({}, yield definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName)), { packageName }));
-            }
-        }
-        function handleOutput({ data, logs, packageName }) {
-            typings[packageName] = data;
-            detailedLog(`# ${packageName}`);
-            logging_1.moveLogs(detailedLog, logs);
-        }
-        yield Promise.all([
-            logging_1.writeLog("parser-log-summary.md", summaryLogResult()),
-            logging_1.writeLog("parser-log-details.md", detailedLogResult()),
-            common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings)),
-        ]);
-        return packages_1.AllPackages.from(typings, yield packages_1.readNotNeededPackages(dt));
     });
+}
+async function main(dt, parallel) {
+    const typesFS = dt.subDir("types");
+    const packageNames = await util_1.filterNAtATime(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
+    const typings = {};
+    if (parallel) {
+        await util_1.runWithChildProcesses({
+            inputs: packageNames,
+            commandLineArgs: [`${parallel.definitelyTypedPath}/types`],
+            workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
+            nProcesses: parallel.nProcesses,
+            handleOutput,
+        });
+    }
+    else {
+        for (const packageName of packageNames) {
+            handleOutput({ data: await definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName)), packageName });
+        }
+    }
+    function handleOutput({ data, packageName }) {
+        typings[packageName] = data;
+    }
+    await common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings));
+    return packages_1.AllPackages.from(typings, await packages_1.readNotNeededPackages(dt));
 }
 exports.default = main;
 function sorted(obj) {
@@ -77,12 +55,10 @@ function sorted(obj) {
     }
     return out;
 }
-function single(singleName, dt) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const result = yield definition_parser_1.getTypingInfo(singleName, dt.subDir(`types/${singleName}`));
-        const typings = { [singleName]: result.data };
-        yield common_1.writeDataFile(packages_1.typesDataFilename, typings);
-        console.log(JSON.stringify(result, undefined, 4));
-    });
+async function single(singleName, dt) {
+    const result = await definition_parser_1.getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
+    const typings = { [singleName]: result.data };
+    await common_1.writeDataFile(packages_1.typesDataFilename, typings);
+    console.log(JSON.stringify(result, undefined, 4));
 }
 //# sourceMappingURL=parse-definitions.js.map
