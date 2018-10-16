@@ -79,7 +79,7 @@ export class AllPackages {
 	}
 
 	tryGetLatestVersion(packageName: string): TypingsData | undefined {
-		const versions = this.data.get(packageName);
+		const versions = this.data.get(getMangledNameForScopedPackage(packageName));
 		return versions && versions.getLatest();
 	}
 
@@ -92,7 +92,7 @@ export class AllPackages {
 	}
 
 	tryGetTypingsData({ name, majorVersion }: PackageId): TypingsData | undefined {
-		const versions = this.data.get(name);
+		const versions = this.data.get(getMangledNameForScopedPackage(name));
 		return versions && versions.tryGet(majorVersion);
 	}
 
@@ -218,7 +218,7 @@ export abstract class PackageBase {
 }
 
 export function fullNpmName(packageName: string): string {
-	return `@${scopeName}/${packageName}`;
+	return `@${scopeName}/${getMangledNameForScopedPackage(packageName)}`;
 }
 
 export const outputDir = joinPaths(home, outputPath);
