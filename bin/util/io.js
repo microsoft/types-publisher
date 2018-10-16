@@ -46,9 +46,11 @@ function stringOfStream(stream, description) {
         stream.on("end", () => {
             body += decoder.end();
             if (body.includes("�")) {
-                throw new Error(`Bad character decode in ${description}`);
+                reject(`Bad character decode in ${description}`);
             }
-            resolve(body);
+            else {
+                resolve(body);
+            }
         });
     });
 }
