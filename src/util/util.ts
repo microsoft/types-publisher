@@ -436,6 +436,11 @@ export function unmangleScopedPackage(packageName: string): string | undefined {
 	return packageName.includes(separator) ? `@${packageName.replace(separator, "/")}` : undefined;
 }
 
+const versionAtEndRegex = /\/v\d+$/;
+export function stripVersion(packageName: string): string {
+	return packageName.replace(versionAtEndRegex, "");
+}
+
 /** Returns [values that cb returned undefined for, defined results of cb]. */
 export function split<T, U>(inputs: ReadonlyArray<T>, cb: (t: T) => U | undefined): [ReadonlyArray<T>, ReadonlyArray<U>] {
 	const keep: T[] = [];

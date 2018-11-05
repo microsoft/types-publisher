@@ -3,7 +3,7 @@ import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
 import {
-	computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, split, unique, unmangleScopedPackage, withoutStart,
+	computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, split, stripVersion, unique, unmangleScopedPackage, withoutStart,
 } from "../util/util";
 
 import getModuleInfo, { getTestDependencies } from "./module-info";
@@ -282,8 +282,8 @@ async function calculateDependencies(
 		}
 		const pathMapping = pathMappingList[0];
 
-		// Path mapping may be for "@foo/bar" -> "foo__bar".
-		const scopedPackageName = unmangleScopedPackage(pathMapping);
+		// Path mapping may be for "@foo/bar" -> "foo__bar" or "@foo/bar" -> "foo__bar/v2"
+		const scopedPackageName = unmangleScopedPackage(stripVersion(pathMapping));
 		if (scopedPackageName !== undefined) {
 			if (dependencyName !== scopedPackageName) {
 				throw new Error(`Expected directory ${pathMapping} to be the path mapping for ${dependencyName}`);
@@ -308,7 +308,10 @@ async function calculateDependencies(
 		pathMappings.push({ packageName: dependencyName, majorVersion });
 	}
 
-	if (oldMajorVersion !== undefined && !(paths && packageName in paths)) {
+	// Path mapping may be for "foo" -> "foo/v2" or "@foo/bar" -> "foo__bar/v2"
+	const scopedName = unmangleScopedPackage(packageName);
+	const hasSelfPathMapping = scopedName !== undefined ? scopedName in paths : packageName in paths;
+	if (oldMajorVersion !== undefined && !hasSelfPathMapping) {
 		throw new Error(`${packageName}: Older version ${oldMajorVersion} must have a path mapping for itself.`);
 	}
 
