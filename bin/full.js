@@ -29,7 +29,7 @@ async function full(dry, timeStamp, options) {
     await generate_packages_1.default(dt, allPackages, versions);
     await create_search_index_1.default(allPackages, infoClient);
     await publish_packages_1.default(allPackages, versions, dry);
-    await publish_registry_1.default(dt, dry, infoClient);
+    await publish_registry_1.default(dt, allPackages, dry, infoClient);
     await validate_1.default(dt);
     if (!dry) {
         await upload_blobs_1.default(timeStamp);

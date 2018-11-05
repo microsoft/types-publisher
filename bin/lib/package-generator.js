@@ -67,7 +67,7 @@ async function createPackageJSON(typing, version, packages) {
         license: typing.license,
         contributors: typing.contributors,
         main: "",
-        types: "",
+        types: "index",
         typesVersions: definitelytyped_header_parser_1.makeTypesVersionsForPackageJson(typing.typesVersions),
         repository: {
             type: "git",
