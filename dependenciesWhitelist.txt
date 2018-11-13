@@ -82,3 +82,8 @@ parchment
 winston
 zipkin
 quill-delta
+@sentry/hub
+@sentry/minimal
+@sentry/browser
+@sentry/node
+@sentry/electron
