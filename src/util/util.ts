@@ -87,7 +87,7 @@ export function filter<T>(iterable: Iterable<T>, predicate: (value: T) => boolea
 
 export type Awaitable<T> = T | Promise<T>;
 
-export async function filterNAtATime<T>(
+export async function filterNAtATimeOrdered<T>(
 	n: number, inputs: ReadonlyArray<T>, shouldKeep: (input: T) => Awaitable<boolean>, progress?: ProgressOptions<T, boolean>): Promise<T[]> {
 	const shouldKeeps: boolean[] = await nAtATime(n, inputs, shouldKeep, progress);
 	return inputs.filter((_, idx) => shouldKeeps[idx]);
@@ -148,14 +148,6 @@ export function intOfString(str: string): number {
 		throw new Error(`Error in parseInt(${JSON.stringify(str)})`);
 	}
 	return n;
-}
-
-export function sortObjectKeys<T extends { [key: string]: unknown }>(data: T): T {
-	const out = {} as T; // tslint:disable-line no-object-literal-type-assertion
-	for (const key of Object.keys(data).sort()) {
-		out[key] = data[key];
-	}
-	return out;
 }
 
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
@@ -244,6 +236,17 @@ export function mapDefined<T, U>(arr: Iterable<T>, mapper: (t: T) => U | undefin
 	const out = [];
 	for (const a of arr) {
 		const res = mapper(a);
+		if (res !== undefined) {
+			out.push(res);
+		}
+	}
+	return out;
+}
+
+export async function mapDefinedAsync<T, U>(arr: Iterable<T>, mapper: (t: T) => Promise<U | undefined>): Promise<U[]> {
+	const out = [];
+	for (const a of arr) {
+		const res = await mapper(a);
 		if (res !== undefined) {
 			out.push(res);
 		}
@@ -445,4 +448,13 @@ export function split<T, U>(inputs: ReadonlyArray<T>, cb: (t: T) => U | undefine
 		if (res === undefined) { keep.push(input); } else { splitOut.push(res); }
 	}
 	return [keep, splitOut];
+}
+
+export function assertSorted(a: ReadonlyArray<string>): ReadonlyArray<string> {
+	let prev = "";
+	for (const x of a) {
+		assert(x >= prev, `${x} >= ${prev}`);
+		prev = x;
+	}
+	return a;
 }
