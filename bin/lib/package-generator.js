@@ -4,36 +4,23 @@ const definitelytyped_header_parser_1 = require("definitelytyped-header-parser")
 const fs_extra_1 = require("fs-extra");
 const path = require("path");
 const io_1 = require("../util/io");
-const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const packages_1 = require("./packages");
 const settings_1 = require("./settings");
-/** Generates the package to disk */
-function generateAnyPackage(pkg, packages, versions, dt) {
-    return pkg.isNotNeeded() ? generateNotNeededPackage(pkg, versions) : generatePackage(pkg, packages, versions.getVersion(pkg), dt);
-}
-exports.default = generateAnyPackage;
 const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
-async function generatePackage(typing, packages, version, dt) {
-    const [log, logResult] = logging_1.quietLogger();
+async function generateTypingPackage(typing, packages, version, dt) {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
-    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${version.major}`);
+    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
     const packageJson = await createPackageJSON(typing, version, packages);
-    log("Write metadata files to disk");
     await writeCommonOutputs(typing, packageJson, createReadme(typing));
-    await Promise.all(typing.files.map(async (file) => {
-        log(`Copy ${file}`);
-        await io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file));
-    }));
-    return logResult();
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
-async function generateNotNeededPackage(pkg, versions) {
-    const [log, logResult] = logging_1.quietLogger();
-    const packageJson = createNotNeededPackageJSON(pkg, versions.getVersion(pkg));
-    log("Write metadata files to disk");
+exports.generateTypingPackage = generateTypingPackage;
+async function generateNotNeededPackage(pkg) {
+    const packageJson = createNotNeededPackageJSON(pkg);
     await writeCommonOutputs(pkg, packageJson, pkg.readme());
-    return logResult();
 }
+exports.generateNotNeededPackage = generateNotNeededPackage;
 async function writeCommonOutputs(pkg, packageJson, readme) {
     await fs_extra_1.mkdir(pkg.outputDirectory);
     await Promise.all([
@@ -59,7 +46,7 @@ async function createPackageJSON(typing, version, packages) {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out = {
         name: typing.fullNpmName,
-        version: version.versionString,
+        version,
         description: `TypeScript definitions for ${typing.libraryName}`,
         // keywords,
         // homepage,
@@ -102,10 +89,10 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL }, version) {
+function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }) {
     return JSON.stringify({
         name: fullNpmName,
-        version: version.versionString,
+        version,
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",

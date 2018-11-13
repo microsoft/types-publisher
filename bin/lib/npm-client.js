@@ -27,14 +27,14 @@ class CachedNpmInfoClient {
         await client.writeCache();
         return res;
     }
-    async getNpmInfo(escapedPackageName, contentHash) {
-        const cached = this.cache.get(escapedPackageName);
-        if (cached !== undefined && contentHash !== undefined &&
-            cached.versions.get(cached.distTags.get("latest")).typesPublisherContentHash === contentHash) {
-            return cached;
-        }
+    /** May return old info -- caller should check that this looks up-to-date. */
+    getNpmInfoFromCache(escapedPackageName) {
+        return this.cache.get(escapedPackageName);
+    }
+    /** Call this when the result of getNpmInfoFromCache looks potentially out-of-date. */
+    async fetchAndCacheNpmInfo(escapedPackageName) {
         const info = await this.uncachedClient.fetchNpmInfo(escapedPackageName);
-        if (info !== undefined && contentHash !== undefined) {
+        if (info) {
             this.cache.set(escapedPackageName, info);
         }
         return info;

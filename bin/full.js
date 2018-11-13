@@ -25,10 +25,10 @@ async function full(dry, timeStamp, options) {
     const allPackages = await parse_definitions_1.default(dt, options.parseInParallel
         ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
         : undefined);
-    const versions = await calculate_versions_1.default(/*forceUpdate*/ false, dt, infoClient);
-    await generate_packages_1.default(dt, allPackages, versions);
+    const changedPackages = await calculate_versions_1.default(dt, infoClient);
+    await generate_packages_1.default(dt, allPackages, changedPackages);
     await create_search_index_1.default(allPackages, infoClient);
-    await publish_packages_1.default(allPackages, versions, dry);
+    await publish_packages_1.default(changedPackages, dry);
     await publish_registry_1.default(dt, allPackages, dry, infoClient);
     await validate_1.default(dt);
     if (!dry) {

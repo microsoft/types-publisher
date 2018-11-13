@@ -65,7 +65,7 @@ function downloadAndExtractFile(url) {
                 }
             });
             extract.on("error", reject);
-            extract.on("finish", () => { resolve(new InMemoryDT(root, "")); });
+            extract.on("finish", () => { resolve(new InMemoryDT(root.finish(), "")); });
         });
     });
 }
@@ -86,6 +86,14 @@ class Dir extends Map {
         const res = new Dir(this);
         this.set(name, res);
         return res;
+    }
+    finish() {
+        const out = new Dir(this.parent);
+        for (const key of Array.from(this.keys()).sort()) {
+            const subDirOrFile = this.get(key);
+            out.set(key, typeof subDirOrFile === "string" ? subDirOrFile : subDirOrFile.finish());
+        }
+        return out;
     }
 }
 class InMemoryDT {
@@ -166,7 +174,7 @@ class DiskFS {
         }
     }
     async readdir(dirPath) {
-        return (await fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
+        return util_1.assertSorted((await fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE"));
     }
     async isDirectory(dirPath) {
         return (await fs_extra_1.stat(this.getPath(dirPath))).isDirectory();

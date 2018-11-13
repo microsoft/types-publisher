@@ -29,8 +29,7 @@ if (!module.parent) {
     }
 }
 async function main(dt) {
-    const changed = await versions_1.changedPackages(await packages_1.AllPackages.read(dt), await versions_1.readChanges());
-    await doValidate(changed.map(c => c.name));
+    await doValidate((await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt))).changedTypings.map(c => c.pkg.name));
 }
 exports.default = main;
 async function doAll() {

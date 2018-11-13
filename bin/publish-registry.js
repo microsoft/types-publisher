@@ -148,7 +148,8 @@ function generatePackageJson(version, typesPublisherContentHash) {
 async function generateRegistry(typings, client) {
     const entries = {};
     for (const typing of typings) {
-        const info = util_1.assertDefined(await client.getNpmInfo(typing.fullEscapedNpmName, typing.contentHash));
+        // Unconditionally use cached info, this should have been set in calculate-versions so should be recent enough.
+        const info = util_1.assertDefined(client.getNpmInfoFromCache(typing.fullEscapedNpmName));
         entries[typing.name] = filterTags(info.distTags);
     }
     return { entries };

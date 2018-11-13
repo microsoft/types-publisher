@@ -25,7 +25,7 @@ if (!module.parent) {
 }
 async function main(dt, parallel) {
     const typesFS = dt.subDir("types");
-    const packageNames = await util_1.filterNAtATime(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
+    const packageNames = await util_1.filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
     const typings = {};
     if (parallel) {
         await util_1.runWithChildProcesses({

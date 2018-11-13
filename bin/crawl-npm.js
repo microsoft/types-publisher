@@ -16,7 +16,7 @@ async function main(options) {
     const all = await allNpmPackages();
     await common_1.writeDataFile("all-npm-packages.json", all);
     const client = new npm_client_1.UncachedNpmInfoClient();
-    const allTyped = await util_1.filterNAtATime(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, client), {
+    const allTyped = await util_1.filterNAtATimeOrdered(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, client), {
         name: "Checking for types...",
         flavor: (name, isTyped) => isTyped ? name : undefined,
         options

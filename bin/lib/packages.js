@@ -20,6 +20,9 @@ class AllPackages {
     static async readTypings() {
         return AllPackages.from(await readTypesDataFile(), []).allTypings();
     }
+    static async readLatestTypings() {
+        return AllPackages.from(await readTypesDataFile(), []).allLatestTypings();
+    }
     /** Use for `--single` tasks only. Do *not* call this in a loop! */
     static async readSingle(name) {
         const data = await readTypesDataFile();
@@ -41,23 +44,15 @@ class AllPackages {
         }
         return pkg;
     }
-    getAnyPackage(id) {
-        const pkg = this.tryGetTypingsData(id) || this.notNeeded.find(p => p.name === id.name);
-        if (!pkg) {
-            throw new Error(`Expected to find a package named ${id.name}`);
-        }
-        return pkg;
+    getNotNeededPackage(name) {
+        return util_1.assertDefined(this.notNeeded.find(p => p.name === name));
     }
     hasTypingFor(dep) {
         return this.tryGetTypingsData(dep) !== undefined;
     }
-    /** Gets the latest version of a package. E.g. getLatest(node v6) = node v7. */
+    /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
     getLatest(pkg) {
-        return pkg.isNotNeeded() ? pkg : this.getLatestVersion(pkg.name);
-    }
-    /** Use only with `--single` tasks. */
-    getSingle(packageName) {
-        return this.getLatestVersion(packageName);
+        return pkg.isLatest ? pkg : this.getLatestVersion(pkg.name);
     }
     getLatestVersion(packageName) {
         const latest = this.tryGetLatestVersion(packageName);
@@ -84,6 +79,7 @@ class AllPackages {
     allPackages() {
         return [...this.allTypings(), ...this.allNotNeeded()];
     }
+    /** Note: this includes older version directories (`foo/v0`) */
     allTypings() {
         return Array.from(flattenData(this.data));
     }
@@ -251,7 +247,6 @@ class TypingsData extends PackageBase {
     get contributors() { return this.data.contributors; }
     get major() { return this.data.libraryMajorVersion; }
     get minor() { return this.data.libraryMinorVersion; }
-    get majorMinor() { return { major: this.major, minor: this.minor }; }
     get minTypeScriptVersion() { return this.data.minTsVersion; }
     get typesVersions() { return this.data.typesVersions; }
     get files() { return this.data.files; }

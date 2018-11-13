@@ -70,11 +70,11 @@ function filter(iterable, predicate) {
     };
 }
 exports.filter = filter;
-async function filterNAtATime(n, inputs, shouldKeep, progress) {
+async function filterNAtATimeOrdered(n, inputs, shouldKeep, progress) {
     const shouldKeeps = await nAtATime(n, inputs, shouldKeep, progress);
     return inputs.filter((_, idx) => shouldKeeps[idx]);
 }
-exports.filterNAtATime = filterNAtATime;
+exports.filterNAtATimeOrdered = filterNAtATimeOrdered;
 async function mapAsyncOrdered(arr, mapper) {
     const out = new Array(arr.length);
     await Promise.all(arr.map(async (em, idx) => {
@@ -131,14 +131,6 @@ function intOfString(str) {
     return n;
 }
 exports.intOfString = intOfString;
-function sortObjectKeys(data) {
-    const out = {}; // tslint:disable-line no-object-literal-type-assertion
-    for (const key of Object.keys(data).sort()) {
-        out[key] = data[key];
-    }
-    return out;
-}
-exports.sortObjectKeys = sortObjectKeys;
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 function exec(cmd, cwd) {
     return new Promise(resolve => {
@@ -229,6 +221,17 @@ function mapDefined(arr, mapper) {
     return out;
 }
 exports.mapDefined = mapDefined;
+async function mapDefinedAsync(arr, mapper) {
+    const out = [];
+    for (const a of arr) {
+        const res = await mapper(a);
+        if (res !== undefined) {
+            out.push(res);
+        }
+    }
+    return out;
+}
+exports.mapDefinedAsync = mapDefinedAsync;
 function* map(inputs, mapper) {
     for (const input of inputs) {
         yield mapper(input);
@@ -404,4 +407,13 @@ function split(inputs, cb) {
     return [keep, splitOut];
 }
 exports.split = split;
+function assertSorted(a) {
+    let prev = "";
+    for (const x of a) {
+        assert(x >= prev, `${x} >= ${prev}`);
+        prev = x;
+    }
+    return a;
+}
+exports.assertSorted = assertSorted;
 //# sourceMappingURL=util.js.map
