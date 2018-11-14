@@ -9,7 +9,7 @@ if (!module.parent) {
     process.on("message", message => {
         assert(process.argv.length === 3);
         const typesPath = process.argv[2];
-        util_1.done(go(message, typesPath));
+        util_1.logUncaughtErrors(go(message, typesPath));
     });
 }
 exports.definitionParserWorkerFilename = __filename;

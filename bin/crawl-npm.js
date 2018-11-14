@@ -9,7 +9,7 @@ const settings_1 = require("./lib/settings");
 const progress_1 = require("./util/progress");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main(common_1.Options.defaults));
+    util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 /** Prints out every package on NPM with 'types'. */
 async function main(options) {
@@ -19,7 +19,7 @@ async function main(options) {
     const allTyped = await util_1.filterNAtATimeOrdered(10, all, pkg => check_parse_results_1.packageHasTypes(pkg, client), {
         name: "Checking for types...",
         flavor: (name, isTyped) => isTyped ? name : undefined,
-        options
+        options,
     });
     await common_1.writeDataFile("all-typed-packages.json", allTyped);
     console.log(allTyped.join("\n"));
@@ -36,7 +36,7 @@ function allNpmPackages() {
             assert(path.length > 0);
             if (typeof x !== "number") {
                 const { name } = x;
-                assert(typeof name === "string" && name.length > 0);
+                assert(typeof name === "string" && name.length > 0); // tslint:disable-line strict-type-predicates
                 progress.update(progress_1.strProgress(name), name);
                 all.push(name);
             }

@@ -16,7 +16,7 @@ const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
-    util_1.done(full(dry, util_1.currentTimeStamp(), common_1.Options.azure)); //->defaults
+    util_1.logUncaughtErrors(full(dry, util_1.currentTimeStamp(), common_1.Options.defaults));
 }
 async function full(dry, timeStamp, options) {
     const infoClient = new npm_client_1.UncachedNpmInfoClient();

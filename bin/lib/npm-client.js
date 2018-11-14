@@ -3,14 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");
-const url = require("url");
+const url_1 = require("url");
 const io_1 = require("../util/io");
 const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
 function packageUrl(packageName) {
-    return url.resolve(settings_1.npmRegistry, packageName);
+    return url_1.resolve(settings_1.npmRegistry, packageName);
 }
 const cacheDir = util_1.joinPaths(__dirname, "..", "..", "cache");
 const cacheFile = util_1.joinPaths(cacheDir, "npmInfo.json");

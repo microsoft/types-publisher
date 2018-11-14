@@ -3,13 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");
+const settings_1 = require("./settings");
 if (process.env.LONGJOHN) {
     console.log("=== USING LONGJOHN ===");
-    const longjohn = require("longjohn");
+    const longjohn = require("longjohn"); // tslint:disable-line no-var-requires
     longjohn.async_trace_limit = -1; // unlimited
 }
-exports.home = util_1.joinPaths(__dirname, "..", "..");
-exports.dataDir = util_1.joinPaths(exports.home, "data");
 var Options;
 (function (Options) {
     /** Options for running locally. */
@@ -32,12 +31,12 @@ async function readFileAndWarn(generatedBy, filePath) {
 }
 exports.readFileAndWarn = readFileAndWarn;
 async function writeDataFile(filename, content, formatted = true) {
-    await fs_extra_1.ensureDir(exports.dataDir);
+    await fs_extra_1.ensureDir(settings_1.dataDirPath);
     await io_1.writeJson(dataFilePath(filename), content, formatted);
 }
 exports.writeDataFile = writeDataFile;
 function dataFilePath(filename) {
-    return util_1.joinPaths(exports.dataDir, filename);
+    return util_1.joinPaths(settings_1.dataDirPath, filename);
 }
 exports.dataFilePath = dataFilePath;
 //# sourceMappingURL=common.js.map

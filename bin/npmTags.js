@@ -9,7 +9,7 @@ const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
-    util_1.done(tagAll(dry));
+    util_1.logUncaughtErrors(tagAll(dry));
 }
 /**
  * Refreshes the tags on every package.

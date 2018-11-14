@@ -8,7 +8,7 @@ const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const remote = yargs.argv.remote;
-    util_1.done(main(remote ? { hostname: "typespublisher.azurewebsites.net" } : { hostname: "localhost", port: getPort() }));
+    util_1.logUncaughtErrors(main(remote ? { hostname: "typespublisher.azurewebsites.net" } : { hostname: "localhost", port: getPort() }));
 }
 function getPort() {
     const port = parseInt(process.env.PORT, 10);

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
-const common_1 = require("../lib/common");
+const settings_1 = require("../lib/settings");
 const util_1 = require("../util/util");
 const io_1 = require("./io");
 /** Logger that *just* outputs to the console and does not save anything. */
@@ -23,7 +23,7 @@ function alsoConsoleLogger(consoleLog) {
             consoleLog(message);
             log(message);
         },
-        logResult
+        logResult,
     ];
 }
 /** Logger that writes to console in addition to recording a result. */
@@ -32,12 +32,12 @@ function logger() {
 }
 exports.logger = logger;
 /** Helper for creating `info` and `error` loggers together. */
-function loggerWithErrorsHelper(logger) {
-    const [info, infoResult] = logger();
-    const [error, errorResult] = logger();
+function loggerWithErrorsHelper(loggerOrQuietLogger) {
+    const [info, infoResult] = loggerOrQuietLogger();
+    const [error, errorResult] = loggerOrQuietLogger();
     return [
         { info, error },
-        () => ({ infos: infoResult(), errors: errorResult() })
+        () => ({ infos: infoResult(), errors: errorResult() }),
     ];
 }
 /** Records `info` and `error` messages without writing to console. */
@@ -66,13 +66,12 @@ function moveLogsWithErrors(dest, { infos, errors }, mapper) {
     moveLogs(dest.error, errors, mapper);
 }
 exports.moveLogsWithErrors = moveLogsWithErrors;
-const logDir = util_1.joinPaths(common_1.home, "logs");
 function logPath(logName) {
-    return util_1.joinPaths(logDir, logName);
+    return util_1.joinPaths(settings_1.logDir, logName);
 }
 exports.logPath = logPath;
 async function writeLog(logName, contents) {
-    await fs_extra_1.ensureDir(logDir);
+    await fs_extra_1.ensureDir(settings_1.logDir);
     await io_1.writeFile(logPath(logName), contents.join("\r\n"));
 }
 exports.writeLog = writeLog;

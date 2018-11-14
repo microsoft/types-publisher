@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const adal_node_1 = require("adal-node");
 const azure_keyvault_1 = require("azure-keyvault");
+const util_1 = require("../util/util");
 const settings_1 = require("./settings");
 var Secret;
 (function (Secret) {
@@ -34,9 +35,10 @@ var Secret;
      */
     Secret[Secret["NPM_TOKEN"] = 3] = "NPM_TOKEN";
 })(Secret = exports.Secret || (exports.Secret = {}));
-exports.allSecrets = Object.keys(Secret)
-    .map(key => Secret[key])
-    .filter(x => typeof x === "number");
+exports.allSecrets = util_1.mapDefined(Object.keys(Secret), key => {
+    const value = Secret[key];
+    return typeof value === "number" ? value : undefined; // tslint:disable-line strict-type-predicates (tslint bug)
+});
 /**
  * Convert `AZURE_STORAGE_ACCESS_KEY` to `azure-storage-access-key`.
  * For some reason Azure wouldn't allow secret names with underscores.

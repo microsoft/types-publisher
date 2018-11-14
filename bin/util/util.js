@@ -8,9 +8,6 @@ const os = require("os");
 const sourceMapSupport = require("source-map-support");
 sourceMapSupport.install();
 const util_1 = require("util");
-if (!Object.entries) {
-    Object.entries = (obj) => Object.getOwnPropertyNames(obj).map(key => [key, obj[key]]);
-}
 function assertDefined(x) {
     assert(x !== undefined);
     return x;
@@ -66,7 +63,7 @@ function filter(iterable, predicate) {
                     return res;
                 }
             }
-        }
+        },
     };
 }
 exports.filter = filter;
@@ -91,13 +88,13 @@ function unique(arr) {
     return [...new Set(arr)];
 }
 exports.unique = unique;
-function done(promise) {
+function logUncaughtErrors(promise) {
     (typeof promise === "function" ? promise() : promise).catch(error => {
         console.error(error);
         process.exit(1);
     });
 }
-exports.done = done;
+exports.logUncaughtErrors = logUncaughtErrors;
 function initArray(length, makeElement) {
     const arr = new Array(length);
     for (let i = 0; i < length; i++) {
@@ -119,10 +116,6 @@ function hasWindowsSlashes(path) {
     return path.includes("\\");
 }
 exports.hasWindowsSlashes = hasWindowsSlashes;
-function hasOwnProperty(object, propertyName) {
-    return Object.prototype.hasOwnProperty.call(object, propertyName);
-}
-exports.hasOwnProperty = hasOwnProperty;
 function intOfString(str) {
     const n = Number.parseInt(str, 10);
     if (Number.isNaN(n)) {
@@ -166,17 +159,17 @@ function best(inputs, isBetter) {
     if (first.done) {
         return undefined;
     }
-    let best = first.value;
+    let res = first.value;
     while (true) {
         const { value, done } = iter.next();
         if (done) {
             break;
         }
-        if (isBetter(value, best)) {
-            best = value;
+        if (isBetter(value, res)) {
+            res = value;
         }
     }
-    return best;
+    return res;
 }
 exports.best = best;
 function computeHash(content) {
@@ -205,11 +198,6 @@ function multiMapAdd(map, key, value) {
     }
 }
 exports.multiMapAdd = multiMapAdd;
-function* concat(a, b) {
-    yield* a;
-    yield* b;
-}
-exports.concat = concat;
 function mapDefined(arr, mapper) {
     const out = [];
     for (const a of arr) {
@@ -232,12 +220,12 @@ async function mapDefinedAsync(arr, mapper) {
     return out;
 }
 exports.mapDefinedAsync = mapDefinedAsync;
-function* map(inputs, mapper) {
+function* mapIter(inputs, mapper) {
     for (const input of inputs) {
         yield mapper(input);
     }
 }
-exports.map = map;
+exports.mapIter = mapIter;
 function* flatMap(inputs, mapper) {
     for (const input of inputs) {
         yield* mapper(input);

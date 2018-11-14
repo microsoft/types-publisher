@@ -7,20 +7,16 @@ async function setIssueOk(githubAccessToken, fetcher) {
 }
 exports.setIssueOk = setIssueOk;
 async function reopenIssue(githubAccessToken, timeStamp, error, fetcher) {
-    await doUpdate(githubAccessToken, createContent(), fetcher);
-    function createContent() {
-        const lines = [];
-        const l = lines.push.bind(lines);
-        l(`### There was a server error on **${timeStamp}**.`);
-        l("The types-publisher server has shut down.");
-        l("Please fix the issue and restart the server. The server will update this issue.");
-        l("");
-        const url = `https://${settings_1.azureContainer}.blob.core.windows.net/${settings_1.azureContainer}/index.html`;
-        l(`Logs are available [here](${url}).`);
-        l("");
-        l(util_1.indent(util_1.errorDetails(error)));
-        return lines.join("\n");
-    }
+    const content = [
+        `### There was a server error on **${timeStamp}**.`,
+        "The types-publisher server has shut down.",
+        "Please fix the issue and restart the server. The server will update this issue.",
+        "",
+        `Logs are available [here](https://${settings_1.azureContainer}.blob.core.windows.net/${settings_1.azureContainer}/index.html).`,
+        "",
+        util_1.indent(util_1.errorDetails(error)),
+    ].join("\n");
+    await doUpdate(githubAccessToken, content, fetcher);
 }
 exports.reopenIssue = reopenIssue;
 async function doUpdate(accessToken, body, fetcher) {
@@ -32,7 +28,7 @@ async function doUpdate(accessToken, body, fetcher) {
         method: "PATCH",
         headers: {
             // arbitrary string, but something must be provided
-            "User-Agent": "types-publisher"
+            "User-Agent": "types-publisher",
         },
     });
     if (responseBody.body !== body) {

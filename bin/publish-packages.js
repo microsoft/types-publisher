@@ -12,10 +12,7 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     const deprecateName = yargs.argv.deprecate;
-    if (deprecateName !== undefined) {
-        throw new Error("Select only one of --single=foo or --deprecate=foo or --shouldUnpublish");
-    }
-    util_1.done(async () => {
+    util_1.logUncaughtErrors(async () => {
         const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
         if (deprecateName !== undefined) {
             // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
@@ -23,11 +20,11 @@ if (!module.parent) {
             await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), await packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt));
         }
         else {
-            await main(await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt)), dry);
+            await publishPackages(await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt)), dry);
         }
     });
 }
-async function main(changedPackages, dry) {
+async function publishPackages(changedPackages, dry) {
     const [log, logResult] = logging_1.logger();
     if (dry) {
         log("=== DRY RUN ===");
@@ -43,5 +40,5 @@ async function main(changedPackages, dry) {
     await logging_1.writeLog("publishing.md", logResult());
     console.log("Done!");
 }
-exports.default = main;
+exports.default = publishPackages;
 //# sourceMappingURL=publish-packages.js.map

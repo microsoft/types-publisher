@@ -5,7 +5,7 @@ const fs_extra_1 = require("fs-extra");
 const http_1 = require("http");
 const https_1 = require("https");
 const path_1 = require("path");
-const stream = require("stream");
+const stream_1 = require("stream");
 const string_decoder_1 = require("string_decoder");
 const util_1 = require("./util");
 async function readFile(path) {
@@ -29,7 +29,7 @@ function writeJson(path, content, formatted = true) {
 }
 exports.writeJson = writeJson;
 function streamOfString(text) {
-    const s = new stream.Readable();
+    const s = new stream_1.Readable();
     s.push(text);
     s.push(null); // tslint:disable-line no-null-keyword
     return s;

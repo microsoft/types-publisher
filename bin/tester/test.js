@@ -11,7 +11,7 @@ const test_runner_1 = require("./test-runner");
 if (!module.parent) {
     const options = test_runner_1.testerOptions(!!yargs.argv.runFromDefinitelyTyped);
     const all = !!yargs.argv.all;
-    util_1.done(main(options, test_runner_1.parseNProcesses(), all));
+    util_1.logUncaughtErrors(main(options, test_runner_1.parseNProcesses(), all));
 }
 async function main(options, nProcesses, all) {
     await clean_1.default();

@@ -9,19 +9,19 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const single = yargs.argv.single;
     if (single) {
-        util_1.done(doSingle(single, new npm_client_1.UncachedNpmInfoClient()));
+        util_1.logUncaughtErrors(doSingle(single, new npm_client_1.UncachedNpmInfoClient()));
     }
     else {
-        util_1.done(async () => main(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults)), new npm_client_1.UncachedNpmInfoClient()));
+        util_1.logUncaughtErrors(async () => createSearchIndex(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults)), new npm_client_1.UncachedNpmInfoClient()));
     }
 }
-async function main(packages, client) {
+async function createSearchIndex(packages, client) {
     console.log("Generating search index...");
     const records = await createSearchRecords(packages.allLatestTypings(), client);
     console.log("Done generating search index. Writing out data files...");
     await common_1.writeDataFile("search-index-min.json", records, false);
 }
-exports.default = main;
+exports.default = createSearchIndex;
 async function doSingle(name, client) {
     const pkg = await packages_1.AllPackages.readSingle(name);
     const record = (await createSearchRecords([pkg], client))[0];

@@ -13,7 +13,7 @@ const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
     const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
     const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
-    util_1.done(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => main(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
 }
 const pathToDtsLint = require.resolve("dtslint");
 function parseNProcesses() {
@@ -21,7 +21,7 @@ function parseNProcesses() {
     if (!str) {
         return util_1.numberOfOsProcesses;
     }
-    const nProcesses = Number.parseInt(yargs.argv.nProcesses, 10);
+    const nProcesses = Number.parseInt(str, 10);
     if (Number.isNaN(nProcesses)) {
         throw new Error("Expected nProcesses to be a number.");
     }
@@ -34,7 +34,7 @@ function testerOptions(runFromDefinitelyTyped) {
         : common_1.Options.defaults;
 }
 exports.testerOptions = testerOptions;
-async function main(dt, definitelyTypedPath, nProcesses, selection) {
+async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     const allPackages = await packages_1.AllPackages.read(dt);
     const { changedPackages, dependentPackages } = selection === "all"
         ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
@@ -45,11 +45,11 @@ async function main(dt, definitelyTypedPath, nProcesses, selection) {
     console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
     console.log(`Running with ${nProcesses} processes.`);
     const typesPath = `${definitelyTypedPath}/types`;
-    await doInstalls(allPackages, util_1.concat(changedPackages, dependentPackages), typesPath, nProcesses);
+    await doInstalls(allPackages, [...changedPackages, ...dependentPackages], typesPath, nProcesses);
     console.log("Testing...");
-    await runTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
+    await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
 }
-exports.default = main;
+exports.default = runTests;
 async function doInstalls(allPackages, packages, typesPath, nProcesses) {
     console.log("Installing NPM dependencies...");
     // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
@@ -73,7 +73,7 @@ async function doInstalls(allPackages, packages, typesPath, nProcesses) {
 function directoryPath(typesPath, pkg) {
     return util_1.joinPaths(typesPath, pkg.subDirectoryPath);
 }
-async function runTests(packages, changed, typesPath, nProcesses) {
+async function doRunTests(packages, changed, typesPath, nProcesses) {
     const allFailures = [];
     if (fold.isTravis()) {
         console.log(fold.start("tests"));

@@ -11,19 +11,19 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const singleName = yargs.argv.single;
     const options = common_1.Options.defaults;
-    util_1.done(async () => {
+    util_1.logUncaughtErrors(async () => {
         const dt = await get_definitely_typed_1.getDefinitelyTyped(options);
         if (singleName) {
             await single(singleName, dt);
         }
         else {
-            await main(dt, options.parseInParallel
+            await parseDefinitions(dt, options.parseInParallel
                 ? { nProcesses: test_runner_1.parseNProcesses(), definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }
                 : undefined);
         }
     });
 }
-async function main(dt, parallel) {
+async function parseDefinitions(dt, parallel) {
     const typesFS = dt.subDir("types");
     const packageNames = await util_1.filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
     const typings = {};
@@ -47,7 +47,7 @@ async function main(dt, parallel) {
     await common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings));
     return packages_1.AllPackages.from(typings, await packages_1.readNotNeededPackages(dt));
 }
-exports.default = main;
+exports.default = parseDefinitions;
 function sorted(obj) {
     const out = {};
     for (const key of Object.keys(obj).sort()) {

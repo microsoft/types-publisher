@@ -9,7 +9,7 @@ const util_1 = require("../util/util");
 const issue_updater_1 = require("./issue-updater");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
-async function server(key, githubAccessToken, dry, fetcher, options) {
+async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
@@ -19,7 +19,7 @@ async function server(key, githubAccessToken, dry, fetcher, options) {
         await full_1.default(dry, timeStamp, options);
     }));
 }
-exports.default = server;
+exports.default = webhookServer;
 function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
@@ -43,7 +43,10 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
             work().then(() => rollingLogs.then(logs => writeLog(logs, logResult()))).catch(onError);
         }
         catch (error) {
-            rollingLogs.then(logs => writeLog(logs, logResult())).then(() => { onError(error); }).catch(onError);
+            rollingLogs
+                .then(logs => writeLog(logs, logResult()))
+                .then(() => { onError(error); })
+                .catch(onError);
         }
         function onError(error) {
             server.close();

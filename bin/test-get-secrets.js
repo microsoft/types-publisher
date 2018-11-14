@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const secrets_1 = require("./lib/secrets");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main());
+    util_1.logUncaughtErrors(main());
 }
 async function main() {
     for (const secret of secrets_1.allSecrets) {

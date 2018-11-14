@@ -41,8 +41,6 @@ async function outputFilePath(pkg, filename) {
     return full;
 }
 async function createPackageJSON(typing, version, packages) {
-    // typing may provide a partial `package.json` for us to complete
-    const dependencies = getDependencies(typing.packageJsonDependencies, typing, packages);
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out = {
         name: typing.fullNpmName,
@@ -58,12 +56,12 @@ async function createPackageJSON(typing, version, packages) {
         typesVersions: definitelytyped_header_parser_1.makeTypesVersionsForPackageJson(typing.typesVersions),
         repository: {
             type: "git",
-            url: `${definitelyTypedURL}.git`
+            url: `${definitelyTypedURL}.git`,
         },
         scripts: {},
-        dependencies,
+        dependencies: getDependencies(typing.packageJsonDependencies, typing, packages),
         typesPublisherContentHash: typing.contentHash,
-        typeScriptVersion: typing.minTypeScriptVersion
+        typeScriptVersion: typing.minTypeScriptVersion,
     };
     return JSON.stringify(out, undefined, 4);
 }
@@ -75,12 +73,9 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
         dependencies[name] = version;
     }
     for (const dependency of typing.dependencies) {
-        const typesDependency = packages_1.fullNpmName(dependency.name);
+        const typesDependency = packages_1.getFullNpmName(dependency.name);
         // A dependency "foo" is already handled if we already have a dependency on the package "foo" or "@types/foo".
-        function handlesDependency(deps) {
-            return util_1.hasOwnProperty(deps, dependency.name) || util_1.hasOwnProperty(deps, typesDependency);
-        }
-        if (!handlesDependency(dependencies) && allPackages.hasTypingFor(dependency)) {
+        if (!packageJsonDependencies.some(d => d.name === dependency.name || d.name === typesDependency) && allPackages.hasTypingFor(dependency)) {
             dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
         }
     }
@@ -102,8 +97,8 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, s
         license,
         // No `typings`, that's provided by the dependency.
         dependencies: {
-            [name]: "*"
-        }
+            [name]: "*",
+        },
     }, undefined, 4);
 }
 function createReadme(typing) {

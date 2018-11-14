@@ -27,12 +27,12 @@ async function getTypingInfo(packageName, fs) {
         }
         return data;
     });
-    const data = {};
-    data[latestVersion] = latestData;
+    const res = {};
+    res[latestVersion] = latestData;
     for (const o of older) {
-        data[o.libraryMajorVersion] = o;
+        res[o.libraryMajorVersion] = o;
     }
-    return data;
+    return res;
 }
 exports.getTypingInfo = getTypingInfo;
 const packageJsonName = "package.json";
@@ -124,7 +124,7 @@ async function getTypingDataForSingleTypesVersion(typescriptVersion, packageName
     return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles, tsconfigPathsForHash };
 }
 function checkPackageJsonDependencies(dependencies, path) {
-    if (dependencies === undefined) {
+    if (dependencies === undefined) { // tslint:disable-line strict-type-predicates (false positive)
         return [];
     }
     if (dependencies === null || typeof dependencies !== "object") { // tslint:disable-line strict-type-predicates
@@ -270,7 +270,7 @@ async function readFileAndThrowOnBOM(fileName, fs) {
         const commands = [
             "npm install -g strip-bom-cli",
             `strip-bom ${fileName} > fix`,
-            `mv fix ${fileName}`
+            `mv fix ${fileName}`,
         ];
         throw new Error(`File '${fileName}' has a BOM. Try using:\n${commands.join("\n")}`);
     }

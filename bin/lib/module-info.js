@@ -63,7 +63,14 @@ async function getModuleInfo(packageName, allEntryFilenames, fs) {
                         if (nameNode) {
                             globals.add(nameNode.text);
                         }
+                        break;
                     }
+                    case ts.SyntaxKind.ImportEqualsDeclaration:
+                    case ts.SyntaxKind.InterfaceDeclaration:
+                    case ts.SyntaxKind.TypeAliasDeclaration:
+                        break;
+                    default:
+                        throw new Error(`Unexpected node kind ${ts.SyntaxKind[node.kind]}`);
                 }
             }
         }
@@ -122,7 +129,7 @@ async function allReferencedFiles(entryFilenames, fs) {
         const resolvedFilename = exact ? text : await resolveModule(text, fs);
         const src = createSourceFile(resolvedFilename, await definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
         all.set(resolvedFilename, src);
-        const refs = referencedFiles(src, path.dirname(resolvedFilename));
+        const refs = findReferencedFiles(src, path.dirname(resolvedFilename));
         await Promise.all(Array.from(refs).map(recur));
     }
     await Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
@@ -142,7 +149,7 @@ async function resolveModule(importSpecifier, fs) {
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function* referencedFiles(src, subDirectory) {
+function* findReferencedFiles(src, subDirectory) {
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
         yield addReference({ text: ref.fileName, exact: true });
@@ -190,7 +197,9 @@ function* imports({ statements }) {
                 if (name.kind === ts.SyntaxKind.StringLiteral && body) {
                     yield* imports(body);
                 }
+                break;
             }
+            default:
         }
     }
 }

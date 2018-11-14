@@ -8,7 +8,7 @@ const webhook_server_1 = require("./lib/webhook-server");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main());
+    util_1.logUncaughtErrors(main());
 }
 async function main() {
     const key = await secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);

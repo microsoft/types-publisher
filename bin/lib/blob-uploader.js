@@ -20,7 +20,7 @@ async function uploadBlobs(container, timeStamp) {
     const [log, logResult] = logging_1.logger();
     const [dataUrls, logUrls] = await Promise.all([
         await uploadDirectory(container, "data", "data", log),
-        await uploadLogs(container, timeStamp, log)
+        await uploadLogs(container, timeStamp, log),
     ]);
     // Finally, output blob logs and upload them.
     const blobLogs = "upload-blobs.md";

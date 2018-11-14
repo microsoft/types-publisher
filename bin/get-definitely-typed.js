@@ -5,13 +5,12 @@ const fs_extra_1 = require("fs-extra");
 const https = require("https");
 const tarStream = require("tar-stream");
 const zlib = require("zlib");
-const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 async function getDefinitelyTyped(options) {
     if (options.definitelyTypedPath === undefined) {
-        await fs_extra_1.ensureDir(common_1.dataDir);
+        await fs_extra_1.ensureDir(settings_1.dataDirPath);
         return downloadAndExtractFile(settings_1.definitelyTypedZipUrl);
     }
     else {

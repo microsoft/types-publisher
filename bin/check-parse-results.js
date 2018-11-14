@@ -9,9 +9,9 @@ const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(async () => main(true, await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient()));
+    util_1.logUncaughtErrors(async () => checkParseResults(true, await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient()));
 }
-async function main(includeNpmChecks, dt, options, client) {
+async function checkParseResults(includeNpmChecks, dt, options, client) {
     const allPackages = await packages_1.AllPackages.read(dt);
     const [log, logResult] = logging_1.logger();
     checkTypeScriptVersions(allPackages);
@@ -45,7 +45,7 @@ async function main(includeNpmChecks, dt, options, client) {
     }
     await logging_1.writeLog("conflicts.md", logResult());
 }
-exports.default = main;
+exports.default = checkParseResults;
 function checkForDuplicates(packages, func, key, log) {
     const lookup = new Map();
     for (const info of packages) {
@@ -129,16 +129,16 @@ async function checkNpm({ major, minor, name, libraryName, projectName, contribu
 }
 async function packageHasTypes(packageName, client) {
     const info = util_1.assertDefined(await client.fetchRawNpmInfo(packageName));
-    return hasTypes(info.versions[info["dist-tags"].latest]);
+    return versionHasTypes(info.versions[info["dist-tags"].latest]);
 }
 exports.packageHasTypes = packageHasTypes;
 function getRegularVersions(versions) {
     return util_1.mapDefined(Object.entries(versions), ([versionString, info]) => {
         const version = versions_1.Semver.tryParse(versionString);
-        return version === undefined ? undefined : { version, hasTypes: hasTypes(info) };
+        return version === undefined ? undefined : { version, hasTypes: versionHasTypes(info) };
     });
 }
-function hasTypes(info) {
+function versionHasTypes(info) {
     return "types" in info || "typings" in info;
 }
 const notNeededExceptions = new Set([

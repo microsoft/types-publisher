@@ -145,7 +145,7 @@ class PackageBase {
     }
     /** '@types/foo' for a package 'foo'. */
     get fullNpmName() {
-        return fullNpmName(this.name);
+        return getFullNpmName(this.name);
     }
     /** '@types%2ffoo' for a package 'foo'. */
     get fullEscapedNpmName() {
@@ -155,15 +155,14 @@ class PackageBase {
         return { name: this.name, majorVersion: this.major };
     }
     get outputDirectory() {
-        return util_1.joinPaths(exports.outputDir, this.desc);
+        return util_1.joinPaths(settings_1.outputDirPath, this.desc);
     }
 }
 exports.PackageBase = PackageBase;
-function fullNpmName(packageName) {
+function getFullNpmName(packageName) {
     return `@${settings_1.scopeName}/${packageName}`;
 }
-exports.fullNpmName = fullNpmName;
-exports.outputDir = util_1.joinPaths(common_1.home, settings_1.outputPath);
+exports.getFullNpmName = getFullNpmName;
 class NotNeededPackage extends PackageBase {
     get license() { return "MIT" /* MIT */; }
     constructor(raw) {
@@ -187,7 +186,7 @@ class NotNeededPackage extends PackageBase {
     get minTypeScriptVersion() { return definitelytyped_header_parser_1.TypeScriptVersion.lowest; }
     readme() {
         return `This is a stub types definition for ${this.libraryName} (${this.sourceRepoURL}).\n
-${this.libraryName} provides its own type definitions, so you don't need ${fullNpmName(this.name)} installed!`;
+${this.libraryName} provides its own type definitions, so you don't need ${getFullNpmName(this.name)} installed!`;
     }
     deprecatedMessage() {
         return `This is a stub types definition. ${this.name} provides its own type definitions, so you do not need this installed.`;
@@ -196,7 +195,7 @@ ${this.libraryName} provides its own type definitions, so you don't need ${fullN
 exports.NotNeededPackage = NotNeededPackage;
 const allLicenses = ["MIT" /* MIT */, "Apache-2.0" /* Apache20 */];
 function getLicenseFromPackageJson(packageJsonLicense) {
-    if (packageJsonLicense === undefined) {
+    if (packageJsonLicense === undefined) { // tslint:disable-line strict-type-predicates (false positive)
         return "MIT" /* MIT */;
     }
     if (packageJsonLicense === "MIT") {

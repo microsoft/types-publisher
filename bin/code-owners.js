@@ -7,7 +7,7 @@ const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.done(main(common_1.Options.defaults));
+    util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 async function main(options) {
     const allPackages = await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options));

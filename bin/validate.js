@@ -18,20 +18,20 @@ if (!module.parent) {
     }
     if (all) {
         console.log("Validating all packages");
-        util_1.done(doAll());
+        util_1.logUncaughtErrors(doAll());
     }
     else if (packageNames.length) {
         console.log(`Validating: ${JSON.stringify(packageNames)}`);
-        util_1.done(doValidate(packageNames));
+        util_1.logUncaughtErrors(doValidate(packageNames));
     }
     else {
-        util_1.done(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(main));
+        util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(validate));
     }
 }
-async function main(dt) {
+async function validate(dt) {
     await doValidate((await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt))).changedTypings.map(c => c.pkg.name));
 }
-exports.default = main;
+exports.default = validate;
 async function doAll() {
     // todo: validate older versions too
     const packageNames = (await packages_1.AllPackages.readTypings()).map(t => t.name).sort();
@@ -43,7 +43,7 @@ async function doValidate(packageNames) {
     const { infos, errors } = logResult();
     await Promise.all([
         logging_1.writeLog("validate.md", infos),
-        logging_1.writeLog("validate-errors.md", errors)
+        logging_1.writeLog("validate-errors.md", errors),
     ]);
 }
 async function validatePackages(packageNames, outPath, log) {
@@ -115,7 +115,7 @@ async function writePackage(packageDirectory, packageName) {
         author: "",
         license: "ISC",
         repository: "https://github.com/Microsoft/types-publisher",
-        dependencies: { [packages_1.fullNpmName(packageName)]: "latest" }
+        dependencies: { [packages_1.getFullNpmName(packageName)]: "latest" },
     });
     // Write tsconfig.json
     await io_1.writeJson(util_1.joinPaths(packageDirectory, "tsconfig.json"), {
@@ -125,8 +125,8 @@ async function writePackage(packageDirectory, packageName) {
             noImplicitAny: false,
             strictNullChecks: false,
             noEmit: true,
-            lib: ["es5", "es2015.promise", "dom"]
-        }
+            lib: ["es5", "es2015.promise", "dom"],
+        },
     });
     // Write index.ts
     await io_1.writeFile(util_1.joinPaths(packageDirectory, "index.ts"), `/// <reference types="${packageName}" />\r\n`);

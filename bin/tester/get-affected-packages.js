@@ -8,7 +8,7 @@ const settings_1 = require("../lib/settings");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 if (!module.parent) {
-    util_1.done(main(common_1.Options.defaults));
+    util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 async function main(options) {
     const changes = await getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options)), logging_1.consoleLogger.info, options.definitelyTypedPath);
@@ -88,7 +88,7 @@ async function gitChanges(log, definitelyTypedPath) {
             }
         }
     }
-    return util_1.flatMap(changedPackages, ([name, versions]) => util_1.map(versions, majorVersion => ({ name, majorVersion })));
+    return util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, majorVersion => ({ name, majorVersion })));
 }
 /*
 We have to be careful about how we get the diff because travis uses a shallow clone.
