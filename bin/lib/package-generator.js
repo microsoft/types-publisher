@@ -87,7 +87,7 @@ function dependencySemver(dependency) {
 function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }) {
     return JSON.stringify({
         name: fullNpmName,
-        version,
+        version: version.versionString,
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",
