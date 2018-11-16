@@ -138,22 +138,23 @@ export async function isDirectory(path: string): Promise<boolean> {
 	return (await stat(path)).isDirectory();
 }
 
-export async function assertDirectoriesEqual(expected: string, actual: string, options: { ignore(fileName: string): boolean }): Promise<void> {
+/** All entries in `actual` must appear in `expected`. If an `actual` entry is a directory, the `expected` must be too.  */
+export async function assertDirectoryIsSubset(expected: string, actual: string, options: { ignore(fileName: string): boolean }): Promise<void> {
 	const expectedLs = await readdir(expected);
 	const actualLs = await readdir(actual);
-	assert.deepStrictEqual(expectedLs, actualLs);
-	for (const name of expectedLs) {
+	for (const name of actualLs) {
 		if (options.ignore(name)) {
 			continue;
 		}
 
 		const expectedFile = joinPaths(expected, name);
 		const actualFile = joinPaths(actual, name);
+		assert(expectedLs.indexOf(name) > -1, `Unexpected entry ${name} found in ${actualFile} but not ${expectedFile}.`);
 		const expectedStat = await stat(expectedFile);
 		const actualStat = await stat(actualFile);
 		assert.strictEqual(expectedStat.isDirectory(), actualStat.isDirectory());
 		if (expectedStat.isDirectory()) {
-			await assertDirectoriesEqual(expectedFile, actualFile, options);
+			await assertDirectoryIsSubset(expectedFile, actualFile, options);
 		} else {
 			assert.strictEqual(await readFile(actualFile), await readFile(expectedFile));
 		}

@@ -8,7 +8,7 @@ import { CachedNpmInfoClient, NpmPublishClient, UncachedNpmInfoClient } from "./
 import { AllPackages, NotNeededPackage, readNotNeededPackages, TypingsData } from "./lib/packages";
 import { outputDirPath, validateOutputPath } from "./lib/settings";
 import { fetchAndProcessNpmInfo } from "./lib/versions";
-import { assertDirectoriesEqual, npmInstallFlags, readJson, sleep, writeFile, writeJson } from "./util/io";
+import { assertDirectoryIsSubset, npmInstallFlags, readJson, sleep, writeFile, writeJson } from "./util/io";
 import { logger, writeLog } from "./util/logging";
 import { computeHash, execAndThrowErrors, joinPaths, logUncaughtErrors } from "./util/util";
 
@@ -121,7 +121,7 @@ const validateTypesRegistryPath = joinPaths(validateOutputPath, "node_modules", 
 
 async function validate(): Promise<void> {
 	await installForValidate();
-	await assertDirectoriesEqual(registryOutputPath, validateTypesRegistryPath, {
+	await assertDirectoryIsSubset(registryOutputPath, validateTypesRegistryPath, {
 		ignore: f => f === "package.json",
 	});
 }
@@ -129,7 +129,7 @@ async function validate(): Promise<void> {
 async function validateIsSubset(notNeeded: ReadonlyArray<NotNeededPackage>): Promise<void> {
 	await installForValidate();
 	const indexJson = "index.json";
-	await assertDirectoriesEqual(registryOutputPath, validateTypesRegistryPath, {
+	await assertDirectoryIsSubset(registryOutputPath, validateTypesRegistryPath, {
 		ignore: f => f === "package.json" || f === indexJson,
 	});
 	const actual = await readJson(joinPaths(validateTypesRegistryPath, indexJson)) as Registry;
