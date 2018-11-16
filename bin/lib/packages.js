@@ -81,10 +81,10 @@ class AllPackages {
     }
     /** Note: this includes older version directories (`foo/v0`) */
     allTypings() {
-        return Array.from(flattenData(this.data));
+        return util_1.assertSorted(Array.from(flattenData(this.data)), t => t.name);
     }
     allLatestTypings() {
-        return Array.from(this.data.values()).map(versions => versions.getLatest());
+        return util_1.assertSorted(Array.from(this.data.values()).map(versions => versions.getLatest()), t => t.name);
     }
     allNotNeeded() {
         return this.notNeeded;

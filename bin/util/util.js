@@ -395,10 +395,11 @@ function split(inputs, cb) {
     return [keep, splitOut];
 }
 exports.split = split;
-function assertSorted(a) {
-    let prev = "";
-    for (const x of a) {
-        assert(x >= prev, `${x} >= ${prev}`);
+function assertSorted(a, cb = (t) => t) {
+    let prev = a[0];
+    for (let i = 1; i < a.length; i++) {
+        const x = a[i];
+        assert(cb(x) >= cb(prev), `${x} >= ${prev}`);
         prev = x;
     }
     return a;

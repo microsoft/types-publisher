@@ -43,6 +43,9 @@ class CachedNpmInfoClient {
         await fs_extra_1.ensureFile(cacheFile);
         await io_1.writeJson(cacheFile, util_1.mapToRecord(this.cache, jsonFromNpmInfo));
     }
+    formatKeys() {
+        return Array.from(this.cache.keys()).join(", ");
+    }
 }
 exports.CachedNpmInfoClient = CachedNpmInfoClient;
 class UncachedNpmInfoClient {
