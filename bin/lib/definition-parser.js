@@ -61,10 +61,10 @@ async function combineDataForAllTypesVersions(typingsPackageName, ls, fs, oldMaj
     const { remainingLs, typesVersions, hasPackageJson } = getTypesVersionsAndPackageJson(ls);
     // Every typesVersion has an index.d.ts, but only the root index.d.ts should have a header.
     const { contributors, libraryMajorVersion, libraryMinorVersion, typeScriptVersion: minTsVersion, libraryName, projects } = definitelytyped_header_parser_1.parseHeaderOrFail(await readFileAndThrowOnBOM("index.d.ts", fs));
-    const dataForRoot = await getTypingDataForSingleTypesVersion(undefined, typingsPackageName, remainingLs, fs, oldMajorVersion);
+    const dataForRoot = await getTypingDataForSingleTypesVersion(undefined, typingsPackageName, fs.debugPath(), remainingLs, fs, oldMajorVersion);
     const dataForOtherTypesVersions = await util_1.mapAsyncOrdered(typesVersions, async (tsVersion) => {
         const subFs = fs.subDir(`ts${tsVersion}`);
-        return getTypingDataForSingleTypesVersion(tsVersion, typingsPackageName, await subFs.readdir(), subFs, oldMajorVersion);
+        return getTypingDataForSingleTypesVersion(tsVersion, typingsPackageName, fs.debugPath(), await subFs.readdir(), subFs, oldMajorVersion);
     });
     const allTypesVersions = [dataForRoot, ...dataForOtherTypesVersions];
     // tslint:disable-next-line await-promise (tslint bug)
@@ -102,10 +102,10 @@ function getAllUniqueValues(records, key) {
  * @param ls All file/directory names in `directory`.
  * @param fs FS rooted at the directory for this particular TS version, e.g. `types/abs/ts3.1` or `types/abs` when typescriptVersion is undefined.
  */
-async function getTypingDataForSingleTypesVersion(typescriptVersion, packageName, ls, fs, oldMajorVersion) {
+async function getTypingDataForSingleTypesVersion(typescriptVersion, packageName, packageDirectory, ls, fs, oldMajorVersion) {
     const tsconfig = await fs.readJson("tsconfig.json"); // tslint:disable-line await-promise (tslint bug)
     const { typeFiles, testFiles } = await entryFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await module_info_1.default(packageName, typeFiles, fs);
+    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await module_info_1.default(packageName, packageDirectory, typeFiles, fs);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
     const removeDeclaredModules = (modules) => util_1.filter(modules, m => !declaredModulesSet.has(m));

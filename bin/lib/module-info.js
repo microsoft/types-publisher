@@ -5,8 +5,8 @@ const path = require("path");
 const ts = require("typescript");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
-async function getModuleInfo(packageName, allEntryFilenames, fs) {
-    const all = await allReferencedFiles(allEntryFilenames, fs);
+async function getModuleInfo(packageName, packageDirectory, allEntryFilenames, fs) {
+    const all = await allReferencedFiles(allEntryFilenames, fs, packageDirectory);
     const dependencies = new Set();
     const declaredModules = [];
     const globals = new Set();
@@ -118,7 +118,7 @@ function withoutExtension(str, ext) {
     return str.slice(0, str.length - ext.length);
 }
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-async function allReferencedFiles(entryFilenames, fs) {
+async function allReferencedFiles(entryFilenames, fs, baseDirectory) {
     const seenReferences = new Set();
     const all = new Map();
     async function recur({ text, exact }) {
@@ -129,7 +129,7 @@ async function allReferencedFiles(entryFilenames, fs) {
         const resolvedFilename = exact ? text : await resolveModule(text, fs);
         const src = createSourceFile(resolvedFilename, await definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
         all.set(resolvedFilename, src);
-        const refs = findReferencedFiles(src, path.dirname(resolvedFilename));
+        const refs = findReferencedFiles(src, path.dirname(resolvedFilename), util_1.normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
         await Promise.all(Array.from(refs).map(recur));
     }
     await Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
@@ -149,7 +149,7 @@ async function resolveModule(importSpecifier, fs) {
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
  * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  */
-function* findReferencedFiles(src, subDirectory) {
+function* findReferencedFiles(src, subDirectory, baseDirectory) {
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
         yield addReference({ text: ref.fileName, exact: true });
@@ -162,7 +162,8 @@ function* findReferencedFiles(src, subDirectory) {
     function addReference({ exact, text }) {
         // `path.normalize` may add windows slashes
         const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, text))));
-        if (full.startsWith("..")) {
+        // allow files in typesVersions directories (i.e. 'ts3.1') to reference files in parent directory
+        if (full.startsWith("..") && (baseDirectory === "." || path.normalize(util_1.joinPaths(baseDirectory, full)).startsWith(".."))) {
             throw new Error(`${src.fileName}: ` +
                 'Definitions must use global references to other packages, not parent ("../xxx") references.' +
                 `(Based on reference '${text}')`);
