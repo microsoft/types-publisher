@@ -33,10 +33,11 @@ export interface FS {
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
-    logUncaughtErrors(getDefinitelyTyped(dry ? Options.azure : Options.defaults).then(async dt => {
+    logUncaughtErrors(async () => {
+        const dt = await getDefinitelyTyped(dry ? Options.azure : Options.defaults);
         assert(await dt.exists("types"));
         assert(!(await dt.exists("buncho")));
-    }));
+    });
 }
 
 export async function getDefinitelyTyped(options: Options): Promise<FS> {
