@@ -1,7 +1,7 @@
 import assert = require("assert");
 import { ensureFile, pathExists } from "fs-extra";
 import RegClient = require("npm-registry-client");
-import * as url from "url";
+import { resolve as resolveUrl } from "url";
 
 import { Fetcher, readFile, readJson, sleep, writeJson } from "../util/io";
 import { createTgz } from "../util/tgz";
@@ -11,7 +11,7 @@ import { getSecret, Secret } from "./secrets";
 import { npmApi, npmRegistry, npmRegistryHostName } from "./settings";
 
 function packageUrl(packageName: string): string {
-    return url.resolve(npmRegistry, packageName);
+    return resolveUrl(npmRegistry, packageName);
 }
 
 const cacheDir = joinPaths(__dirname, "..", "..", "cache");
@@ -37,7 +37,7 @@ export interface NpmInfo {
     readonly timeModified: string;
 }
 export interface NpmInfoVersion {
-    readonly typesPublisherContentHash: string;
+    readonly typesPublisherContentHash?: string;
     readonly deprecated?: string;
 }
 
@@ -53,23 +53,25 @@ export class CachedNpmInfoClient {
 
     private constructor(private readonly uncachedClient: UncachedNpmInfoClient, private readonly cache: Map<string, NpmInfo>) {}
 
-    async getNpmInfo(escapedPackageName: string, contentHash: string | undefined): Promise<NpmInfo | undefined> {
-        const cached = this.cache.get(escapedPackageName);
-        if (cached !== undefined && contentHash !== undefined &&
-            cached.versions.get(cached.distTags.get("latest")!)!.typesPublisherContentHash === contentHash) {
-            return cached;
-        }
+    /** May return old info -- caller should check that this looks up-to-date. */
+    getNpmInfoFromCache(escapedPackageName: string): NpmInfo | undefined {
+        return this.cache.get(escapedPackageName);
+    }
 
+    /** Call this when the result of getNpmInfoFromCache looks potentially out-of-date. */
+    async fetchAndCacheNpmInfo(escapedPackageName: string): Promise<NpmInfo | undefined> {
         const info = await this.uncachedClient.fetchNpmInfo(escapedPackageName);
-        if (info !== undefined && contentHash !== undefined) {
-            this.cache.set(escapedPackageName, info);
-        }
+        if (info) { this.cache.set(escapedPackageName, info); }
         return info;
     }
 
     private async writeCache(): Promise<void> {
         await ensureFile(cacheFile);
         await writeJson(cacheFile, mapToRecord(this.cache, jsonFromNpmInfo));
+    }
+
+    formatKeys(): string {
+        return Array.from(this.cache.keys()).join(", ");
     }
 }
 
