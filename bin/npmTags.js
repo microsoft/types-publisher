@@ -39,7 +39,7 @@ async function updateTypeScriptVersionTags(pkg, version, client, log, dry) {
 }
 exports.updateTypeScriptVersionTags = updateTypeScriptVersionTags;
 async function updateLatestTag(fullEscapedNpmName, version, client, log, dry) {
-    log(`	but tag ${fullEscapedNpmName}@${version} as "latest"`);
+    log(`   but tag ${fullEscapedNpmName}@${version} as "latest"`);
     if (!dry) {
         await client.tag(fullEscapedNpmName, version, "latest");
     }

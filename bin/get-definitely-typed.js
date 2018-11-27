@@ -4,10 +4,21 @@ const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const https = require("https");
 const tarStream = require("tar-stream");
+const yargs = require("yargs");
 const zlib = require("zlib");
+const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
+if (!module.parent) {
+    const dry = !!yargs.argv.dry;
+    console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
+    util_1.logUncaughtErrors(async () => {
+        const dt = await getDefinitelyTyped(dry ? common_1.Options.azure : common_1.Options.defaults);
+        assert(await dt.exists("types"));
+        assert(!(await dt.exists("buncho")));
+    });
+}
 async function getDefinitelyTyped(options) {
     if (options.definitelyTypedPath === undefined) {
         await fs_extra_1.ensureDir(settings_1.dataDirPath);
@@ -95,6 +106,7 @@ class Dir extends Map {
         return out;
     }
 }
+exports.Dir = Dir;
 class InMemoryDT {
     /** pathToRoot is just for debugging */
     constructor(curDir, pathToRoot) {
@@ -158,6 +170,7 @@ class InMemoryDT {
         return this.pathToRoot;
     }
 }
+exports.InMemoryDT = InMemoryDT;
 class DiskFS {
     constructor(rootPrefix) {
         this.rootPrefix = rootPrefix;
