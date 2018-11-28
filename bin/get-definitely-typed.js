@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const appInsights = require("applicationinsights");
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const https = require("https");
@@ -11,6 +12,8 @@ const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
+    appInsights.setup();
+    appInsights.start();
     const dry = !!yargs.argv.dry;
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
     util_1.logUncaughtErrors(async () => {

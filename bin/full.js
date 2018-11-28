@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
+const appInsights = require("applicationinsights");
 const calculate_versions_1 = require("./calculate-versions");
 const clean_1 = require("./clean");
 const create_search_index_1 = require("./create-search-index");
@@ -15,6 +16,8 @@ const upload_blobs_1 = require("./upload-blobs");
 const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
+    appInsights.setup();
+    appInsights.start();
     const dry = !!yargs.argv.dry;
     util_1.logUncaughtErrors(full(dry, util_1.currentTimeStamp(), common_1.Options.defaults));
 }
