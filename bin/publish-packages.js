@@ -35,6 +35,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     for (const cp of changedPackages.changedTypings) {
         console.log(`Publishing ${cp.pkg.desc}...`);
         await package_publisher_1.publishTypingsPackage(client, cp, dry, log);
+        console.log("Done publishing, checking latency ...");
         const commits = await fetcher.fetchJson({
             hostname: "api.github.com",
             path: `repos/DefinitelyTyped/DefinitelyTyped/commits?access_token=${githubAccessToken}`,
@@ -45,6 +46,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             },
         });
         if (commits.length > 0) {
+            console.log("Found related commits, logging event and metric");
             const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
             appInsights.defaultClient.trackEvent({
                 name: "publish package",
@@ -54,6 +56,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
                 }
             });
             appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
+            console.log("Done logging");
         }
     }
     for (const n of changedPackages.changedNotNeededPackages) {
