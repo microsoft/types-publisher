@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
+const Github = require("@octokit/rest");
 const full_1 = require("../full");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
@@ -11,12 +12,17 @@ const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
+        const github = new Github();
+        github.authenticate({
+            type: "token",
+            token: githubAccessToken
+        });
         log.info("");
         log.info("");
         log.info(`# ${timeStamp}`);
         log.info("");
         log.info("Starting full...");
-        await full_1.default(dry, timeStamp, options);
+        await full_1.default(dry, timeStamp, github, options);
     }));
 }
 exports.default = webhookServer;
