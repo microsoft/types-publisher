@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
-const appInsights = require("applicationinsights");
+// import appInsights = require("applicationinsights");
 const Github = require("@octokit/rest");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
@@ -47,15 +47,15 @@ async function publishPackages(changedPackages, dry, github) {
             per_page: 1
         })).data;
         if (commits.length > 0) {
-            const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
-            appInsights.defaultClient.trackEvent({
-                name: "publish package",
-                properties: {
-                    name: cp.pkg.desc,
-                    latency: latency.toString()
-                }
-            });
-            appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
+            // const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
+            // appInsights.defaultClient.trackEvent({
+            //     name: "publish package",
+            //     properties: {
+            //         name: cp.pkg.desc,
+            //         latency: latency.toString()
+            //     }
+            // });
+            // appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
         }
     }
     for (const n of changedPackages.changedNotNeededPackages) {
