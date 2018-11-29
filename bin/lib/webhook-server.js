@@ -12,7 +12,13 @@ const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
-        const github = new Github();
+        const github = new Github({
+            baseUrl: 'https://api.github.com',
+            headers: {
+                accept: 'application/vnd.github.v3+json',
+                'user-agent': `octokit/rest.js v16.1.0 Node.js/${process.version.substr(1)} (Windows; ${process.arch})`
+            }
+        });
         github.authenticate({
             type: "token",
             token: githubAccessToken
