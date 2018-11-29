@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
 const full_1 = require("../full");
-const appInsights = require("applicationinsights");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -11,8 +10,6 @@ const issue_updater_1 = require("./issue-updater");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
-    appInsights.setup();
-    appInsights.start();
     return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
@@ -28,6 +25,7 @@ function writeLog(rollingLogs, logs) {
 }
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
 function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
+    console.log("Before starting server");
     const rollingLogs = rolling_logs_1.default.create("webhook-logs.md", 1000);
     const server = http_1.createServer((req, resp) => {
         switch (req.method) {
@@ -43,6 +41,7 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
         const [log, logResult] = logging_1.loggerWithErrors();
         const timeStamp = util_1.currentTimeStamp();
         try {
+            log.info("Before starting work");
             work().then(() => rollingLogs.then(logs => writeLog(logs, logResult()))).catch(onError);
         }
         catch (error) {
