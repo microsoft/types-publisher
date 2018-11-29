@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const appInsights = require("applicationinsights");
-const Github = require("@octokit/rest");
+const io_1 = require("./util/io");
 const calculate_versions_1 = require("./calculate-versions");
 const clean_1 = require("./clean");
 const create_search_index_1 = require("./create-search-index");
@@ -19,15 +19,10 @@ const validate_1 = require("./validate");
 if (!module.parent) {
     appInsights.setup();
     appInsights.start();
-    const gh = new Github();
-    gh.authenticate({
-        type: "token",
-        token: process.env["GH_API_TOKEN"] || ""
-    });
     const dry = !!yargs.argv.dry;
-    util_1.logUncaughtErrors(full(dry, util_1.currentTimeStamp(), gh, common_1.Options.defaults));
+    util_1.logUncaughtErrors(full(dry, util_1.currentTimeStamp(), process.env["GH_API_TOKEN"] || "", new io_1.Fetcher(), common_1.Options.defaults));
 }
-async function full(dry, timeStamp, github, options) {
+async function full(dry, timeStamp, githubAccessToken, fetcher, options) {
     const infoClient = new npm_client_1.UncachedNpmInfoClient();
     await clean_1.default();
     const dt = await get_definitely_typed_1.getDefinitelyTyped(options);
@@ -37,7 +32,7 @@ async function full(dry, timeStamp, github, options) {
     const changedPackages = await calculate_versions_1.default(dt, infoClient);
     await generate_packages_1.default(dt, allPackages, changedPackages);
     await create_search_index_1.default(allPackages, infoClient);
-    await publish_packages_1.default(changedPackages, dry, github);
+    await publish_packages_1.default(changedPackages, dry, githubAccessToken, fetcher);
     await publish_registry_1.default(dt, allPackages, dry, infoClient);
     await validate_1.default(dt);
     if (!dry) {
