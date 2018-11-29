@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
 const full_1 = require("../full");
+const appInsights = require("applicationinsights");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -10,6 +11,8 @@ const issue_updater_1 = require("./issue-updater");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
+    appInsights.setup();
+    appInsights.start();
     return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
