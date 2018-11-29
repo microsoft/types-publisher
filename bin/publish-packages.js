@@ -44,6 +44,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
                 "User-Agent": "types-publisher",
             },
         });
+        console.log(responseBody.body);
         const commits = JSON.parse(responseBody.body);
         if (commits.length > 0) {
             const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
