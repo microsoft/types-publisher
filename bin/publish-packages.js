@@ -35,7 +35,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     for (const cp of changedPackages.changedTypings) {
         console.log(`Publishing ${cp.pkg.desc}...`);
         await package_publisher_1.publishTypingsPackage(client, cp, dry, log);
-        const responseBody = await fetcher.fetchJson({
+        const commits = await fetcher.fetchJson({
             hostname: "api.github.com",
             path: `repos/DefinitelyTyped/DefinitelyTyped/commits?access_token=${githubAccessToken}`,
             method: "GET",
@@ -44,8 +44,6 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
                 "User-Agent": "types-publisher",
             },
         });
-        console.log(responseBody.body);
-        const commits = JSON.parse(responseBody.body);
         if (commits.length > 0) {
             const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
             appInsights.defaultClient.trackEvent({
