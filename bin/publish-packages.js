@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
-const appInsights = require("applicationinsights");
+// import appInsights = require("applicationinsights");
 const io_1 = require("./util/io");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
@@ -46,17 +46,17 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             },
         });
         if (commits.length > 0) {
-            console.log("Found related commits, logging event and metric");
             const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
-            appInsights.defaultClient.trackEvent({
-                name: "publish package",
-                properties: {
-                    name: cp.pkg.desc,
-                    latency: latency.toString()
-                }
-            });
-            appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
-            console.log("Done logging");
+            console.log("Found related commits, logging event and metric:" + latency);
+            //     appInsights.defaultClient.trackEvent({
+            //         name: "publish package",
+            //         properties: {
+            //             name: cp.pkg.desc,
+            //             latency: latency.toString()
+            //         }
+            //     });
+            //     appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
+            //     console.log("Done logging");
         }
     }
     for (const n of changedPackages.changedNotNeededPackages) {
