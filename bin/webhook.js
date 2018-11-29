@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
-// import appInsights = require("applicationinsights");
+const appInsights = require("applicationinsights");
 const common_1 = require("./lib/common");
 const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
@@ -21,7 +21,7 @@ async function main() {
     }
     else {
         console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-        // appInsights.setup(process.env["APPINSIGHTS_INSTRUMENTATIONKEY"]).start();
+        appInsights.setup(process.env["APPINSIGHTS_INSTRUMENTATIONKEY"]).start();
         console.log("Done initialising App Insights");
         const fetcher = new io_1.Fetcher();
         const s = await webhook_server_1.default(key, githubAccessToken, dry, fetcher, common_1.Options.azure);
