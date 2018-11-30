@@ -33,12 +33,13 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     }
     const client = await npm_client_1.NpmPublishClient.create();
     for (const cp of changedPackages.changedTypings) {
-        console.log(`Publishing ${cp.pkg.desc}...`);
+        log(`Publishing ${cp.pkg.desc}...`);
         await package_publisher_1.publishTypingsPackage(client, cp, dry, log);
-        console.log("Done publishing, checking latency ...");
+        const path = `repos/DefinitelyTyped/DefinitelyTyped/commits?path=types%2f${cp.pkg.desc}&access_token=${githubAccessToken}`;
+        log("Requesting from github: " + path);
         const commits = await fetcher.fetchJson({
             hostname: "api.github.com",
-            path: `repos/DefinitelyTyped/DefinitelyTyped/commits?access_token=${githubAccessToken}`,
+            path,
             method: "GET",
             headers: {
                 // arbitrary string, but something must be provided
@@ -47,7 +48,10 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
         });
         if (commits.length > 0) {
             const latency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
-            console.log("Found related commits, logging event and metric:" + latency);
+            log("Found related commits, logging event and metric:" + latency);
+            log("Current date is " + new Date(Date.now()));
+            log(" Commit date is " + new Date(commits[0].commit.author.date));
+            log(" Commit hash is " + commits[0].sha);
             appInsights.defaultClient.trackEvent({
                 name: "publish package",
                 properties: {
@@ -56,7 +60,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
                 }
             });
             appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
-            console.log("Done logging");
+            log("Done logging latency");
         }
     }
     for (const n of changedPackages.changedNotNeededPackages) {

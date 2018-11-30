@@ -124,6 +124,14 @@ function intOfString(str) {
     return n;
 }
 exports.intOfString = intOfString;
+function sortObjectKeys(data) {
+    const out = {}; // tslint:disable-line no-object-literal-type-assertion
+    for (const key of Object.keys(data).sort()) {
+        out[key] = data[key];
+    }
+    return out;
+}
+exports.sortObjectKeys = sortObjectKeys;
 /** Run a command and return the error, stdout, and stderr. (Never throws.) */
 function exec(cmd, cwd) {
     return new Promise(resolve => {

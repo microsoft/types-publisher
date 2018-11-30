@@ -79,7 +79,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
             dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
         }
     }
-    return dependencies;
+    return util_1.sortObjectKeys(dependencies);
 }
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
@@ -119,7 +119,7 @@ function createReadme(typing) {
     lines.push("");
     lines.push("Additional Details");
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
-    const dependencies = Array.from(typing.dependencies).map(d => d.name);
+    const dependencies = Array.from(typing.dependencies).map(d => packages_1.getFullNpmName(d.name));
     lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");

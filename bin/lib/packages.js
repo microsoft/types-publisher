@@ -62,7 +62,7 @@ class AllPackages {
         return latest;
     }
     tryGetLatestVersion(packageName) {
-        const versions = this.data.get(packageName);
+        const versions = this.data.get(getMangledNameForScopedPackage(packageName));
         return versions && versions.getLatest();
     }
     getTypingsData(id) {
@@ -73,7 +73,7 @@ class AllPackages {
         return pkg;
     }
     tryGetTypingsData({ name, majorVersion }) {
-        const versions = this.data.get(name);
+        const versions = this.data.get(getMangledNameForScopedPackage(name));
         return versions && versions.tryGet(majorVersion);
     }
     allPackages() {
@@ -160,7 +160,7 @@ class PackageBase {
 }
 exports.PackageBase = PackageBase;
 function getFullNpmName(packageName) {
-    return `@${settings_1.scopeName}/${packageName}`;
+    return `@${settings_1.scopeName}/${getMangledNameForScopedPackage(packageName)}`;
 }
 exports.getFullNpmName = getFullNpmName;
 class NotNeededPackage extends PackageBase {

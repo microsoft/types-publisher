@@ -69,6 +69,10 @@ class UncachedNpmInfoClient {
             }
             throw new Error(`Error getting version at ${escapedPackageName}: ${info.error}`);
         }
+        if (!info["dist-tags"] && !info.versions) {
+            // Unpublished
+            return undefined;
+        }
         return info;
     }
     // See https://github.com/npm/download-counts

@@ -56,9 +56,9 @@ function sorted(obj) {
     return out;
 }
 async function single(singleName, dt) {
-    const result = await definition_parser_1.getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
-    const typings = { [singleName]: result.data };
+    const data = await definition_parser_1.getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
+    const typings = { [singleName]: data };
     await common_1.writeDataFile(packages_1.typesDataFilename, typings);
-    console.log(JSON.stringify(result, undefined, 4));
+    console.log(JSON.stringify(data, undefined, 4));
 }
 //# sourceMappingURL=parse-definitions.js.map
