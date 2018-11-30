@@ -49,7 +49,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             if (latestPr === 0) {
                 continue;
             }
-            const pr = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/${latestPr}`, githubAccessToken, fetcher);
+            const pr = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/pulls/${latestPr}`, githubAccessToken, fetcher);
             const latency = Date.now() - new Date(pr.merged_at).valueOf();
             log("Current date is " + new Date(Date.now()));
             log("  Merge date is " + new Date(pr.merged_at));
