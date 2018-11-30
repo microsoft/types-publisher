@@ -21,7 +21,10 @@ async function tagAll(dry) {
     await npm_client_1.CachedNpmInfoClient.with(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
         await util_1.nAtATime(10, await packages_1.AllPackages.readLatestTypings(), async (pkg) => {
             // Only update tags for the latest version of the package.
-            if (pkg.fullEscapedNpmName === "@types%2foffice-js")
+            if (pkg.fullEscapedNpmName === "@types%2foffice-js" ||
+                pkg.fullEscapedNpmName === "@types%2freact" ||
+                pkg.fullEscapedNpmName === "@types%2freact-navigation" ||
+                pkg.fullEscapedNpmName.match(/\@types%2f[a-q]/))
                 return;
             const version = await versions_1.getLatestTypingVersion(pkg, infoClient);
             await updateTypeScriptVersionTags(pkg, version, publishClient, logging_1.consoleLogger.info, dry);
