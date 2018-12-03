@@ -65,6 +65,7 @@ protractor
 quill-delta
 raven-js
 react-dnd
+react-native-maps
 react-native-svg
 redux
 redux-observable
