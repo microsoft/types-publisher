@@ -51,16 +51,21 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             }
             const pr = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/pulls/${latestPr}`, githubAccessToken, fetcher);
             const latency = Date.now() - new Date(pr.merged_at).valueOf();
+            const commitlatency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
             log("Current date is " + new Date(Date.now()));
             log("  Merge date is " + new Date(pr.merged_at));
             appInsights.defaultClient.trackEvent({
                 name: "publish package",
                 properties: {
                     name: cp.pkg.desc,
-                    latency: latency.toString()
+                    latency: latency.toString(),
+                    commitLatency: commitlatency.toString(),
+                    authorCommit: commits[0].sha,
+                    pr: latestPr.toString(),
                 }
             });
             appInsights.defaultClient.trackMetric({ name: "publish latency", value: latency });
+            appInsights.defaultClient.trackMetric({ name: "author commit latency", value: commitlatency });
             log("Done logging latency");
         }
     }

@@ -24,10 +24,21 @@ async function main() {
         appInsights.setup(process.env["APPINSIGHTS_INSTRUMENTATIONKEY"]).start();
         console.log("Done initialising App Insights");
         const fetcher = new io_1.Fetcher();
-        const s = await webhook_server_1.default(key, githubAccessToken, dry, fetcher, common_1.Options.azure);
-        await issue_updater_1.setIssueOk(githubAccessToken, fetcher);
-        console.log(`Listening on port ${port}`);
-        s.listen(port);
+        try {
+            const s = await webhook_server_1.default(key, githubAccessToken, dry, fetcher, common_1.Options.azure);
+            await issue_updater_1.setIssueOk(githubAccessToken, fetcher);
+            console.log(`Listening on port ${port}`);
+            s.listen(port);
+        }
+        catch (e) {
+            appInsights.defaultClient.trackEvent({
+                name: "crash",
+                properties: {
+                    error: e.toString()
+                },
+            });
+            throw e;
+        }
     }
 }
 exports.default = main;
