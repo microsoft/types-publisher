@@ -8,8 +8,9 @@ import * as zlib from "zlib";
 
 import { Options } from "./lib/common";
 import { dataDirPath, definitelyTypedZipUrl } from "./lib/settings";
-import { readFile, readJson, stringOfStream } from "./util/io";
-import { assertDefined, assertSorted, Awaitable, exec, joinPaths, withoutStart, logUncaughtErrors } from "./util/util";
+import { Fetcher, readFile, readJson, stringOfStream } from "./util/io";
+import { assertDefined, assertSorted, Awaitable, exec, joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
+import { queryGithub } from "./util/github";
 
 /**
  * Readonly filesystem.
@@ -43,10 +44,18 @@ if (!module.parent) {
     });
 }
 
-export async function getDefinitelyTyped(options: Options): Promise<FS> {
+/**
+ * Return the commit SHA1 of the master tip of DefinitelyTyped
+ */
+export async function resolveDefinitelyTypedMaster(githubAccessToken: string, fetcher: Fetcher): Promise<string> {
+    const masterRef = await queryGithub("repos/DefinitelyTyped/DefinitelyTyped/git/refs/heads/master", githubAccessToken, fetcher) as { object: { sha: string } };
+    return masterRef.object.sha
+}
+
+export async function getDefinitelyTyped(options: Options, revision: string = 'master'): Promise<FS> {
     if (options.definitelyTypedPath === undefined) {
         await ensureDir(dataDirPath);
-        return downloadAndExtractFile(definitelyTypedZipUrl);
+        return downloadAndExtractFile(definitelyTypedZipUrl + "/" + revision);
     } else {
         const { error, stderr, stdout } = await exec("git diff --name-only", options.definitelyTypedPath);
         if (error) { throw error; }

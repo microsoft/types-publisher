@@ -1,13 +1,14 @@
 import * as yargs from "yargs";
 
 import appInsights = require("applicationinsights");
-import { Fetcher } from "./util/io";
 import { getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
 import { NpmPublishClient } from "./lib/npm-client";
 import { deprecateNotNeededPackage, publishNotNeededPackage, publishTypingsPackage } from "./lib/package-publisher";
 import { AllPackages } from "./lib/packages";
 import { ChangedPackages, readChangedPackages } from "./lib/versions";
+import { queryGithub } from "./util/github";
+import { Fetcher } from "./util/io";
 import { logger, writeLog } from "./util/logging";
 import { logUncaughtErrors } from "./util/util";
 
@@ -85,18 +86,4 @@ export default async function publishPackages(changedPackages: ChangedPackages, 
 
     await writeLog("publishing.md", logResult());
     console.log("Done!");
-}
-
-async function queryGithub(path: string, githubToken: string, fetcher: Fetcher) {
-    const [log] = logger();
-    log("Requesting from github: " + path);
-    return await fetcher.fetchJson({
-        hostname: "api.github.com",
-        path: path + "&access_token=" + githubToken,
-        method: "GET",
-        headers: {
-            // arbitrary string, but something must be provided
-            "User-Agent": "types-publisher",
-        },
-    });
 }

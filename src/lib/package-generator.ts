@@ -13,11 +13,11 @@ import { sourceBranch } from "./settings";
 
 const mitLicense = readFileSync(joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
 
-export async function generateTypingPackage(typing: TypingsData, packages: AllPackages, version: string, dt: FS): Promise<void> {
+export async function generateTypingPackage(typing: TypingsData, packages: AllPackages, version: string, dt: FS, gitHead: string): Promise<void> {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
 
-    const packageJson = await createPackageJSON(typing, version, packages);
+    const packageJson = await createPackageJSON(typing, version, gitHead, packages);
     await writeCommonOutputs(typing, packageJson, createReadme(typing));
     await Promise.all(typing.files.map(async file => writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
@@ -52,11 +52,12 @@ async function outputFilePath(pkg: AnyPackage, filename: string): Promise<string
 
 interface Dependencies { [name: string]: string; }
 
-async function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages): Promise<string> {
+async function createPackageJSON(typing: TypingsData, version: string, gitHead: string, packages: AllPackages): Promise<string> {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out: {} = {
         name: typing.fullNpmName,
         version,
+        gitHead,
         description: `TypeScript definitions for ${typing.libraryName}`,
         // keywords,
         // homepage,
