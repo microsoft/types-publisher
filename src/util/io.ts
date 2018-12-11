@@ -1,8 +1,7 @@
 import assert = require("assert");
-import { readdir, readFile as readFileWithEncoding, stat, writeFile as writeFileWithEncoding, writeJson as writeJsonRaw } from "fs-extra";
+import { readFile as readFileWithEncoding, stat, writeFile as writeFileWithEncoding, writeJson as writeJsonRaw } from "fs-extra";
 import { request as httpRequest } from "http";
 import { Agent, request } from "https";
-import { join as joinPaths } from "path";
 import { Readable as ReadableStream } from "stream";
 import { StringDecoder } from "string_decoder";
 
@@ -138,24 +137,14 @@ export async function isDirectory(path: string): Promise<boolean> {
     return (await stat(path)).isDirectory();
 }
 
-export async function assertDirectoriesEqual(expected: string, actual: string, options: { ignore(fileName: string): boolean }): Promise<void> {
-    const expectedLs = await readdir(expected);
-    const actualLs = await readdir(actual);
-    assert.deepStrictEqual(expectedLs, actualLs);
-    for (const name of expectedLs) {
-        if (options.ignore(name)) {
-            continue;
+export function assertJsonSuperset(superset: { [s: string]: any }, subset: { [s: string]: any }, parent = "") {
+    for (const key of Object.keys(subset)) {
+        assert(superset.hasOwnProperty(key), key);
+        if (typeof superset[key] === "string" || typeof superset[key] === "number" || typeof superset[key] === "boolean") {
+            assert(superset[key] === subset[key], `${key} in ${parent} did not match: superset[key] (${superset[key]} !== subset[key] (${subset[key]})`);
         }
-
-        const expectedFile = joinPaths(expected, name);
-        const actualFile = joinPaths(actual, name);
-        const expectedStat = await stat(expectedFile);
-        const actualStat = await stat(actualFile);
-        assert.strictEqual(expectedStat.isDirectory(), actualStat.isDirectory());
-        if (expectedStat.isDirectory()) {
-            await assertDirectoriesEqual(expectedFile, actualFile, options);
-        } else {
-            assert.strictEqual(await readFile(actualFile), await readFile(expectedFile));
+        else {
+            assertJsonSuperset(superset[key], subset[key], key);
         }
     }
 }
