@@ -24,10 +24,10 @@ async function computeAndSaveChangedPackages(allPackages, log, client) {
 exports.computeAndSaveChangedPackages = computeAndSaveChangedPackages;
 async function computeChangedPackages(allPackages, log, client) {
     const changedTypings = await util_1.mapDefinedAsync(allPackages.allTypings(), async (pkg) => {
-        const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, log);
+        const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ true, log);
         if (needsPublish) {
             log(`Changed: ${pkg.desc}`);
-            const latestVersion = pkg.isLatest ? undefined : (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client)).version;
+            const latestVersion = pkg.isLatest ? undefined : (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client, /*publish*/ true)).version;
             return { pkg, version, latestVersion };
         }
         return undefined;
@@ -42,7 +42,7 @@ async function computeChangedPackages(allPackages, log, client) {
     return { changedTypings, changedNotNeededPackages };
 }
 async function getLatestTypingVersion(pkg, client) {
-    return (await fetchTypesPackageVersionInfo(pkg, client)).version;
+    return (await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ false)).version;
 }
 exports.getLatestTypingVersion = getLatestTypingVersion;
 /** Version of a package published to NPM. */
@@ -83,7 +83,7 @@ class Semver {
     }
 }
 exports.Semver = Semver;
-async function fetchTypesPackageVersionInfo(pkg, client, log) {
+async function fetchTypesPackageVersionInfo(pkg, client, canPublish, log) {
     let info = client.getNpmInfoFromCache(pkg.fullEscapedNpmName);
     let latestVersion = info && getHighestVersionForMajor(info.versions, pkg);
     let latestVersionInfo = latestVersion && util_1.assertDefined(info.versions.get(latestVersion.versionString));
@@ -102,7 +102,7 @@ async function fetchTypesPackageVersionInfo(pkg, client, log) {
         // https://github.com/DefinitelyTyped/DefinitelyTyped/pull/22306
         assert(pkg.name === "angular-ui-router" || pkg.name === "ui-router-extras", `Package ${pkg.name} has been deprecated, so we shouldn't have parsed it. Was it re-added?`);
     }
-    const needsPublish = pkg.contentHash !== latestVersionInfo.typesPublisherContentHash;
+    const needsPublish = canPublish && pkg.contentHash !== latestVersionInfo.typesPublisherContentHash;
     const patch = needsPublish ? (latestVersion.minor === pkg.minor ? latestVersion.patch + 1 : 0) : latestVersion.patch;
     return { version: versionString(pkg, patch), needsPublish };
 }

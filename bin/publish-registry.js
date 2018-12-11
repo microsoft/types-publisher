@@ -106,21 +106,27 @@ async function installForValidate() {
 const validateTypesRegistryPath = util_1.joinPaths(settings_1.validateOutputPath, "node_modules", "types-registry");
 async function validate() {
     await installForValidate();
-    await io_1.assertDirectoriesEqual(registryOutputPath, validateTypesRegistryPath, {
-        ignore: f => f === "package.json",
-    });
+    assertJsonSuperset(await io_1.readJson(util_1.joinPaths(registryOutputPath, "index.json")), await io_1.readJson(util_1.joinPaths(validateTypesRegistryPath, "index.json")));
 }
 async function validateIsSubset(notNeeded) {
     await installForValidate();
     const indexJson = "index.json";
-    await io_1.assertDirectoriesEqual(registryOutputPath, validateTypesRegistryPath, {
-        ignore: f => f === "package.json" || f === indexJson,
-    });
     const actual = await io_1.readJson(util_1.joinPaths(validateTypesRegistryPath, indexJson));
     const expected = await io_1.readJson(util_1.joinPaths(registryOutputPath, indexJson));
     for (const key in actual.entries) {
         if (!(key in expected.entries) && !notNeeded.some(p => p.name === key)) {
             throw new Error(`Actual types-registry has unexpected key ${key}`);
+        }
+    }
+}
+function assertJsonSuperset(superset, subset, parent = "") {
+    for (const key of Object.keys(subset)) {
+        assert(superset.hasOwnProperty(key), `${key} in ${parent} was not found in superset`);
+        if (typeof superset[key] === "string" || typeof superset[key] === "number" || typeof superset[key] === "boolean") {
+            assert(superset[key] === subset[key], `${key} in ${parent} did not match: superset[key] (${superset[key]} !== subset[key] (${subset[key]})`);
+        }
+        else {
+            assertJsonSuperset(superset[key], subset[key], key);
         }
     }
 }
@@ -152,7 +158,7 @@ async function generateRegistry(typings, client) {
         const info = client.getNpmInfoFromCache(typing.fullEscapedNpmName);
         if (!info) {
             const missings = typings.filter(t => !client.getNpmInfoFromCache(t.fullEscapedNpmName)).map(t => t.fullEscapedNpmName);
-            throw new Error(`${missings} not found in ${Array.from(client.formatKeys())}`);
+            throw new Error(`${missings} not found in ${client.formatKeys()}`);
         }
         entries[typing.name] = filterTags(info.distTags);
     }

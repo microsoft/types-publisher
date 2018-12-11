@@ -9,22 +9,30 @@ const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
     const dry = !!yargs.argv.dry;
-    util_1.logUncaughtErrors(tagAll(dry));
+    util_1.logUncaughtErrors(tag(dry, yargs.argv.name));
 }
 /**
  * Refreshes the tags on every package.
  * This shouldn't normally need to run, since we run `tagSingle` whenever we publish a package.
  * But this should be run if the way we calculate tags changes (e.g. when a new release is allowed to be tagged "latest").
  */
-async function tagAll(dry) {
+async function tag(dry, name) {
     const publishClient = await npm_client_1.NpmPublishClient.create();
     await npm_client_1.CachedNpmInfoClient.with(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
-        await util_1.nAtATime(10, await packages_1.AllPackages.readLatestTypings(), async (pkg) => {
-            // Only update tags for the latest version of the package.
+        if (name) {
+            const pkg = await packages_1.AllPackages.readSingle(name);
             const version = await versions_1.getLatestTypingVersion(pkg, infoClient);
             await updateTypeScriptVersionTags(pkg, version, publishClient, logging_1.consoleLogger.info, dry);
             await updateLatestTag(pkg.fullEscapedNpmName, version, publishClient, logging_1.consoleLogger.info, dry);
-        });
+        }
+        else {
+            await util_1.nAtATime(10, await packages_1.AllPackages.readLatestTypings(), async (pkg) => {
+                // Only update tags for the latest version of the package.
+                const version = await versions_1.getLatestTypingVersion(pkg, infoClient);
+                await updateTypeScriptVersionTags(pkg, version, publishClient, logging_1.consoleLogger.info, dry);
+                await updateLatestTag(pkg.fullEscapedNpmName, version, publishClient, logging_1.consoleLogger.info, dry);
+            });
+        }
     });
     // Don't tag notNeeded packages
 }

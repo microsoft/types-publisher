@@ -1,10 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const http_1 = require("http");
 const https_1 = require("https");
-const path_1 = require("path");
 const stream_1 = require("stream");
 const string_decoder_1 = require("string_decoder");
 const util_1 = require("./util");
@@ -128,27 +126,5 @@ async function isDirectory(path) {
     return (await fs_extra_1.stat(path)).isDirectory();
 }
 exports.isDirectory = isDirectory;
-async function assertDirectoriesEqual(expected, actual, options) {
-    const expectedLs = await fs_extra_1.readdir(expected);
-    const actualLs = await fs_extra_1.readdir(actual);
-    assert.deepStrictEqual(expectedLs, actualLs);
-    for (const name of expectedLs) {
-        if (options.ignore(name)) {
-            continue;
-        }
-        const expectedFile = path_1.join(expected, name);
-        const actualFile = path_1.join(actual, name);
-        const expectedStat = await fs_extra_1.stat(expectedFile);
-        const actualStat = await fs_extra_1.stat(actualFile);
-        assert.strictEqual(expectedStat.isDirectory(), actualStat.isDirectory());
-        if (expectedStat.isDirectory()) {
-            await assertDirectoriesEqual(expectedFile, actualFile, options);
-        }
-        else {
-            assert.strictEqual(await readFile(actualFile), await readFile(expectedFile));
-        }
-    }
-}
-exports.assertDirectoriesEqual = assertDirectoriesEqual;
 exports.npmInstallFlags = "--ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links --no-save";
 //# sourceMappingURL=io.js.map
