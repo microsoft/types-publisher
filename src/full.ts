@@ -1,5 +1,7 @@
 import * as yargs from "yargs";
 
+import appInsights = require("applicationinsights");
+import { Fetcher } from "./util/io";
 import calculateVersions from "./calculate-versions";
 import clean from "./clean";
 import createSearchIndex from "./create-search-index";
@@ -15,11 +17,13 @@ import { assertDefined, currentTimeStamp, logUncaughtErrors, numberOfOsProcesses
 import validate from "./validate";
 
 if (!module.parent) {
+    appInsights.setup();
+    appInsights.start();
     const dry = !!yargs.argv.dry;
-    logUncaughtErrors(full(dry, currentTimeStamp(), Options.defaults));
+    logUncaughtErrors(full(dry, currentTimeStamp(), process.env["GH_API_TOKEN"] || "", new Fetcher(), Options.defaults));
 }
 
-export default async function full(dry: boolean, timeStamp: string, options: Options): Promise<void> {
+export default async function full(dry: boolean, timeStamp: string, githubAccessToken: string, fetcher: Fetcher, options: Options): Promise<void> {
     const infoClient = new UncachedNpmInfoClient();
     await clean();
     const dt = await getDefinitelyTyped(options);
@@ -29,7 +33,7 @@ export default async function full(dry: boolean, timeStamp: string, options: Opt
     const changedPackages = await calculateVersions(dt, infoClient);
     await generatePackages(dt, allPackages, changedPackages);
     await createSearchIndex(allPackages, infoClient);
-    await publishPackages(changedPackages, dry);
+    await publishPackages(changedPackages, dry, githubAccessToken, fetcher);
     await publishRegistry(dt, allPackages, dry, infoClient);
     await validate(dt);
     if (!dry) {

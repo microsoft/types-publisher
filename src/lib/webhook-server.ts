@@ -23,7 +23,7 @@ export default async function webhookServer(
         log.info(`# ${timeStamp}`);
         log.info("");
         log.info("Starting full...");
-        await full(dry, timeStamp, options);
+        await full(dry, timeStamp, githubAccessToken, fetcher, options);
     }));
 }
 
@@ -39,6 +39,7 @@ function listenToGithub(
     onUpdate: (log: LoggerWithErrors, timeStamp: string) => Promise<void> | undefined,
 ): Server {
 
+    console.log("Before starting server");
     const rollingLogs = RollingLogs.create("webhook-logs.md", 1000);
     const server = createServer((req, resp) => {
         switch (req.method) {
@@ -55,6 +56,7 @@ function listenToGithub(
         const [log, logResult] = loggerWithErrors();
         const timeStamp = currentTimeStamp();
         try {
+            log.info("Before starting work");
             work().then(() => rollingLogs.then(logs => writeLog(logs, logResult()))).catch(onError);
         } catch (error) {
             rollingLogs
