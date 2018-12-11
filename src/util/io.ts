@@ -137,16 +137,4 @@ export async function isDirectory(path: string): Promise<boolean> {
     return (await stat(path)).isDirectory();
 }
 
-export function assertJsonSuperset(superset: { [s: string]: any }, subset: { [s: string]: any }, parent = "") {
-    for (const key of Object.keys(subset)) {
-        assert(superset.hasOwnProperty(key), key);
-        if (typeof superset[key] === "string" || typeof superset[key] === "number" || typeof superset[key] === "boolean") {
-            assert(superset[key] === subset[key], `${key} in ${parent} did not match: superset[key] (${superset[key]} !== subset[key] (${subset[key]})`);
-        }
-        else {
-            assertJsonSuperset(superset[key], subset[key], key);
-        }
-    }
-}
-
 export const npmInstallFlags = "--ignore-scripts --no-shrinkwrap --no-package-lock --no-bin-links --no-save";

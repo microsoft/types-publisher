@@ -11,7 +11,6 @@ import { fetchAndProcessNpmInfo } from "./lib/versions";
 import { npmInstallFlags, readJson, sleep, writeFile, writeJson } from "./util/io";
 import { logger, writeLog } from "./util/logging";
 import { computeHash, execAndThrowErrors, joinPaths, logUncaughtErrors } from "./util/util";
-import { log } from "util";
 
 const packageName = "types-registry";
 const registryOutputPath = joinPaths(outputDirPath, packageName);
@@ -189,7 +188,6 @@ async function generateRegistry(typings: ReadonlyArray<TypingsData>, client: Cac
             const missings = typings.filter(t => !client.getNpmInfoFromCache(t.fullEscapedNpmName)).map(t => t.fullEscapedNpmName);
             throw new Error(`${missings} not found in ${client.formatKeys()}`);
         }
-        if (typing.name==='activex-excel') log('hiiii')
         entries[typing.name] = filterTags(info.distTags);
     }
     return { entries };
