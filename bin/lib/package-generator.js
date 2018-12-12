@@ -14,7 +14,6 @@ async function generateTypingPackage(typing, packages, version, dt) {
     const packageJson = createPackageJSON(typing, version, packages);
     await writeCommonOutputs(typing, packageJson, createReadme(typing));
     await Promise.all(typing.files.
-        filter(file => !file.startsWith("..")).
         map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
 exports.generateTypingPackage = generateTypingPackage;

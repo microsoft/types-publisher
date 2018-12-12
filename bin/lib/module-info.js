@@ -159,16 +159,17 @@ function* findReferencedFiles(src, subDirectory, baseDirectory) {
             yield addReference({ text: ref, exact: false });
         }
     }
-    function addReference({ exact, text }) {
+    function addReference(ref) {
         // `path.normalize` may add windows slashes
-        const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, text))));
+        const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, ref.text))));
         // allow files in typesVersions directories (i.e. 'ts3.1') to reference files in parent directory
-        if (full.startsWith("..") && (baseDirectory === "." || path.normalize(util_1.joinPaths(baseDirectory, full)).startsWith(".."))) {
+        if (full.startsWith("..") && (baseDirectory === "" || path.normalize(util_1.joinPaths(baseDirectory, full)).startsWith(".."))) {
             throw new Error(`${src.fileName}: ` +
                 'Definitions must use global references to other packages, not parent ("../xxx") references.' +
-                `(Based on reference '${text}')`);
+                `(Based on reference '${ref.text}')`);
         }
-        return { exact, text: full };
+        ref.text = full;
+        return ref;
     }
 }
 /**
