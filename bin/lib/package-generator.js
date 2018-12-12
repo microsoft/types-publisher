@@ -11,9 +11,11 @@ const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "..
 async function generateTypingPackage(typing, packages, version, dt) {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
-    const packageJson = await createPackageJSON(typing, version, packages);
+    const packageJson = createPackageJSON(typing, version, packages);
     await writeCommonOutputs(typing, packageJson, createReadme(typing));
-    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
+    await Promise.all(typing.files.
+        filter(file => !file.startsWith("..")).
+        map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
 exports.generateTypingPackage = generateTypingPackage;
 async function generateNotNeededPackage(pkg) {
@@ -40,7 +42,7 @@ async function outputFilePath(pkg, filename) {
     }
     return full;
 }
-async function createPackageJSON(typing, version, packages) {
+function createPackageJSON(typing, version, packages) {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out = {
         name: typing.fullNpmName,
