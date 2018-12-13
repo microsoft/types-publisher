@@ -106,7 +106,7 @@ async function installForValidate() {
 const validateTypesRegistryPath = util_1.joinPaths(settings_1.validateOutputPath, "node_modules", "types-registry");
 async function validate() {
     await installForValidate();
-    assertJsonSuperset(await io_1.readJson(util_1.joinPaths(registryOutputPath, "index.json")), await io_1.readJson(util_1.joinPaths(validateTypesRegistryPath, "index.json")));
+    assertJsonNewer(await io_1.readJson(util_1.joinPaths(registryOutputPath, "index.json")), await io_1.readJson(util_1.joinPaths(validateTypesRegistryPath, "index.json")));
 }
 async function validateIsSubset(notNeeded) {
     await installForValidate();
@@ -119,14 +119,26 @@ async function validateIsSubset(notNeeded) {
         }
     }
 }
-function assertJsonSuperset(newer, older, parent = "") {
+function assertJsonNewer(newer, older, parent = "") {
     for (const key of Object.keys(older)) {
         assert(newer.hasOwnProperty(key), `${key} in ${parent} was not found in newer`);
-        if (typeof newer[key] === "string" || typeof newer[key] === "number" || typeof newer[key] === "boolean") {
-            assert(newer[key] >= older[key], `${key} in ${parent} did not match: newer[key] (${newer[key]} < older[key] (${older[key]})`);
-        }
-        else {
-            assertJsonSuperset(newer[key], older[key], key);
+        switch (typeof newer[key]) {
+            case "string":
+                const newerver = versions_1.Semver.tryParse(newer[key]);
+                const olderver = versions_1.Semver.tryParse(older[key]);
+                const condition = newerver && olderver ?
+                    newerver.greaterThan(olderver) || newerver.equals(olderver) :
+                    newer[key] >= older[key];
+                assert(condition, `${key} in ${parent} did not match: newer[key] (${newer[key]}) < older[key] (${older[key]})`);
+                break;
+            case "number":
+                assert(newer[key] >= older[key], `${key} in ${parent} did not match: newer[key] (${newer[key]}) < older[key] (${older[key]})`);
+                break;
+            case "boolean":
+                assert(newer[key] === older[key], `${key} in ${parent} did not match: newer[key] (${newer[key]}) !== older[key] (${older[key]})`);
+                break;
+            default:
+                assertJsonNewer(newer[key], older[key], key);
         }
     }
 }
