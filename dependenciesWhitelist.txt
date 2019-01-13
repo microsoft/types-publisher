@@ -90,3 +90,4 @@ vue-router
 vuex
 winston
 zipkin
+broadcast-channel
