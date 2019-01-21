@@ -62,6 +62,7 @@ path-to-regexp
 pkcs11js
 popper.js
 postcss
+preact
 probot
 protobufjs
 protractor
