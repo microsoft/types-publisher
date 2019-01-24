@@ -19,10 +19,12 @@ anydb-sql
 apollo-client
 apollo-link
 apollo-link-http-common
+ast-types
 aws-sdk
 axe-core
 axios
 bignumber.js
+broadcast-channel
 chalk
 cordova-plugin-camera
 cordova-plugin-file
@@ -62,6 +64,7 @@ path-to-regexp
 pkcs11js
 popper.js
 postcss
+preact
 probot
 protobufjs
 protractor
@@ -70,6 +73,7 @@ raven-js
 react-dnd
 react-native-maps
 react-native-svg
+recast
 redux
 redux-observable
 redux-persist
