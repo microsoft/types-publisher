@@ -109,7 +109,7 @@ function createReadme(typing) {
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {
-        lines.push(`This package contains type definitions for ${typing.libraryName} (${typing.projectName}).`);
+        lines.push(`This package contains type definitions for ${typing.libraryName} ( ${typing.projectName} ).`);
     }
     else {
         lines.push(`This package contains type definitions for ${typing.libraryName}.`);
