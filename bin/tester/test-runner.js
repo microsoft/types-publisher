@@ -15,7 +15,6 @@ if (!module.parent) {
     const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
     util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
 }
-const pathToDtsLint = require.resolve("dtslint");
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
     if (!str) {
@@ -68,7 +67,7 @@ async function doInstalls(allPackages, packages, typesPath, nProcesses) {
             console.log(` from ${cwd}: ${stdout}`);
         }
     });
-    await runCommand(console, undefined, pathToDtsLint, ["--installAll"]);
+    await runCommand(console, undefined, require.resolve("dtslint"), ["--installAll"]);
 }
 function directoryPath(typesPath, pkg) {
     return util_1.joinPaths(typesPath, pkg.subDirectoryPath);
@@ -81,7 +80,7 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
     await util_1.runWithListeningChildProcesses({
         inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p) })),
         commandLineArgs: ["--listen"],
-        workerFile: pathToDtsLint,
+        workerFile: require.resolve("dtslint"),
         nProcesses,
         cwd: typesPath,
         handleOutput(output) {
