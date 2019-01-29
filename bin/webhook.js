@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
 const appInsights = require("applicationinsights");
 const common_1 = require("./lib/common");
-const issue_updater_1 = require("./lib/issue-updater");
 const secrets_1 = require("./lib/secrets");
 const webhook_server_1 = require("./lib/webhook-server");
 const io_1 = require("./util/io");
@@ -26,7 +25,6 @@ async function main() {
         const fetcher = new io_1.Fetcher();
         try {
             const s = await webhook_server_1.default(key, githubAccessToken, dry, fetcher, common_1.Options.azure);
-            await issue_updater_1.setIssueOk(githubAccessToken, fetcher);
             console.log(`Listening on port ${port}`);
             s.listen(port);
         }

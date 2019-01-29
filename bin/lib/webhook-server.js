@@ -6,11 +6,10 @@ const full_1 = require("../full");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
-const issue_updater_1 = require("./issue-updater");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
-    return listenToGithub(key, githubAccessToken, fetcher, updateOneAtATime(async (log, timeStamp) => {
+    return listenToGithub(key, updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
         log.info(`# ${timeStamp}`);
@@ -24,7 +23,7 @@ function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
 /** @param onUpdate: returns a promise in case it may error. Server will shut down on errors. */
-function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
+function listenToGithub(key, onUpdate) {
     console.log("Before starting server");
     const rollingLogs = rolling_logs_1.default.create("webhook-logs.md", 1000);
     const server = http_1.createServer((req, resp) => {
@@ -47,18 +46,11 @@ function listenToGithub(key, githubAccessToken, fetcher, onUpdate) {
         catch (error) {
             rollingLogs
                 .then(logs => writeLog(logs, logResult()))
-                .then(() => { onError(error); })
+                .then(onError)
                 .catch(onError);
         }
-        function onError(error) {
+        function onError() {
             server.close();
-            // tslint:disable-next-line no-floating-promises
-            issue_updater_1.reopenIssue(githubAccessToken, timeStamp, error, fetcher).catch(issueError => {
-                console.error(util_1.errorDetails(issueError));
-            }).then(() => {
-                console.error(util_1.errorDetails(error));
-                process.exit(1);
-            });
         }
         async function work() {
             const data = await io_1.stringOfStream(req, "Request to webhook");
