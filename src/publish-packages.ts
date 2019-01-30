@@ -19,7 +19,7 @@ if (!module.parent) {
         if (deprecateName !== undefined) {
             // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
             // Normally this should not be needed.
-            await deprecateNotNeededPackage(await NpmPublishClient.create(), await AllPackages.readSingleNotNeeded(deprecateName, dt));
+            await deprecateNotNeededPackage(await NpmPublishClient.create(), await AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, logger()[0]);
         } else {
             await publishPackages(await readChangedPackages(await AllPackages.read(dt)), dry, process.env["GH_API_TOKEN"] || "", new Fetcher());
         }

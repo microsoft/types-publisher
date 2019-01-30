@@ -9,7 +9,7 @@ import { identity, joinPaths, mapToRecord, recordToMap } from "../util/util";
 
 import { getSecret, Secret } from "./secrets";
 import { npmApi, npmRegistry, npmRegistryHostName } from "./settings";
-import { log } from "util";
+import { Logger } from "../util/logging";
 
 function packageUrl(packageName: string): string {
     return resolveUrl(npmRegistry, packageName);
@@ -141,7 +141,7 @@ export class NpmPublishClient {
 
     private constructor(private readonly client: RegClient, private readonly auth: RegClient.Credentials) {}
 
-    async publish(publishedDirectory: string, packageJson: {}, dry: boolean): Promise<void> {
+    async publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger): Promise<void> {
         const readme = await readFile(joinPaths(publishedDirectory, "README.md"));
 
         return new Promise<void>((resolve, reject) => {
