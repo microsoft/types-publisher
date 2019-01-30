@@ -115,11 +115,14 @@ class NpmPublishClient {
         const token = await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN);
         return new this(new RegClient(config), { token });
     }
-    async publish(publishedDirectory, packageJson, dry) {
+    async publish(publishedDirectory, packageJson, dry, log) {
         const readme = await io_1.readFile(util_1.joinPaths(publishedDirectory, "README.md"));
         return new Promise((resolve, reject) => {
             const body = tgz_1.createTgz(publishedDirectory, reject);
             const metadata = { readme, ...packageJson };
+            if (dry) {
+                log("(dry) Skip publish of " + publishedDirectory);
+            }
             resolve(dry ? undefined : promisifyVoid(cb => {
                 this.client.publish(settings_1.npmRegistry, { access: "public", auth: this.auth, metadata, body }, cb);
             }));

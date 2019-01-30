@@ -47,7 +47,7 @@ async function publishRegistry(dt, allPackages, dry, client) {
     }
     else if (oldContentHash !== newContentHash && isAWeekAfter(lastModified)) {
         log("New packages have been added, so publishing a new registry.");
-        await publish(await publishClient(), packageJson, newVersion, dry);
+        await publish(await publishClient(), packageJson, newVersion, dry, log);
     }
     else {
         const reason = oldContentHash === newContentHash ? "Was modified less than a week ago" : "No new packages published";
@@ -79,8 +79,8 @@ async function generate(registry, packageJson) {
         return util_1.joinPaths(registryOutputPath, filename);
     }
 }
-async function publish(client, packageJson, version, dry) {
-    await client.publish(registryOutputPath, packageJson, dry);
+async function publish(client, packageJson, version, dry, log) {
+    await client.publish(registryOutputPath, packageJson, dry, log);
     // Sleep for 60 seconds to let NPM update.
     await io_1.sleep(60);
     // Don't set it as "latest" until *after* it's been validated.

@@ -8,6 +8,9 @@ const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
+    // TODO: package-publisher.ts doesn't have a main block so probably should just merge this here
+    //  (although npmTags is run in yet a THIRD case, unrelated to npm or to the azure app. It updates for a release.)
+    //  this is the most overloaded piece of software ever
     const dry = !!yargs.argv.dry;
     util_1.logUncaughtErrors(tag(dry, yargs.argv.name));
 }
@@ -39,7 +42,10 @@ async function tag(dry, name) {
 async function updateTypeScriptVersionTags(pkg, version, client, log, dry) {
     const tags = definitelytyped_header_parser_1.TypeScriptVersion.tagsToUpdate(pkg.minTypeScriptVersion);
     log(`Tag ${pkg.fullNpmName}@${version} as ${JSON.stringify(tags)}`);
-    if (!dry) {
+    if (dry) {
+        log("(dry) Skip tag");
+    }
+    else {
         for (const tagName of tags) {
             await client.tag(pkg.fullEscapedNpmName, version, tagName);
         }
@@ -48,7 +54,10 @@ async function updateTypeScriptVersionTags(pkg, version, client, log, dry) {
 exports.updateTypeScriptVersionTags = updateTypeScriptVersionTags;
 async function updateLatestTag(fullEscapedNpmName, version, client, log, dry) {
     log(`   but tag ${fullEscapedNpmName}@${version} as "latest"`);
-    if (!dry) {
+    if (dry) {
+        log("   (dry) Skip move \"latest\" back to newest version");
+    }
+    else {
         await client.tag(fullEscapedNpmName, version, "latest");
     }
 }

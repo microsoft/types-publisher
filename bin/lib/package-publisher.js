@@ -23,17 +23,20 @@ async function publishNotNeededPackage(client, pkg, dry, log) {
     log(`Deprecating ${pkg.name}`);
     await common(client, pkg, log, dry);
     // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
-    await deprecateNotNeededPackage(client, pkg, dry);
+    await deprecateNotNeededPackage(client, pkg, dry, log);
 }
 exports.publishNotNeededPackage = publishNotNeededPackage;
 async function common(client, pkg, log, dry) {
     log(`Publishing ${pkg.desc}`);
     const packageDir = pkg.outputDirectory;
     const packageJson = await common_1.readFileAndWarn("generate", util_1.joinPaths(packageDir, "package.json"));
-    await client.publish(packageDir, packageJson, dry);
+    await client.publish(packageDir, packageJson, dry, log);
 }
-async function deprecateNotNeededPackage(client, pkg, dry = false) {
-    if (!dry) {
+async function deprecateNotNeededPackage(client, pkg, dry = false, log) {
+    if (dry) {
+        log("(dry) Skip deprecate not needed package " + pkg.fullNpmName);
+    }
+    else {
         await client.deprecate(pkg.fullNpmName, pkg.version.versionString, pkg.deprecatedMessage());
     }
 }

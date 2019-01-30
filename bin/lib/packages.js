@@ -213,8 +213,12 @@ class TypingsVersions {
         this.latest = Math.max(...versions);
         this.map = new Map(versions.map((version) => [version, new TypingsData(data[version], version === this.latest)]));
     }
+    /**
+     * Values are reversed so that we publish the current version first.
+     * This is important because older versions repeatedly reset the "latest" tag to the current version.
+     */
     getAll() {
-        return this.map.values();
+        return Array.from(this.map.values()).reverse();
     }
     get(majorVersion) {
         return majorVersion === "*" ? this.getLatest() : this.getExact(majorVersion);
