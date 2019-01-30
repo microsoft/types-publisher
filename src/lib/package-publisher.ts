@@ -8,6 +8,7 @@ import { joinPaths } from "../util/util";
 
 import { NpmPublishClient } from "./npm-client";
 import { AnyPackage, NotNeededPackage } from "./packages";
+import { log } from "util";
 
 export async function publishTypingsPackage(client: NpmPublishClient, changedTyping: ChangedTyping, dry: boolean, log: Logger): Promise<void> {
     const { pkg, version, latestVersion } = changedTyping;
@@ -39,7 +40,10 @@ async function common(client: NpmPublishClient, pkg: AnyPackage, log: Logger, dr
 }
 
 export async function deprecateNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry = false): Promise<void> {
-    if (!dry) {
+    if (dry) {
+        log("(dry) Skip deprecate not needed package " + pkg.fullNpmName);
+    }
+    else {
         await client.deprecate(pkg.fullNpmName, pkg.version.versionString, pkg.deprecatedMessage());
     }
 }

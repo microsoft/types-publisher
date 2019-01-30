@@ -9,6 +9,7 @@ import { identity, joinPaths, mapToRecord, recordToMap } from "../util/util";
 
 import { getSecret, Secret } from "./secrets";
 import { npmApi, npmRegistry, npmRegistryHostName } from "./settings";
+import { log } from "util";
 
 function packageUrl(packageName: string): string {
     return resolveUrl(npmRegistry, packageName);
@@ -146,6 +147,9 @@ export class NpmPublishClient {
         return new Promise<void>((resolve, reject) => {
             const body = createTgz(publishedDirectory, reject);
             const metadata = { readme, ...packageJson };
+            if (dry) {
+                log("(dry) Skip publish of " + publishedDirectory);
+            }
             resolve(dry ? undefined : promisifyVoid(cb => {
                 this.client.publish(npmRegistry, { access: "public", auth: this.auth, metadata, body }, cb);
             }));
