@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const yargs = require("yargs");
+const crypto_1 = require("crypto");
 const secrets_1 = require("./lib/secrets");
 const settings_1 = require("./lib/settings");
-const webhook_server_1 = require("./lib/webhook-server");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
 if (!module.parent) {
@@ -17,6 +17,12 @@ function getPort() {
     }
     return port;
 }
+function expectedSignature(key, data) {
+    const hmac = crypto_1.createHmac("sha1", key);
+    hmac.write(data);
+    const digest = hmac.digest("hex");
+    return `sha1=${digest}`;
+}
 async function main(options) {
     const key = await secrets_1.getSecret(secrets_1.Secret.GITHUB_SECRET);
     const body = JSON.stringify({ ref: `refs/heads/${settings_1.sourceBranch}` });
@@ -26,7 +32,7 @@ async function main(options) {
         path: "",
         method: "POST",
         body,
-        headers: { "x-hub-signature": webhook_server_1.expectedSignature(key, body) },
+        headers: { "x-hub-signature": expectedSignature(key, body) },
     }));
 }
 //# sourceMappingURL=make-server-run.js.map
