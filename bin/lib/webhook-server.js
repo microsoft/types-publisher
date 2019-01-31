@@ -8,7 +8,9 @@ const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
+const timers_1 = require("timers");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
+    timers_1.setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 200000, logging_1.loggerWithErrors()[0]);
     return listenToGithub(key, updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
@@ -19,6 +21,18 @@ async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     }));
 }
 exports.default = webhookServer;
+function timedUpdate(githubAccessToken, dry, fetcher, options) {
+    return updateOneAtATime(async (log) => {
+        const timeStamp = util_1.currentTimeStamp();
+        log.info("");
+        log.info("");
+        log.info(`# ${timeStamp}`);
+        log.info("");
+        log.info("Starting full from timed update...");
+        await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options);
+        timers_1.setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 1000000, log);
+    });
+}
 function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
@@ -57,7 +71,7 @@ function listenToGithub(key, onUpdate) {
             if (!checkSignature(key, data, req.headers, log)) {
                 return;
             }
-            log.info(`Message from github: ${data}`);
+            log.info(`Message from github: ${data.slice(0, 200)}...`);
             const expectedRef = `refs/heads/${settings_1.sourceBranch}`;
             const actualRef = util_1.parseJson(data).ref;
             if (actualRef === expectedRef) {
