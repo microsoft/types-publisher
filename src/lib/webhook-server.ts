@@ -39,7 +39,7 @@ function timedUpdate(
         log.info(""); log.info("");
         log.info(`# ${timeStamp}`);
         log.info("");
-        log.info("Starting full...");
+        log.info("Starting full from timed update...");
         await full(dry, timeStamp, githubAccessToken, fetcher, options);
         setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 1_000_000, log);
     });
