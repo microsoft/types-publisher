@@ -4,42 +4,36 @@ import { LoggerWithErrors, loggerWithErrors } from "../util/logging";
 import { currentTimeStamp } from "../util/util";
 
 import { Options } from "./common";
-import { setTimeout } from "timers";
+import { setInterval } from "timers";
 
-export default function webhookServer(
+export default async function webhookServer(
     githubAccessToken: string,
     dry: boolean,
     fetcher: Fetcher,
     options: Options,
-): void {
-    setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 200_000, loggerWithErrors()[0]);
-}
-
-function timedUpdate(
-    githubAccessToken: string,
-    dry: boolean,
-    fetcher: Fetcher,
-    options: Options,
-) {
-    return updateOneAtATime(async (log) => {
+): Promise<void> {
+    const fullOnce = updateOneAtATime(async (log) => {
         const timeStamp = currentTimeStamp();
         log.info(""); log.info("");
         log.info(`# ${timeStamp}`);
         log.info("");
-        log.info("Starting full from timed update...");
+        log.info("Starting full...");
         await full(dry, timeStamp, githubAccessToken, fetcher, options);
-        setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 1_000_000, log);
     });
+
+    const log = loggerWithErrors()[0];
+    await fullOnce(log);
+    setInterval(fullOnce, 1_000_000, log);
 }
 
 // Even if there are many changes to DefinitelyTyped in a row, we only perform one update at a time.
 function updateOneAtATime(
-    doOnce: (log: LoggerWithErrors, timeStamp: string) => Promise<void>,
-): (log: LoggerWithErrors, timeStamp: string) => Promise<void> | undefined {
+    doOnce: (log: LoggerWithErrors) => Promise<void>,
+): (log: LoggerWithErrors) => Promise<void> | undefined {
     let working = false;
     let anyUpdatesWhileWorking = false;
 
-    return (log, timeStamp) => {
+    return (log) => {
         if (working) {
             anyUpdatesWhileWorking = true;
             log.info("Not starting update, because already performing one.");
@@ -55,7 +49,7 @@ function updateOneAtATime(
             working = true;
             anyUpdatesWhileWorking = false;
             do {
-                await doOnce(log, timeStamp);
+                await doOnce(log);
                 working = false;
             } while (anyUpdatesWhileWorking);
         }
