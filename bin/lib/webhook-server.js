@@ -10,29 +10,18 @@ const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 const timers_1 = require("timers");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
-    timers_1.setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 200000, logging_1.loggerWithErrors()[0]);
-    return listenToGithub(key, updateOneAtATime(async (log, timeStamp) => {
+    const fullOne = updateOneAtATime(async (log, timeStamp) => {
         log.info("");
         log.info("");
         log.info(`# ${timeStamp}`);
         log.info("");
         log.info("Starting full...");
         await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options);
-    }));
+    });
+    timers_1.setInterval(fullOne, 300000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
+    return listenToGithub(key, fullOne);
 }
 exports.default = webhookServer;
-function timedUpdate(githubAccessToken, dry, fetcher, options) {
-    return updateOneAtATime(async (log) => {
-        const timeStamp = util_1.currentTimeStamp();
-        log.info("");
-        log.info("");
-        log.info(`# ${timeStamp}`);
-        log.info("");
-        log.info("Starting full from timed update...");
-        await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options);
-        timers_1.setTimeout(timedUpdate(githubAccessToken, dry, fetcher, options), 1000000, log);
-    });
-}
 function writeLog(rollingLogs, logs) {
     return rollingLogs.write(logging_1.joinLogWithErrors(logs));
 }
