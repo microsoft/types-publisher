@@ -18,7 +18,7 @@ async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
         log.info("Starting full...");
         await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options, log);
     });
-    timers_1.setInterval(fullOne, 500000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
+    timers_1.setInterval(fullOne, 1000000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
     return listenToGithub(key, fullOne);
 }
 exports.default = webhookServer;
@@ -83,34 +83,26 @@ function listenToGithub(key, onUpdate) {
 // Even if there are many changes to DefinitelyTyped in a row, we only perform one update at a time.
 function updateOneAtATime(doOnce) {
     let working = false;
-    let anyUpdatesWhileWorking = false;
     return (log, timeStamp) => {
         if (working) {
-            anyUpdatesWhileWorking = true;
             log.info("Not starting update, because already performing one.");
             return undefined;
         }
         else {
-            working = false;
-            anyUpdatesWhileWorking = false;
             return work();
         }
         async function work() {
             log.info("Starting update");
             working = true;
-            anyUpdatesWhileWorking = false;
-            do {
-                try {
-                    await doOnce(log, timeStamp);
-                }
-                catch (e) {
-                    log.info("Error: ");
-                    log.info(e.toString());
-                }
-                finally {
-                    working = false;
-                }
-            } while (anyUpdatesWhileWorking);
+            try {
+                await doOnce(log, timeStamp);
+            }
+            catch (e) {
+                log.info(e.toString());
+            }
+            finally {
+                working = false;
+            }
         }
     };
 }

@@ -36,6 +36,7 @@ async function deprecateNotNeededPackage(client, pkg, dry = false, log) {
         log("(dry) Skip deprecate not needed package " + pkg.fullNpmName);
     }
     else {
+        log(`Deprecating ${pkg.fullNpmName} at ${pkg.version.versionString} with message: ${pkg.deprecatedMessage()}.`);
         await client.deprecate(pkg.fullNpmName, pkg.version.versionString, pkg.deprecatedMessage());
     }
 }
