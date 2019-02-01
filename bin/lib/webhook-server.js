@@ -100,8 +100,16 @@ function updateOneAtATime(doOnce) {
             working = true;
             anyUpdatesWhileWorking = false;
             do {
-                await doOnce(log, timeStamp);
-                working = false;
+                try {
+                    await doOnce(log, timeStamp);
+                }
+                catch (e) {
+                    log.info("Error: ");
+                    log.info(e.toString);
+                }
+                finally {
+                    working = false;
+                }
             } while (anyUpdatesWhileWorking);
         }
     };
