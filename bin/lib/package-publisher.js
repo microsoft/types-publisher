@@ -27,7 +27,6 @@ async function publishNotNeededPackage(client, pkg, dry, log) {
 }
 exports.publishNotNeededPackage = publishNotNeededPackage;
 async function common(client, pkg, log, dry) {
-    log(`Publishing ${pkg.desc}`);
     const packageDir = pkg.outputDirectory;
     const packageJson = await common_1.readFileAndWarn("generate", util_1.joinPaths(packageDir, "package.json"));
     await client.publish(packageDir, packageJson, dry, log);
