@@ -9,6 +9,7 @@ const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
+const logging_1 = require("../util/logging");
 function packageUrl(packageName) {
     return url_1.resolve(settings_1.npmRegistry, packageName);
 }
@@ -20,9 +21,21 @@ class CachedNpmInfoClient {
         this.cache = cache;
     }
     static async with(uncachedClient, cb) {
-        const client = new this(uncachedClient, await fs_extra_1.pathExists(cacheFile)
-            ? util_1.recordToMap(await io_1.readJson(cacheFile), npmInfoFromJson)
-            : new Map());
+        const log = logging_1.loggerWithErrors()[0];
+        let unroll;
+        log.info("Checking for cache file...");
+        const cacheFileExists = await fs_extra_1.pathExists(cacheFile);
+        if (cacheFileExists) {
+            log.info("Reading cache file...");
+            const cache = await io_1.readJson(cacheFile);
+            log.info(`Cache file ${cacheFile} existed, copying to map...`);
+            unroll = util_1.recordToMap(cache, npmInfoFromJson);
+        }
+        else {
+            log.info("Cache file didn't exist, using empty map.");
+            unroll = new Map();
+        }
+        const client = new this(uncachedClient, unroll);
         const res = await cb(client);
         await client.writeCache();
         return res;
