@@ -11,7 +11,7 @@ if (!module.parent) {
     util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 async function main(options) {
-    const changes = await getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options)), logging_1.consoleLogger.info, options.definitelyTypedPath);
+    const changes = await getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0])), logging_1.consoleLogger.info, options.definitelyTypedPath);
     console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */

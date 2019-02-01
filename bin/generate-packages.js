@@ -14,7 +14,8 @@ const util_1 = require("./util/util");
 if (!module.parent) {
     const tgz = !!yargs.argv.tgz;
     util_1.logUncaughtErrors(async () => {
-        const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
+        const log = logging_1.loggerWithErrors()[0];
+        const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, log);
         const allPackages = await packages_1.AllPackages.read(dt);
         await generatePackages(dt, allPackages, await versions_1.readChangedPackages(allPackages), tgz);
     });

@@ -11,19 +11,21 @@ const common_1 = require("./lib/common");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
+const logging_1 = require("./util/logging");
 if (!module.parent) {
     appInsights.setup();
     appInsights.start();
     const dry = !!yargs.argv.dry;
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
     util_1.logUncaughtErrors(async () => {
-        const dt = await getDefinitelyTyped(dry ? common_1.Options.azure : common_1.Options.defaults);
+        const dt = await getDefinitelyTyped(dry ? common_1.Options.azure : common_1.Options.defaults, logging_1.loggerWithErrors()[0]);
         assert(await dt.exists("types"));
         assert(!(await dt.exists("buncho")));
     });
 }
-async function getDefinitelyTyped(options) {
+async function getDefinitelyTyped(options, log) {
     if (options.definitelyTypedPath === undefined) {
+        log.info("Downloading Definitely Typed ...");
         await fs_extra_1.ensureDir(settings_1.dataDirPath);
         return downloadAndExtractFile(settings_1.definitelyTypedZipUrl);
     }
@@ -38,6 +40,7 @@ async function getDefinitelyTyped(options) {
         if (stdout) {
             throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
         }
+        log.info(`Using local Definitely Typed at ${options.definitelyTypedPath}.`);
         return new DiskFS(`${options.definitelyTypedPath}/`);
     }
 }

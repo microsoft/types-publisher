@@ -13,7 +13,7 @@ const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
     const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
     const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
-    util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
 }
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;

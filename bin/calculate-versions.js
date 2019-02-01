@@ -8,11 +8,16 @@ const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.logUncaughtErrors(async () => calculateVersions(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), new npm_client_1.UncachedNpmInfoClient()));
+    const log = logging_1.loggerWithErrors()[0];
+    util_1.logUncaughtErrors(async () => calculateVersions(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, log), new npm_client_1.UncachedNpmInfoClient(), log));
 }
-async function calculateVersions(dt, uncachedClient) {
-    console.log("=== Calculating versions ===");
-    return npm_client_1.CachedNpmInfoClient.with(uncachedClient, async (client) => versions_1.computeAndSaveChangedPackages(await packages_1.AllPackages.read(dt), logging_1.consoleLogger.info, client));
+async function calculateVersions(dt, uncachedClient, log) {
+    log.info("=== Calculating versions ===");
+    return npm_client_1.CachedNpmInfoClient.with(uncachedClient, async (client) => {
+        log.info("Reading packages...");
+        const packages = await packages_1.AllPackages.read(dt);
+        return versions_1.computeAndSaveChangedPackages(packages, log, client);
+    });
 }
 exports.default = calculateVersions;
 //# sourceMappingURL=calculate-versions.js.map

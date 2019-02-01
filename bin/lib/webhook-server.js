@@ -16,7 +16,7 @@ async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
         log.info(`# ${timeStamp}`);
         log.info("");
         log.info("Starting full...");
-        await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options);
+        await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options, log);
     });
     timers_1.setInterval(fullOne, 300000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
     return listenToGithub(key, fullOne);

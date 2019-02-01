@@ -6,11 +6,13 @@ const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
 const util_1 = require("./util/util");
+const logging_1 = require("./util/logging");
 if (!module.parent) {
     util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 async function main(options) {
-    const allPackages = await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options));
+    const log = logging_1.loggerWithErrors()[0];
+    const allPackages = await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options, log));
     const typings = allPackages.allTypings();
     const maxPathLen = Math.max(...typings.map(t => t.subDirectoryPath.length));
     const lines = util_1.mapDefined(typings, t => getEntry(t, maxPathLen));

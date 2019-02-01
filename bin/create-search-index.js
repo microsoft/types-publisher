@@ -6,13 +6,15 @@ const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
 const util_1 = require("./util/util");
+const logging_1 = require("./util/logging");
 if (!module.parent) {
+    const log = logging_1.loggerWithErrors()[0];
     const single = yargs.argv.single;
     if (single) {
         util_1.logUncaughtErrors(doSingle(single, new npm_client_1.UncachedNpmInfoClient()));
     }
     else {
-        util_1.logUncaughtErrors(async () => createSearchIndex(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults)), new npm_client_1.UncachedNpmInfoClient()));
+        util_1.logUncaughtErrors(async () => createSearchIndex(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, log)), new npm_client_1.UncachedNpmInfoClient()));
     }
 }
 async function createSearchIndex(packages, client) {

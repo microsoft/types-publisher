@@ -13,6 +13,7 @@ async function readChangedPackages(allPackages) {
 }
 exports.readChangedPackages = readChangedPackages;
 async function computeAndSaveChangedPackages(allPackages, log, client) {
+    log.info("Computing changed packages...");
     const cp = await computeChangedPackages(allPackages, log, client);
     const json = {
         changedTypings: cp.changedTypings.map(({ pkg: { id }, version, latestVersion }) => ({ id, version, latestVersion })),
@@ -26,7 +27,7 @@ async function computeChangedPackages(allPackages, log, client) {
     const changedTypings = await util_1.mapDefinedAsync(allPackages.allTypings(), async (pkg) => {
         const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ true, log);
         if (needsPublish) {
-            log(`Changed: ${pkg.desc}`);
+            log.info(`Changed: ${pkg.desc}`);
             const latestVersion = pkg.isLatest ? undefined : (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client, /*publish*/ true)).version;
             return { pkg, version, latestVersion };
         }
@@ -34,7 +35,7 @@ async function computeChangedPackages(allPackages, log, client) {
     });
     const changedNotNeededPackages = await util_1.mapDefinedAsync(allPackages.allNotNeeded(), async (pkg) => {
         if (!await isNotNeededPackageAlreadyDeprecated(pkg, client, log)) {
-            log(`Now deprecated: ${pkg.name}`);
+            log.info(`Now deprecated: ${pkg.name}`);
             return pkg;
         }
         return undefined;
@@ -89,7 +90,7 @@ async function fetchTypesPackageVersionInfo(pkg, client, canPublish, log) {
     let latestVersionInfo = latestVersion && util_1.assertDefined(info.versions.get(latestVersion.versionString));
     if (!latestVersionInfo || latestVersionInfo.typesPublisherContentHash !== pkg.contentHash) {
         if (log) {
-            log(`Version info not cached for ${pkg.desc}`);
+            log.info(`Version info not cached for ${pkg.desc}`);
         }
         info = await client.fetchAndCacheNpmInfo(pkg.fullEscapedNpmName);
         latestVersion = info && getHighestVersionForMajor(info.versions, pkg);
@@ -114,7 +115,7 @@ async function isNotNeededPackageAlreadyDeprecated(pkg, client, log) {
     let latestVersion = cachedInfo && util_1.assertDefined(cachedInfo.distTags.get("latest"));
     let latestVersionInfo = cachedInfo && latestVersion && util_1.assertDefined(cachedInfo.versions.get(latestVersion));
     if (!latestVersionInfo || !latestVersionInfo.deprecated) {
-        log(`Version info not cached for ${pkg.desc}`);
+        log.info(`Version info not cached for ${pkg.desc}`);
         // Since we're deprecating this package, it should have been published at least once before, so assertDefined.
         const info = util_1.assertDefined(await client.fetchAndCacheNpmInfo(pkg.fullEscapedNpmName));
         latestVersion = util_1.assertDefined(info.distTags.get("latest"));

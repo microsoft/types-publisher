@@ -25,7 +25,8 @@ if (!module.parent) {
         util_1.logUncaughtErrors(doValidate(packageNames));
     }
     else {
-        util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults).then(validate));
+        const log = logging_1.loggerWithErrors()[0];
+        util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, log).then(validate));
     }
 }
 async function validate(dt) {

@@ -15,7 +15,7 @@ if (!module.parent) {
     const dry = !!yargs.argv.dry;
     const deprecateName = yargs.argv.deprecate;
     util_1.logUncaughtErrors(async () => {
-        const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults);
+        const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, logging_1.loggerWithErrors()[0]);
         if (deprecateName !== undefined) {
             // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
             // Normally this should not be needed.

@@ -9,7 +9,8 @@ const versions_1 = require("./lib/versions");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    util_1.logUncaughtErrors(async () => checkParseResults(true, await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults), common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient()));
+    const log = logging_1.loggerWithErrors()[0];
+    util_1.logUncaughtErrors(async () => checkParseResults(true, await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.defaults, log), common_1.Options.defaults, new npm_client_1.UncachedNpmInfoClient()));
 }
 async function checkParseResults(includeNpmChecks, dt, options, client) {
     const allPackages = await packages_1.AllPackages.read(dt);
