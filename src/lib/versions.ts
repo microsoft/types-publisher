@@ -42,6 +42,7 @@ export interface ChangedPackages {
 }
 
 export async function computeAndSaveChangedPackages(allPackages: AllPackages, log: LoggerWithErrors, client: CachedNpmInfoClient): Promise<ChangedPackages> {
+    log.info("Computing changed packages...");
     const cp = await computeChangedPackages(allPackages, log, client);
     const json: ChangedPackagesJson = {
         changedTypings: cp.changedTypings.map(({ pkg: { id }, version, latestVersion }): ChangedTypingJson => ({ id, version, latestVersion })),

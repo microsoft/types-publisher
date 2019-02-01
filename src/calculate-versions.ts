@@ -13,6 +13,9 @@ if (!module.parent) {
 
 export default async function calculateVersions(dt: FS, uncachedClient: UncachedNpmInfoClient, log: LoggerWithErrors): Promise<ChangedPackages> {
     log.info("=== Calculating versions ===");
-    return CachedNpmInfoClient.with(uncachedClient, async client =>
-        computeAndSaveChangedPackages(await AllPackages.read(dt), log, client));
+    return CachedNpmInfoClient.with(uncachedClient, async client => {
+        log.info("Reading packages...");
+        const packages = await AllPackages.read(dt);
+        return computeAndSaveChangedPackages(packages, log, client)
+    });
 }
