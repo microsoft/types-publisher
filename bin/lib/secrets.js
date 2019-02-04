@@ -48,9 +48,8 @@ function azureSecretName(secret) {
 }
 function getSecret(secret) {
     const client = getClient();
-    const secretUrl = `${settings_1.azureKeyvault}/secrets/${azureSecretName(secret)}`;
     return new Promise((resolve, reject) => {
-        client.getSecret(secretUrl, (error, bundle) => {
+        client.getSecret(settings_1.azureKeyvault, azureSecretName(secret), process.env.TYPES_PUBLISHER_CLIENT_SECRET_VERSION, (error, bundle) => {
             if (error) {
                 reject(error);
             }
@@ -64,19 +63,17 @@ exports.getSecret = getSecret;
 function getClient() {
     const clientId = process.env.TYPES_PUBLISHER_CLIENT_ID;
     const clientSecret = process.env.TYPES_PUBLISHER_CLIENT_SECRET;
-    if (!(clientId && clientSecret)) {
-        throw new Error("Must set the TYPES_PUBLISHER_CLIENT_ID and TYPES_PUBLISHER_CLIENT_SECRET environment variables.");
+    const clientSecretVersion = process.env.TYPES_PUBLISHER_CLIENT_SECRET_VERSION;
+    if (!(clientId && clientSecret && clientSecretVersion)) {
+        throw new Error("Must set the TYPES_PUBLISHER_CLIENT_ID, TYPES_PUBLISHER_CLIENT_SECRET and TYPES_PUBLISHER_CLIENT_SECRET_VERSION environment variables.");
     }
-    // Authenticator - retrieves the access token
+    // Copied from example usage at https://www.npmjs.com/package/azure-keyvault
     const credentials = new azure_keyvault_1.KeyVaultCredentials((challenge, callback) => {
-        // Create a new authentication context.
         const context = new adal_node_1.AuthenticationContext(challenge.authorization);
-        // Use the context to acquire an authentication token.
         context.acquireTokenWithClientCredentials(challenge.resource, clientId, clientSecret, (error, tokenResponse) => {
             if (error) {
                 throw error;
             }
-            // Calculate the value to be set in the request's Authorization header and resume the call.
             callback(undefined, `${tokenResponse.tokenType} ${tokenResponse.accessToken}`);
         });
     });
