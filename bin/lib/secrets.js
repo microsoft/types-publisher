@@ -58,7 +58,9 @@ async function getSecret(secret) {
     const client = new azure_keyvault_1.KeyVaultClient(credentials);
     // Convert `AZURE_STORAGE_ACCESS_KEY` to `azure-storage-access-key` -- for some reason, Azure wouldn't allow secret names with underscores.
     const azureSecretName = Secret[secret].toLowerCase().replace(/_/g, "-");
+    console.log("Getting versions for: " + azureSecretName);
     const versions = await client.getSecretVersions(settings_1.azureKeyvault, azureSecretName);
+    console.log(versions);
     const urlParts = versions.value[0].id.split("/");
     const latest = urlParts[urlParts.length - 1];
     return (await client.getSecret(settings_1.azureKeyvault, azureSecretName, latest)).value;
