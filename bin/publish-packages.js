@@ -58,7 +58,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
                 log("(dry) Not posting published-comment to Definitely Typed.");
             }
             else {
-                const commented = await postGithub(`repos/DefinitelyTyped/DefinitelyTyped/issues/${latestPr}/comments&access_token=${githubAccessToken}`, `body=${cp.pkg.fullEscapedNpmName}@${cp.pkg.major}.${cp.pkg.minor}%20is%20now%20published.`, githubAccessToken, fetcher);
+                const commented = await postGithub(`repos/DefinitelyTyped/DefinitelyTyped/issues/${latestPr}/comments`, `body=${cp.pkg.fullEscapedNpmName}@${cp.pkg.major}.${cp.pkg.minor}%20is%20now%20published.`, githubAccessToken, fetcher);
                 log("From github: " + JSON.stringify(commented));
             }
             if (dry) {
@@ -88,10 +88,9 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     console.log("Done!");
 }
 exports.default = publishPackages;
-async function postGithub(path, data, githubToken, fetcher) {
+async function postGithub(path, body, githubToken, fetcher) {
     const [log] = logging_1.logger();
     log("Posting to github: " + path);
-    const body = data + "&access_token=" + githubToken;
     return fetcher.fetchJson({
         hostname: "api.github.com",
         method: "POST",
@@ -101,6 +100,7 @@ async function postGithub(path, data, githubToken, fetcher) {
             // arbitrary string, but something must be provided
             "User-Agent": "types-publisher",
             "Content-Type": "application/x-www-form-urlencoded",
+            "authToken": githubToken,
             "Content-Length": Buffer.byteLength(body),
         },
     });
