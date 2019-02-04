@@ -61,7 +61,7 @@ async function getSecret(secret) {
     console.log("Getting versions for: " + azureSecretName);
     const versions = await client.getSecretVersions(settings_1.azureKeyvault, azureSecretName);
     console.log(versions);
-    const urlParts = versions.value[0].id.split("/");
+    const urlParts = versions[0].id.split("/");
     const latest = urlParts[urlParts.length - 1];
     return (await client.getSecret(settings_1.azureKeyvault, azureSecretName, latest)).value;
 }
