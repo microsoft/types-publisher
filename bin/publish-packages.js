@@ -54,7 +54,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             const commitlatency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
             log("Current date is " + new Date(Date.now()));
             log("  Merge date is " + new Date(latest.merged_at));
-            const published = cp.pkg.fullNpmName + "@" + cp.pkg.major + "." + cp.pkg.minor + "." + cp.version;
+            const published = cp.pkg.fullNpmName + "@" + cp.version;
             const publishNotification = "I just published [`" + published + "` to npm](https://www.npmjs.com/package/" + cp.pkg.fullNpmName + ").";
             log(publishNotification);
             if (dry) {
