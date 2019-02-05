@@ -118,7 +118,11 @@ async function checkNpm({ major, minor, name, libraryName, projectName, contribu
     }).join(", ");
     log("  To fix this:");
     log(`  git checkout -b not-needed-${name}`);
-    log(`  yarn not-needed ${name} ${firstTypedVersion.versionString} ${projectName}${libraryName !== name ? ` ${JSON.stringify(libraryName)}` : ""}`);
+    const yarnargs = [name, firstTypedVersion.versionString, projectName];
+    if (libraryName !== name) {
+        yarnargs.push(JSON.stringify(libraryName));
+    }
+    log("  yarn not-needed " + yarnargs.join(" "));
     log(`  git add --all && git commit -m "${name}: Provides its own types" && git push -u origin not-needed-${name}`);
     log(`  And comment PR: This will deprecate \`@types/${name}\` in favor of just \`${name}\`. CC ${contributorUrls}`);
     if (new versions_1.Semver(major, minor, 0).greaterThan(firstTypedVersion)) {
@@ -164,7 +168,8 @@ const notNeededExceptions = new Set([
     "node-mysql-wrapper",
     // raspi packages bundle types, but can only be installed on a Raspberry Pi, so they are duplicated to DefinitelyTyped.
     // See https://github.com/DefinitelyTyped/DefinitelyTyped/pull/21618
-    "raspi", "raspi-board", "raspi-gpio", "raspi-i2c", "raspi-led", "raspi-onewire", "raspi-peripheral", "raspi-pwm", "raspi-serial", "raspi-soft-pwm",
+    "raspi", "raspi-board", "raspi-gpio", "raspi-i2c", "raspi-led", "raspi-onewire",
+    "raspi-peripheral", "raspi-pwm", "raspi-serial", "raspi-soft-pwm",
     // Declare "typings" but don't actually have them yet (https://github.com/stampit-org/stampit/issues/245)
     "stampit",
 ]);

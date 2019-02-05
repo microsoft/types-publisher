@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const common_1 = require("./lib/common");
 const get_definitely_typed_1 = require("./get-definitely-typed");
+const common_1 = require("./lib/common");
 const logging_1 = require("./util/logging");
 function testo(o) {
     for (const k in o) {

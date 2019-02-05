@@ -28,7 +28,9 @@ async function computeChangedPackages(allPackages, log, client) {
         const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ true, log);
         if (needsPublish) {
             log.info(`Changed: ${pkg.desc}`);
-            const latestVersion = pkg.isLatest ? undefined : (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client, /*publish*/ true)).version;
+            const latestVersion = pkg.isLatest ?
+                undefined :
+                (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client, /*publish*/ true)).version;
             return { pkg, version, latestVersion };
         }
         return undefined;

@@ -5,8 +5,8 @@ const common_1 = require("./lib/common");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
 const io_1 = require("./util/io");
-const util_1 = require("./util/util");
 const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 if (!module.parent) {
     util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }

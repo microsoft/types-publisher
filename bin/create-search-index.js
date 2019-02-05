@@ -5,8 +5,8 @@ const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
-const util_1 = require("./util/util");
 const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 if (!module.parent) {
     const log = logging_1.loggerWithErrors()[0];
     const single = yargs.argv.single;

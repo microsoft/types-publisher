@@ -7,8 +7,8 @@ const definition_parser_1 = require("./lib/definition-parser");
 const definition_parser_worker_1 = require("./lib/definition-parser-worker");
 const packages_1 = require("./lib/packages");
 const test_runner_1 = require("./tester/test-runner");
-const util_1 = require("./util/util");
 const logging_1 = require("./util/logging");
+const util_1 = require("./util/util");
 if (!module.parent) {
     const singleName = yargs.argv.single;
     const options = common_1.Options.defaults;

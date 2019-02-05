@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = require("crypto");
 const http_1 = require("http");
+const timers_1 = require("timers");
 const full_1 = require("../full");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
-const timers_1 = require("timers");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     const fullOne = updateOneAtATime(async (log, timeStamp) => {
         log.info("");

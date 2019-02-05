@@ -5,11 +5,11 @@ const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");
 const url_1 = require("url");
 const io_1 = require("../util/io");
+const logging_1 = require("../util/logging");
 const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
-const logging_1 = require("../util/logging");
 function packageUrl(packageName) {
     return url_1.resolve(settings_1.npmRegistry, packageName);
 }

@@ -20,7 +20,7 @@ async function main() {
     }
     else {
         console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-        appInsights.setup(process.env["APPINSIGHTS_INSTRUMENTATIONKEY"]).start();
+        appInsights.setup(process.env.APPINSIGHTS_INSTRUMENTATIONKEY).start();
         console.log("Done initialising App Insights");
         const fetcher = new io_1.Fetcher();
         try {
@@ -32,7 +32,7 @@ async function main() {
             appInsights.defaultClient.trackEvent({
                 name: "crash",
                 properties: {
-                    error: e.toString()
+                    error: e.toString(),
                 },
             });
             throw e;
