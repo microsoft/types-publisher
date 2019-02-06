@@ -38,17 +38,16 @@ async function parseDefinitions(dt, parallel, log) {
             commandLineArgs: [`${parallel.definitelyTypedPath}/types`],
             workerFile: definition_parser_worker_1.definitionParserWorkerFilename,
             nProcesses: parallel.nProcesses,
-            handleOutput,
+            handleOutput({ data, packageName }) {
+                typings[packageName] = data;
+            },
         });
     }
     else {
         log.info("Parsing non-parallel...");
         for (const packageName of packageNames) {
-            handleOutput({ data: await definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName)), packageName });
+            typings[packageName] = await definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName));
         }
-    }
-    function handleOutput({ data, packageName }) {
-        typings[packageName] = data;
     }
     await common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings));
     return packages_1.AllPackages.from(typings, await packages_1.readNotNeededPackages(dt));

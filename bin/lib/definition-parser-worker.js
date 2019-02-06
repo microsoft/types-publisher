@@ -5,19 +5,18 @@ const process = require("process");
 const get_definitely_typed_1 = require("../get-definitely-typed");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
+// This file is "called" by runWithChildProcesses from parse-definition.ts
+exports.definitionParserWorkerFilename = __filename;
 if (!module.parent) {
     process.on("message", message => {
         assert(process.argv.length === 3);
         const typesPath = process.argv[2];
-        util_1.logUncaughtErrors(go(message, typesPath));
+        util_1.logUncaughtErrors(async () => {
+            for (const packageName of message) {
+                const data = await definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
+                process.send({ data, packageName });
+            }
+        });
     });
-}
-exports.definitionParserWorkerFilename = __filename;
-async function go(packageNames, typesPath) {
-    for (const packageName of packageNames) {
-        const data = await definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
-        const result = { data, packageName };
-        process.send(result);
-    }
 }
 //# sourceMappingURL=definition-parser-worker.js.map
