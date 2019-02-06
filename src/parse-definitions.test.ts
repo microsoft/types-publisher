@@ -11,6 +11,7 @@ function testo(o: { [s: string]: () => void }) {
 testo({
     async parseDefinitions() {
         const log = loggerWithErrors()[0]
+        // TODO: A mocked DT would be really nice here
         const dt = await getDefinitelyTyped(Options.defaults, log);
         const defs = await parseDefinitions(dt, undefined, log)
         expect(defs.allNotNeeded().length).toBeGreaterThan(0)
