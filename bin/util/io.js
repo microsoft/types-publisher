@@ -69,7 +69,7 @@ class Fetcher {
             return JSON.parse(text);
         }
         catch (e) {
-            throw new Error(`Bad response from server:\noptions: ${options}\n\n${text}`);
+            throw new Error(`Bad response from server:\noptions: ${JSON.stringify(options)}\n\n${text}`);
         }
     }
     async fetch(options) {
