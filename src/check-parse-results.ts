@@ -24,8 +24,6 @@ export default async function checkParseResults(includeNpmChecks: boolean, dt: F
 
     if (fold.isTravis()) { console.log(fold.start("Duplicate packages")); }
     const packages = allPackages.allPackages();
-    checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
-    checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
     if (fold.isTravis()) { console.log(fold.end("Duplicate packages")); }
 
     const dependedOn = new Set<string>();
@@ -49,25 +47,6 @@ export default async function checkParseResults(includeNpmChecks: boolean, dt: F
     }
 
     await writeLog("conflicts.md", logResult());
-}
-
-function checkForDuplicates(packages: ReadonlyArray<AnyPackage>, func: (info: AnyPackage) => string | undefined, key: string, log: Logger): void {
-    const lookup = new Map<string, TypingsData[]>();
-    for (const info of packages) {
-        const libraryOrProjectName = func(info);
-        if (libraryOrProjectName !== undefined) {
-            multiMapAdd(lookup, libraryOrProjectName, info);
-        }
-    }
-
-    for (const [libName, values] of lookup) {
-        if (values.length > 1) {
-            log(` * Duplicate ${key} descriptions "${libName}"`);
-            for (const n of values) {
-                log(`   * ${n.desc}`);
-            }
-        }
-    }
 }
 
 function checkTypeScriptVersions(allPackages: AllPackages): void {
