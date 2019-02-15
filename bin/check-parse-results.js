@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const fold = require("travis-fold");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
@@ -17,16 +16,8 @@ async function checkParseResults(includeNpmChecks, dt, options, client) {
     const [log, logResult] = logging_1.logger();
     checkTypeScriptVersions(allPackages);
     checkPathMappings(allPackages);
-    if (fold.isTravis()) {
-        console.log(fold.start("Duplicate packages"));
-    }
-    const packages = allPackages.allPackages();
-    checkForDuplicates(packages, pkg => pkg.libraryName, "Library Name", log);
-    checkForDuplicates(packages, pkg => pkg.projectName, "Project Name", log);
-    if (fold.isTravis()) {
-        console.log(fold.end("Duplicate packages"));
-    }
     const dependedOn = new Set();
+    const packages = allPackages.allPackages();
     for (const pkg of packages) {
         if (pkg instanceof packages_1.TypingsData) {
             for (const dep of pkg.dependencies) {
@@ -47,23 +38,6 @@ async function checkParseResults(includeNpmChecks, dt, options, client) {
     await logging_1.writeLog("conflicts.md", logResult());
 }
 exports.default = checkParseResults;
-function checkForDuplicates(packages, func, key, log) {
-    const lookup = new Map();
-    for (const info of packages) {
-        const libraryOrProjectName = func(info);
-        if (libraryOrProjectName !== undefined) {
-            util_1.multiMapAdd(lookup, libraryOrProjectName, info);
-        }
-    }
-    for (const [libName, values] of lookup) {
-        if (values.length > 1) {
-            log(` * Duplicate ${key} descriptions "${libName}"`);
-            for (const n of values) {
-                log(`   * ${n.desc}`);
-            }
-        }
-    }
-}
 function checkTypeScriptVersions(allPackages) {
     for (const pkg of allPackages.allTypings()) {
         for (const dep of allPackages.allDependencyTypings(pkg)) {
