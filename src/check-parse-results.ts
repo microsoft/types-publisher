@@ -1,12 +1,10 @@
-import * as fold from "travis-fold";
-
 import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
 import { NpmInfoRawVersions, NpmInfoVersion, UncachedNpmInfoClient } from "./lib/npm-client";
-import { AllPackages, AnyPackage, TypingsData } from "./lib/packages";
+import { AllPackages, TypingsData } from "./lib/packages";
 import { Semver } from "./lib/versions";
 import { Logger, logger, loggerWithErrors, writeLog } from "./util/logging";
-import { assertDefined, best, logUncaughtErrors, mapDefined, multiMapAdd, nAtATime } from "./util/util";
+import { assertDefined, best, logUncaughtErrors, mapDefined, nAtATime } from "./util/util";
 
 if (!module.parent) {
     const log = loggerWithErrors()[0];
@@ -22,11 +20,8 @@ export default async function checkParseResults(includeNpmChecks: boolean, dt: F
 
     checkPathMappings(allPackages);
 
-    if (fold.isTravis()) { console.log(fold.start("Duplicate packages")); }
-    const packages = allPackages.allPackages();
-    if (fold.isTravis()) { console.log(fold.end("Duplicate packages")); }
-
     const dependedOn = new Set<string>();
+    const packages = allPackages.allPackages();
     for (const pkg of packages) {
         if (pkg instanceof TypingsData) {
             for (const dep of pkg.dependencies) {
