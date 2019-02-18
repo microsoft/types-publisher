@@ -84,6 +84,7 @@ rollup
 rxjs
 should
 smooth-scrollbar
+scroll-into-view-if-needed
 source-map
 styled-components
 sw-toolbox
