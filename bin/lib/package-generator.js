@@ -58,6 +58,7 @@ function createPackageJSON(typing, version, packages) {
         repository: {
             type: "git",
             url: `${definitelyTypedURL}.git`,
+            directory: `types/${typing.name}`,
         },
         scripts: {},
         dependencies: getDependencies(typing.packageJsonDependencies, typing, packages),
