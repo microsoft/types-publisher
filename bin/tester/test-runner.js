@@ -78,7 +78,7 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
         console.log(fold.start("tests"));
     }
     await util_1.runWithListeningChildProcesses({
-        inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p) })),
+        inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p), expectOnly: !changed.has(p) })),
         commandLineArgs: ["--listen"],
         workerFile: require.resolve("dtslint"),
         nProcesses,
