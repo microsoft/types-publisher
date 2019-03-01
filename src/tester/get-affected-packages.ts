@@ -22,13 +22,30 @@ export interface Affected {
     readonly dependentPackages: ReadonlyArray<TypingsData>;
 }
 
+interface PackageVersion {
+    name: string;
+    majorVersion: number | "latest";
+}
+
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 export default async function getAffectedPackages(allPackages: AllPackages, log: Logger, definitelyTypedPath: string): Promise<Affected> {
-    const changedPackageIds = await gitChanges(log, definitelyTypedPath);
+    const changedPackageIds = Array.from(await gitChanges(log, definitelyTypedPath));
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!', changedPackageIds.length)
     // If a package doesn't exist, that's because it was deleted.
     const changedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) =>
-        majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-    const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
+        majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
+    ));
+    const deletedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) => {
+        const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
+        if (!res) {
+            console.log('found deleted package', name)
+            return name
+        }
+        return undefined
+    }));
+    const dependentPackages =[
+        ...collectDependers(changedPackages, getReverseDependencies(allPackages)),
+        ...collectDependersUnused(allPackages, deletedPackages, getReverseDependenciesByName(allPackages, deletedPackages))];
     return { changedPackages, dependentPackages };
 }
 
@@ -45,6 +62,17 @@ function collectDependers(changedPackages: TypingsData[], reverseDependencies: M
         dependers.delete(original);
     }
     return sortPackages(dependers);
+}
+
+/** Collect all packages that depend on changed packages, and all that depend on those, etc. */
+function collectDependersUnused(allPackages: AllPackages, deletedPackages: string[], reverseDependencies: Map<string, Set<string>>): TypingsData[] {
+    const dependers = transitiveClosure(deletedPackages, pkg => reverseDependencies.get(pkg) || []);
+    // Don't include the original changed packages, just their dependers
+    for (const original of deletedPackages) {
+        dependers.delete(original);
+    }
+    // TODO: Remove the !
+    return sortPackages(mapIter(dependers, d => allPackages.tryGetLatestVersion(d)!));
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
@@ -80,6 +108,7 @@ function transitiveClosure<T>(initialItems: Iterable<T>, getRelatedItems: (item:
 function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<TypingsData>> {
     const map = new Map<TypingsData, Set<TypingsData>>();
 
+    // this isn't good enough; you need to look up some things by name too
     for (const typing of allPackages.allTypings()) {
         map.set(typing, new Set());
     }
@@ -93,13 +122,32 @@ function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<
     return map;
 }
 
-interface PackageVersion { name: string; majorVersion: number | "latest"; }
+/** Returns all immediate subdirectories of the root directory that have changed. */
+/** Generate a map from a package to packages that depend on it. */
+function getReverseDependenciesByName(allPackages: AllPackages, deletedPackageNames: string[]): Map<string, Set<string>> {
+    const map = new Map<string, Set<string>>();
+
+    for (const name of deletedPackageNames) {
+        map.set(name, new Set());
+    }
+
+    for (const typing of allPackages.allTypings()) {
+        for (const dependency of allPackages.allDependencyTypings(typing)) {
+            if (map.has(dependency.name)) {
+                map.get(dependency.name)!.add(typing.name);
+            }
+        }
+    }
+
+    return map;
+}
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
 async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Iterable<PackageVersion>> {
     const changedPackages = new Map<string, Set<number | "latest">>();
 
     for (const fileName of await gitDiff(log, definitelyTypedPath)) {
+        // TODO: Handle notNeededPackage.json here
         const dep = getDependencyFromFile(fileName);
         if (dep) {
             const versions = changedPackages.get(dep.name);

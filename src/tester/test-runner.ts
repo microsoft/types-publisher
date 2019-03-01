@@ -43,10 +43,10 @@ export default async function runTests(
     selection: "all" | "affected" | RegExp,
 ): Promise<void> {
     const allPackages = await AllPackages.read(dt);
-    const { changedPackages, dependentPackages }: Affected = selection === "all"
-        ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
-        : selection === "affected"
-        ? await getAffectedPackages(allPackages, consoleLogger.info, definitelyTypedPath)
+    console.log("!!!!!!!!!!!!!!!!!!!!!!" + selection)
+    const { changedPackages, dependentPackages }: Affected =
+        selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
+        selection === "affected" ? await getAffectedPackages(allPackages, consoleLogger.info, definitelyTypedPath)
         : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
 
     console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
