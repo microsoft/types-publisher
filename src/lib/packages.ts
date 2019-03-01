@@ -109,12 +109,12 @@ export class AllPackages {
 
     /** Returns all of the dependences *that have typings*, ignoring others. */
     *dependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
-        if (pkg.name === 'alt') {
-            console.log('why not alt?')
-            console.log(pkg.dependencies)
-            console.log('this.data has', this.data.get('alt')!.getLatest())
-        }
         for (const { name, majorVersion } of pkg.dependencies) {
+
+            if (pkg.name === 'alt') {
+                console.log('why not alt at ', name, majorVersion)
+                console.log('this.data has', this.data.get('react'))
+            }
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.get(majorVersion);
