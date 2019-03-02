@@ -59,6 +59,11 @@ export class AllPackages {
         return this.tryGetTypingsData(dep) !== undefined;
     }
 
+    tryResolve(dep: PackageId): PackageId {
+        const versions = this.data.get(getMangledNameForScopedPackage(dep.name));
+        return versions ? versions.get(dep.majorVersion).id : dep;
+    }
+
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
     getLatest(pkg: TypingsData): TypingsData {
         return pkg.isLatest ? pkg : this.getLatestVersion(pkg.name);
@@ -107,19 +112,14 @@ export class AllPackages {
         return this.notNeeded;
     }
 
-    /** Returns all of the dependences *that have typings*, ignoring others. */
-    *dependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
+    /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
+    *allDependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
         for (const { name, majorVersion } of pkg.dependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.get(majorVersion);
             }
         }
-    }
-
-    /** Like 'dependencyTypings', but includes test dependencies. */
-    *allDependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
-        yield* this.dependencyTypings(pkg);
 
         for (const name of pkg.testDependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
@@ -131,7 +131,7 @@ export class AllPackages {
 }
 
 // Same as the function in moduleNameResolver.ts in typescript
-function getMangledNameForScopedPackage(packageName: string): string {
+export function getMangledNameForScopedPackage(packageName: string): string {
     if (packageName.startsWith("@")) {
         const replaceSlash = packageName.replace("/", "__");
         if (replaceSlash !== packageName) {

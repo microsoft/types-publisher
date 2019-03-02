@@ -1,7 +1,7 @@
 import { getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
-import { AllPackages, PackageBase, TypingsData, PackageId, DependencyVersion } from "../lib/packages";
+import { AllPackages, PackageBase, TypingsData, PackageId, DependencyVersion, getMangledNameForScopedPackage } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { consoleLogger, Logger, loggerWithErrors } from "../util/logging";
 import { execAndThrowErrors, flatMap, logUncaughtErrors, mapDefined, mapIter, sort } from "../util/util";
@@ -24,21 +24,11 @@ export interface Affected {
 
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 export default async function getAffectedPackages(allPackages: AllPackages, log: Logger, definitelyTypedPath: string): Promise<Affected> {
-    const revs = getReverseDependencies(allPackages);
-    const changedPackageIds = Array.from(await gitChanges(log, definitelyTypedPath));
+    const resolved = (await gitChanges(log, definitelyTypedPath)).map(id => allPackages.tryResolve(id));
     // If a package doesn't exist, that's because it was deleted.
-    const changedPackages = mapDefined(changedPackageIds, (id =>
-        id.majorVersion === "*" ? allPackages.tryGetLatestVersion(id.name) : allPackages.tryGetTypingsData(id)
-    ));
-    const deletedPackages = mapDefined(changedPackageIds, (id => {
-        const res = id.majorVersion === "*" ? allPackages.tryGetLatestVersion(id.name) : allPackages.tryGetTypingsData(id)
-        return res ? undefined : id;
-    }));
-    const revdels = getReverseDependenciesByName(allPackages, deletedPackages);
-    const dependentPackages =[
-        ...collectDependers(changedPackages, revs, t => t),
-        ...collectDependers(deletedPackages, revdels, p => allPackages.getTypingsData(p))];
-    return { changedPackages, dependentPackages };
+    const changed = mapDefined(resolved, id => allPackages.tryGetTypingsData(id));
+    const dependent = mapIter(collectDependers(resolved, getReverseDependencies(allPackages, resolved)), p => allPackages.getTypingsData(p));
+    return { changedPackages: changed, dependentPackages: sortPackages(dependent) };
 }
 
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
@@ -47,13 +37,13 @@ export function allDependencies(allPackages: AllPackages, packages: Iterable<Typ
 }
 
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependers<T>(changedPackages: T[], reverseDependencies: Map<T, Set<T>>, convert: (t: T) => TypingsData): TypingsData[] {
+function collectDependers(changedPackages: PackageId[], reverseDependencies: Map<PackageId, Set<PackageId>>): Set<PackageId> {
     const dependers = transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []);
     // Don't include the original changed packages, just their dependers
     for (const original of changedPackages) {
         dependers.delete(original);
     }
-    return sortPackages(mapIter(dependers, convert));
+    return dependers;
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
@@ -86,36 +76,28 @@ function transitiveClosure<T>(initialItems: Iterable<T>, getRelatedItems: (item:
 }
 
 /** Generate a map from a package to packages that depend on it. */
-function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<TypingsData>> {
-    const map = new Map<TypingsData, Set<TypingsData>>();
-    for (const typing of allPackages.allTypings()) {
-        map.set(typing, new Set());
+function getReverseDependencies(allPackages: AllPackages, changedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
+   const map = new Map<string, [PackageId, Set<PackageId>]>();
+     for (const changed of changedPackages) {
+         map.set(packageIdToKey(changed), [changed, new Set()]);
     }
-
     for (const typing of allPackages.allTypings()) {
-        for (const dependency of allPackages.allDependencyTypings(typing)) {
-            map.get(dependency)!.add(typing);
+        if (!map.has(packageIdToKey(typing.id))) {
+            map.set(packageIdToKey(typing.id), [typing.id, new Set()]);
         }
-    }
-
-    return map;
-}
-
-/** Generate a map from a package to packages that depend on it. */
-function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
-    const map = new Map<string, [PackageId, Set<PackageId>]>();
-    for (const deleted of deletedPackages) {
-        map.set(packageIdToKey(deleted), [deleted, new Set()]);
     }
     for (const typing of allPackages.allTypings()) {
         for (const dependency of typing.dependencies) {
-            if (map.has(packageIdToKey(dependency))) {
-                map.get(packageIdToKey(dependency))![1].add({ name: typing.name, majorVersion: typing.major });
+            const dependencies = map.get(packageIdToKey(allPackages.tryResolve(dependency)))
+            if (dependencies) {
+                dependencies[1].add(typing.id);
             }
         }
         for (const dependencyName of typing.testDependencies) {
-            if (map.has(packageIdToKey({ name: dependencyName, majorVersion: "*"}))) {
-                map.get(packageIdToKey({ name: dependencyName, majorVersion: "*" }))![1].add({ name: typing.name, majorVersion: typing.major });
+            const latest = { name: dependencyName, majorVersion: "*" } as PackageId;
+            const dependencies = map.get(packageIdToKey(allPackages.tryResolve(latest)));
+            if (dependencies) {
+                dependencies[1].add(typing.id);
             }
         }
     }
@@ -123,11 +105,11 @@ function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages:
 }
 
 function packageIdToKey(pkg: PackageId): string {
-    return pkg.name + "/v" + pkg.majorVersion;
+    return getMangledNameForScopedPackage(pkg.name) + "/v" + pkg.majorVersion;
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
-async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Iterable<PackageId>> {
+async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Array<PackageId>> {
     const changedPackages = new Map<string, Set<DependencyVersion>>();
 
     for (const fileName of await gitDiff(log, definitelyTypedPath)) {
@@ -142,8 +124,8 @@ async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Ite
         }
     }
 
-    return flatMap(changedPackages, ([name, versions]) =>
-        mapIter(versions, majorVersion => ({ name, majorVersion })));
+    return Array.from(flatMap(changedPackages, ([name, versions]) =>
+        mapIter(versions, majorVersion => ({ name, majorVersion }))));
 }
 
 /*
