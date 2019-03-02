@@ -36,7 +36,7 @@ export default async function getAffectedPackages(allPackages: AllPackages, log:
     ));
     const deletedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) => {
         const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
-        return res ? undefined : packageVersionToPackageId({ name, majorVersion });
+        return res ? undefined : { name, majorVersion: majorVersion === "latest" ? "*" : majorVersion } as PackageId;
     }));
     const dependentPackages =[
         ...collectDependers(changedPackages, getReverseDependencies(allPackages), t => t),
@@ -91,8 +91,6 @@ function transitiveClosure<T>(initialItems: Iterable<T>, getRelatedItems: (item:
 /** Generate a map from a package to packages that depend on it. */
 function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<TypingsData>> {
     const map = new Map<TypingsData, Set<TypingsData>>();
-
-    // this isn't good enough; you need to look up some things by name too
     for (const typing of allPackages.allTypings()) {
         map.set(typing, new Set());
     }
@@ -106,7 +104,6 @@ function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<
     return map;
 }
 
-/** Returns all immediate subdirectories of the root directory that have changed. */
 /** Generate a map from a package to packages that depend on it. */
 function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
     const map = new Map<string, [PackageId, Set<PackageId>]>();
@@ -126,10 +123,6 @@ function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages:
         }
     }
     return new Map(map.values())
-}
-
-function packageVersionToPackageId(pkg: PackageVersion): PackageId {
-    return { name: pkg.name, majorVersion: pkg.majorVersion === "latest" ? "*" : pkg.majorVersion };
 }
 
 function packageIdToKey(pkg: PackageId): string {
