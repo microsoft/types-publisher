@@ -80,7 +80,7 @@ export class AllPackages {
     getTypingsData(id: PackageId): TypingsData {
         const pkg = this.tryGetTypingsData(id);
         if (!pkg) {
-            throw new Error(`No typings available for ${id}`);
+            throw new Error(`No typings available for ${JSON.stringify(id)}`);
         }
         return pkg;
     }
@@ -136,7 +136,7 @@ export class AllPackages {
 }
 
 // Same as the function in moduleNameResolver.ts in typescript
-function getMangledNameForScopedPackage(packageName: string): string {
+export function getMangledNameForScopedPackage(packageName: string): string {
     if (packageName.startsWith("@")) {
         const replaceSlash = packageName.replace("/", "__");
         if (replaceSlash !== packageName) {

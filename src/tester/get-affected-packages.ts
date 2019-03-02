@@ -1,7 +1,7 @@
 import { getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
-import { AllPackages, PackageBase, TypingsData } from "../lib/packages";
+import { AllPackages, PackageBase, TypingsData, PackageId } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { consoleLogger, Logger, loggerWithErrors } from "../util/logging";
 import { execAndThrowErrors, flatMap, logUncaughtErrors, mapDefined, mapIter, sort } from "../util/util";
@@ -14,7 +14,7 @@ async function main(options: TesterOptions): Promise<void> {
         await AllPackages.read(await getDefinitelyTyped(options, loggerWithErrors()[0])),
         consoleLogger.info,
         options.definitelyTypedPath);
-    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
+    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
 }
 
 export interface Affected {
@@ -38,8 +38,8 @@ export default async function getAffectedPackages(allPackages: AllPackages, log:
     const deletedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) => {
         const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
         if (!res) {
-            console.log('found deleted package', name)
-            return name
+            console.log('found deleted package', name, 'at', majorVersion)
+            return { name, majorVersion }
         }
         return undefined
     }));
@@ -65,14 +65,13 @@ function collectDependers(changedPackages: TypingsData[], reverseDependencies: M
 }
 
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependersUnused(allPackages: AllPackages, deletedPackages: string[], reverseDependencies: Map<string, Set<string>>): TypingsData[] {
+function collectDependersUnused(allPackages: AllPackages, deletedPackages: PackageVersion[], reverseDependencies: Map<PackageVersion, Set<PackageVersion>>): TypingsData[] {
     const dependers = transitiveClosure(deletedPackages, pkg => reverseDependencies.get(pkg) || []);
     // Don't include the original changed packages, just their dependers
     for (const original of deletedPackages) {
         dependers.delete(original);
     }
-    // TODO: Remove the !
-    return sortPackages(mapIter(dependers, d => allPackages.tryGetLatestVersion(d)!));
+    return sortPackages(mapIter(dependers, d => allPackages.getTypingsData(packageVersionToPackageId(d))));
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
@@ -124,22 +123,45 @@ function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
 /** Generate a map from a package to packages that depend on it. */
-function getReverseDependenciesByName(allPackages: AllPackages, deletedPackageNames: string[]): Map<string, Set<string>> {
-    const map = new Map<string, Set<string>>();
+function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageVersion[]): Map<PackageVersion, Set<PackageVersion>> {
+    const map = new Map<string, [PackageVersion, Set<PackageVersion>]>();
 
-    for (const name of deletedPackageNames) {
-        map.set(name, new Set());
+    for (const deleted of deletedPackages) {
+        console.log('looking for dependencies of deleted package', deleted.name)
+        map.set(packageVersionToKey(deleted), [deleted, new Set()]);
     }
 
     for (const typing of allPackages.allTypings()) {
-        for (const dependency of allPackages.allDependencyTypings(typing)) {
-            if (map.has(dependency.name)) {
-                map.get(dependency.name)!.add(typing.name);
+        for (const dependency of typing.dependencies) {
+            if (map.has(packageIdToKey(dependency))) {
+                map.get(packageIdToKey(dependency))![1].add({ name: typing.name, majorVersion: typing.major });
+            }
+        }
+        for (const dependencyName of typing.testDependencies) {
+            // aim for '... and 439 more' (I think I am not looking for react v15 yet)
+            // 2 changed, 539 dependent packages
+            if (map.has(packageVersionToKey({ name: dependencyName, majorVersion: "latest"}))) {
+                map.get(packageVersionToKey({ name: dependencyName, majorVersion: "latest" }))![1].add({ name: typing.name, majorVersion: typing.major });
             }
         }
     }
+    return new Map(map.values())
+}
 
-    return map;
+function packageVersionToPackageId(pkg: PackageVersion): PackageId {
+    return { name: pkg.name, majorVersion: pkg.majorVersion === "latest" ? "*" : pkg.majorVersion };
+}
+
+function packageIdToPackageVersion(pkg: PackageId): PackageVersion {
+    return { name: pkg.name, majorVersion: pkg.majorVersion === "*" ? "latest" : pkg.majorVersion };
+}
+
+function packageVersionToKey(pkg: PackageVersion): string {
+    return pkg.name + "/v" + pkg.majorVersion;
+}
+
+function packageIdToKey(pkg: PackageId): string {
+    return packageVersionToKey(packageIdToPackageVersion(pkg));
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
