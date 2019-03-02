@@ -36,15 +36,11 @@ export default async function getAffectedPackages(allPackages: AllPackages, log:
     ));
     const deletedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) => {
         const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
-        if (!res) {
-            console.log('found deleted package', name, 'at', majorVersion)
-            return packageVersionToPackageId({ name, majorVersion });
-        }
-        return undefined
+        return res ? undefined : packageVersionToPackageId({ name, majorVersion });
     }));
     const dependentPackages =[
-        ...collectDependers(changedPackages, getReverseDependencies(allPackages)),
-        ...collectDependersUnused(allPackages, deletedPackages, getReverseDependenciesByName(allPackages, deletedPackages))];
+        ...collectDependers(changedPackages, getReverseDependencies(allPackages), t => t),
+        ...collectDependers(deletedPackages, getReverseDependenciesByName(allPackages, deletedPackages), p => allPackages.getTypingsData(p))];
     return { changedPackages, dependentPackages };
 }
 
@@ -54,23 +50,13 @@ export function allDependencies(allPackages: AllPackages, packages: Iterable<Typ
 }
 
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependers(changedPackages: TypingsData[], reverseDependencies: Map<TypingsData, Set<TypingsData>>): TypingsData[] {
+function collectDependers<T>(changedPackages: T[], reverseDependencies: Map<T, Set<T>>, convert: (t: T) => TypingsData): TypingsData[] {
     const dependers = transitiveClosure(changedPackages, pkg => reverseDependencies.get(pkg) || []);
     // Don't include the original changed packages, just their dependers
     for (const original of changedPackages) {
         dependers.delete(original);
     }
-    return sortPackages(dependers);
-}
-
-/** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependersUnused(allPackages: AllPackages, deletedPackages: PackageId[], reverseDependencies: Map<PackageId, Set<PackageId>>): TypingsData[] {
-    const dependers = transitiveClosure(deletedPackages, pkg => reverseDependencies.get(pkg) || []);
-    // Don't include the original changed packages, just their dependers
-    for (const original of deletedPackages) {
-        dependers.delete(original);
-    }
-    return sortPackages(mapIter(dependers, d => allPackages.getTypingsData(d)));
+    return sortPackages(mapIter(dependers, convert));
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
@@ -124,12 +110,9 @@ function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<
 /** Generate a map from a package to packages that depend on it. */
 function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
     const map = new Map<string, [PackageId, Set<PackageId>]>();
-
     for (const deleted of deletedPackages) {
-        console.log('looking for dependencies of deleted package', deleted.name)
         map.set(packageIdToKey(deleted), [deleted, new Set()]);
     }
-
     for (const typing of allPackages.allTypings()) {
         for (const dependency of typing.dependencies) {
             if (map.has(packageIdToKey(dependency))) {
@@ -137,8 +120,6 @@ function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages:
             }
         }
         for (const dependencyName of typing.testDependencies) {
-            // aim for '... and 439 more' (I think I am not looking for react v15 yet)
-            // 2 changed, 539 dependent packages
             if (map.has(packageIdToKey({ name: dependencyName, majorVersion: "*"}))) {
                 map.get(packageIdToKey({ name: dependencyName, majorVersion: "*" }))![1].add({ name: typing.name, majorVersion: typing.major });
             }
@@ -160,7 +141,6 @@ async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Ite
     const changedPackages = new Map<string, Set<number | "latest">>();
 
     for (const fileName of await gitDiff(log, definitelyTypedPath)) {
-        // TODO: Handle notNeededPackage.json here
         const dep = getDependencyFromFile(fileName);
         if (dep) {
             const versions = changedPackages.get(dep.name);
