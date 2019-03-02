@@ -1,7 +1,7 @@
 import { getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
-import { AllPackages, PackageBase, TypingsData, PackageId } from "../lib/packages";
+import { AllPackages, PackageBase, TypingsData, PackageId, DependencyVersion } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { consoleLogger, Logger, loggerWithErrors } from "../util/logging";
 import { execAndThrowErrors, flatMap, logUncaughtErrors, mapDefined, mapIter, sort } from "../util/util";
@@ -22,25 +22,22 @@ export interface Affected {
     readonly dependentPackages: ReadonlyArray<TypingsData>;
 }
 
-interface PackageVersion {
-    name: string;
-    majorVersion: number | "latest";
-}
-
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 export default async function getAffectedPackages(allPackages: AllPackages, log: Logger, definitelyTypedPath: string): Promise<Affected> {
+    const revs = getReverseDependencies(allPackages);
     const changedPackageIds = Array.from(await gitChanges(log, definitelyTypedPath));
     // If a package doesn't exist, that's because it was deleted.
-    const changedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) =>
-        majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
+    const changedPackages = mapDefined(changedPackageIds, (id =>
+        id.majorVersion === "*" ? allPackages.tryGetLatestVersion(id.name) : allPackages.tryGetTypingsData(id)
     ));
-    const deletedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) => {
-        const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
-        return res ? undefined : { name, majorVersion: majorVersion === "latest" ? "*" : majorVersion } as PackageId;
+    const deletedPackages = mapDefined(changedPackageIds, (id => {
+        const res = id.majorVersion === "*" ? allPackages.tryGetLatestVersion(id.name) : allPackages.tryGetTypingsData(id)
+        return res ? undefined : id;
     }));
+    const revdels = getReverseDependenciesByName(allPackages, deletedPackages);
     const dependentPackages =[
-        ...collectDependers(changedPackages, getReverseDependencies(allPackages), t => t),
-        ...collectDependers(deletedPackages, getReverseDependenciesByName(allPackages, deletedPackages), p => allPackages.getTypingsData(p))];
+        ...collectDependers(changedPackages, revs, t => t),
+        ...collectDependers(deletedPackages, revdels, p => allPackages.getTypingsData(p))];
     return { changedPackages, dependentPackages };
 }
 
@@ -130,8 +127,8 @@ function packageIdToKey(pkg: PackageId): string {
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
-async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Iterable<PackageVersion>> {
-    const changedPackages = new Map<string, Set<number | "latest">>();
+async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Iterable<PackageId>> {
+    const changedPackages = new Map<string, Set<DependencyVersion>>();
 
     for (const fileName of await gitDiff(log, definitelyTypedPath)) {
         const dep = getDependencyFromFile(fileName);
@@ -192,7 +189,7 @@ async function gitDiff(log: Logger, definitelyTypedPath: string): Promise<string
  * For "types/a/v3/c", returns { name: "a", version: 3 }.
  * For "x", returns undefined.
  */
-function getDependencyFromFile(fileName: string): PackageVersion | undefined {
+function getDependencyFromFile(fileName: string): PackageId | undefined {
     const parts = fileName.split("/");
     if (parts.length <= 2) {
         // It's not in a typings directory at all.
@@ -213,5 +210,5 @@ function getDependencyFromFile(fileName: string): PackageVersion | undefined {
         }
     }
 
-    return { name, majorVersion: "latest" };
+    return { name, majorVersion: "*" };
 }
