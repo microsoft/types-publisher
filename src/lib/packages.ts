@@ -110,11 +110,6 @@ export class AllPackages {
     /** Returns all of the dependences *that have typings*, ignoring others. */
     *dependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
         for (const { name, majorVersion } of pkg.dependencies) {
-
-            if (pkg.name === 'alt') {
-                console.log('why not alt at ', name, majorVersion)
-                console.log('this.data has', this.data.get('react'))
-            }
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.get(majorVersion);
@@ -136,7 +131,7 @@ export class AllPackages {
 }
 
 // Same as the function in moduleNameResolver.ts in typescript
-export function getMangledNameForScopedPackage(packageName: string): string {
+function getMangledNameForScopedPackage(packageName: string): string {
     if (packageName.startsWith("@")) {
         const replaceSlash = packageName.replace("/", "__");
         if (replaceSlash !== packageName) {

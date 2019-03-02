@@ -30,7 +30,6 @@ interface PackageVersion {
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 export default async function getAffectedPackages(allPackages: AllPackages, log: Logger, definitelyTypedPath: string): Promise<Affected> {
     const changedPackageIds = Array.from(await gitChanges(log, definitelyTypedPath));
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!', changedPackageIds.length)
     // If a package doesn't exist, that's because it was deleted.
     const changedPackages = mapDefined(changedPackageIds, (({ name, majorVersion }) =>
         majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
@@ -39,7 +38,7 @@ export default async function getAffectedPackages(allPackages: AllPackages, log:
         const res = majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })
         if (!res) {
             console.log('found deleted package', name, 'at', majorVersion)
-            return { name, majorVersion }
+            return packageVersionToPackageId({ name, majorVersion });
         }
         return undefined
     }));
@@ -65,13 +64,13 @@ function collectDependers(changedPackages: TypingsData[], reverseDependencies: M
 }
 
 /** Collect all packages that depend on changed packages, and all that depend on those, etc. */
-function collectDependersUnused(allPackages: AllPackages, deletedPackages: PackageVersion[], reverseDependencies: Map<PackageVersion, Set<PackageVersion>>): TypingsData[] {
+function collectDependersUnused(allPackages: AllPackages, deletedPackages: PackageId[], reverseDependencies: Map<PackageId, Set<PackageId>>): TypingsData[] {
     const dependers = transitiveClosure(deletedPackages, pkg => reverseDependencies.get(pkg) || []);
     // Don't include the original changed packages, just their dependers
     for (const original of deletedPackages) {
         dependers.delete(original);
     }
-    return sortPackages(mapIter(dependers, d => allPackages.getTypingsData(packageVersionToPackageId(d))));
+    return sortPackages(mapIter(dependers, d => allPackages.getTypingsData(d)));
 }
 
 function sortPackages(packages: Iterable<TypingsData>): TypingsData[] {
@@ -123,12 +122,12 @@ function getReverseDependencies(allPackages: AllPackages): Map<TypingsData, Set<
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
 /** Generate a map from a package to packages that depend on it. */
-function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageVersion[]): Map<PackageVersion, Set<PackageVersion>> {
-    const map = new Map<string, [PackageVersion, Set<PackageVersion>]>();
+function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
+    const map = new Map<string, [PackageId, Set<PackageId>]>();
 
     for (const deleted of deletedPackages) {
         console.log('looking for dependencies of deleted package', deleted.name)
-        map.set(packageVersionToKey(deleted), [deleted, new Set()]);
+        map.set(packageIdToKey(deleted), [deleted, new Set()]);
     }
 
     for (const typing of allPackages.allTypings()) {
@@ -140,8 +139,8 @@ function getReverseDependenciesByName(allPackages: AllPackages, deletedPackages:
         for (const dependencyName of typing.testDependencies) {
             // aim for '... and 439 more' (I think I am not looking for react v15 yet)
             // 2 changed, 539 dependent packages
-            if (map.has(packageVersionToKey({ name: dependencyName, majorVersion: "latest"}))) {
-                map.get(packageVersionToKey({ name: dependencyName, majorVersion: "latest" }))![1].add({ name: typing.name, majorVersion: typing.major });
+            if (map.has(packageIdToKey({ name: dependencyName, majorVersion: "*"}))) {
+                map.get(packageIdToKey({ name: dependencyName, majorVersion: "*" }))![1].add({ name: typing.name, majorVersion: typing.major });
             }
         }
     }
@@ -152,16 +151,8 @@ function packageVersionToPackageId(pkg: PackageVersion): PackageId {
     return { name: pkg.name, majorVersion: pkg.majorVersion === "latest" ? "*" : pkg.majorVersion };
 }
 
-function packageIdToPackageVersion(pkg: PackageId): PackageVersion {
-    return { name: pkg.name, majorVersion: pkg.majorVersion === "*" ? "latest" : pkg.majorVersion };
-}
-
-function packageVersionToKey(pkg: PackageVersion): string {
-    return pkg.name + "/v" + pkg.majorVersion;
-}
-
 function packageIdToKey(pkg: PackageId): string {
-    return packageVersionToKey(packageIdToPackageVersion(pkg));
+    return pkg.name + "/v" + pkg.majorVersion;
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
