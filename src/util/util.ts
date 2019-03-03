@@ -450,7 +450,7 @@ export function assertSorted<T>(a: ReadonlyArray<T>, cb: (t: T) => string = (t: 
     let prev = a[0];
     for (let i = 1; i < a.length; i++) {
         const x = a[i];
-        assert(cb(x) >= cb(prev), `${x} >= ${prev}`);
+        assert(cb(x) >= cb(prev), `${JSON.stringify(x)} >= ${JSON.stringify(prev)}`);
         prev = x;
     }
     return a;

@@ -10,10 +10,9 @@ if (!module.parent) {
     logUncaughtErrors(main(Options.defaults));
 }
 async function main(options: TesterOptions): Promise<void> {
-    const changes = await getAffectedPackages(
+    const changes = getAffectedPackages(
         await AllPackages.read(await getDefinitelyTyped(options, loggerWithErrors()[0])),
-        consoleLogger.info,
-        options.definitelyTypedPath);
+        await gitChanges(consoleLogger.info, options.definitelyTypedPath));
     console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
 }
 
@@ -23,8 +22,8 @@ export interface Affected {
 }
 
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-export default async function getAffectedPackages(allPackages: AllPackages, log: Logger, definitelyTypedPath: string): Promise<Affected> {
-    const resolved = (await gitChanges(log, definitelyTypedPath)).map(id => allPackages.tryResolve(id));
+export default function getAffectedPackages(allPackages: AllPackages, changedPackageIds: PackageId[]): Affected {
+    const resolved = changedPackageIds.map(id => allPackages.tryResolve(id));
     // If a package doesn't exist, that's because it was deleted.
     const changed = mapDefined(resolved, id => allPackages.tryGetTypingsData(id));
     const dependent = mapIter(collectDependers(resolved, getReverseDependencies(allPackages, resolved)), p => allPackages.getTypingsData(p));
@@ -109,7 +108,7 @@ function packageIdToKey(pkg: PackageId): string {
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
-async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Array<PackageId>> {
+export async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Array<PackageId>> {
     const changedPackages = new Map<string, Set<DependencyVersion>>();
 
     for (const fileName of await gitDiff(log, definitelyTypedPath)) {

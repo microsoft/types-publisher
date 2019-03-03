@@ -297,7 +297,7 @@ export interface TypingsDataRaw extends BaseRaw {
 
     readonly minTsVersion: TypeScriptVersion;
     /**
-     * List of TS versions that have their own directoreies, and corresponding "typesVersions" in package.json.
+     * List of TS versions that have their own directories, and corresponding "typesVersions" in package.json.
      * Usually empty.
      */
     readonly typesVersions: ReadonlyArray<TypeScriptVersion>;
@@ -431,7 +431,7 @@ export interface PackageId {
     readonly majorVersion: DependencyVersion;
 }
 
-interface TypesDataFile {
+export interface TypesDataFile {
     readonly [packageName: string]: TypingsVersionsRaw;
 }
 function readTypesDataFile(): Promise<TypesDataFile> {
