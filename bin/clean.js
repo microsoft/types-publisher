@@ -10,5 +10,5 @@ function clean() {
         fs_extra_1.removeSync(dir);
     }
 }
-exports.default = clean;
+exports.clean = clean;
 //# sourceMappingURL=clean.js.map

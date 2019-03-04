@@ -25,7 +25,7 @@ if (!module.parent) {
 }
 async function full(dry, timeStamp, githubAccessToken, fetcher, options, log) {
     const infoClient = new npm_client_1.UncachedNpmInfoClient();
-    clean_1.default();
+    clean_1.clean();
     const dt = await get_definitely_typed_1.getDefinitelyTyped(options, log);
     const allPackages = await parse_definitions_1.default(dt, options.parseInParallel
         ? { nProcesses: util_1.numberOfOsProcesses, definitelyTypedPath: util_1.assertDefined(options.definitelyTypedPath) }

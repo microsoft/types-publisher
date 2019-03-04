@@ -15,7 +15,7 @@ if (!module.parent) {
     util_1.logUncaughtErrors(main(options, test_runner_1.parseNProcesses(), all));
 }
 async function main(options, nProcesses, all) {
-    clean_1.default();
+    clean_1.clean();
     const log = logging_1.loggerWithErrors()[0];
     const dt = await get_definitely_typed_1.getDefinitelyTyped(options, log);
     await parse_definitions_1.default(dt, { nProcesses, definitelyTypedPath: options.definitelyTypedPath }, log);

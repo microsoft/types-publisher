@@ -1,1 +1,1 @@
-export default function clean(): void;
+export declare function clean(): void;
