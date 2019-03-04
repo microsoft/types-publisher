@@ -79,4 +79,7 @@ export declare function unmangleScopedPackage(packageName: string): string | und
 export declare function split<T, U>(inputs: ReadonlyArray<T>, cb: (t: T) => U | undefined): [ReadonlyArray<T>, ReadonlyArray<U>];
 export declare function assertSorted(a: ReadonlyArray<string>): ReadonlyArray<string>;
 export declare function assertSorted<T>(a: ReadonlyArray<T>, cb: (t: T) => string): ReadonlyArray<T>;
+export declare function testo(o: {
+    [s: string]: () => void;
+}): void;
 export {};

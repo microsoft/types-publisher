@@ -11,16 +11,16 @@ if (!module.parent) {
     util_1.logUncaughtErrors(main(common_1.Options.defaults));
 }
 async function main(options) {
-    const changes = await getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0])), logging_1.consoleLogger.info, options.definitelyTypedPath);
-    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependers: changes.dependentPackages.map(t => t.desc) });
+    const changes = getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0])), await gitChanges(logging_1.consoleLogger.info, options.definitelyTypedPath));
+    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-async function getAffectedPackages(allPackages, log, definitelyTypedPath) {
-    const changedPackageIds = await gitChanges(log, definitelyTypedPath);
+function getAffectedPackages(allPackages, changedPackageIds) {
+    const resolved = changedPackageIds.map(id => allPackages.tryResolve(id));
     // If a package doesn't exist, that's because it was deleted.
-    const changedPackages = util_1.mapDefined(changedPackageIds, (({ name, majorVersion }) => majorVersion === "latest" ? allPackages.tryGetLatestVersion(name) : allPackages.tryGetTypingsData({ name, majorVersion })));
-    const dependentPackages = collectDependers(changedPackages, getReverseDependencies(allPackages));
-    return { changedPackages, dependentPackages };
+    const changed = util_1.mapDefined(resolved, id => allPackages.tryGetTypingsData(id));
+    const dependent = util_1.mapIter(collectDependers(resolved, getReverseDependencies(allPackages, resolved)), p => allPackages.getTypingsData(p));
+    return { changedPackages: changed, dependentPackages: sortPackages(dependent) };
 }
 exports.default = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */
@@ -35,7 +35,7 @@ function collectDependers(changedPackages, reverseDependencies) {
     for (const original of changedPackages) {
         dependers.delete(original);
     }
-    return sortPackages(dependers);
+    return dependers;
 }
 function sortPackages(packages) {
     return util_1.sort(packages, packages_1.PackageBase.compare); // tslint:disable-line no-unbound-method
@@ -61,17 +61,35 @@ function transitiveClosure(initialItems, getRelatedItems) {
     return all;
 }
 /** Generate a map from a package to packages that depend on it. */
-function getReverseDependencies(allPackages) {
+function getReverseDependencies(allPackages, changedPackages) {
     const map = new Map();
-    for (const typing of allPackages.allTypings()) {
-        map.set(typing, new Set());
+    for (const changed of changedPackages) {
+        map.set(packageIdToKey(changed), [changed, new Set()]);
     }
     for (const typing of allPackages.allTypings()) {
-        for (const dependency of allPackages.allDependencyTypings(typing)) {
-            map.get(dependency).add(typing);
+        if (!map.has(packageIdToKey(typing.id))) {
+            map.set(packageIdToKey(typing.id), [typing.id, new Set()]);
         }
     }
-    return map;
+    for (const typing of allPackages.allTypings()) {
+        for (const dependency of typing.dependencies) {
+            const dependencies = map.get(packageIdToKey(allPackages.tryResolve(dependency)));
+            if (dependencies) {
+                dependencies[1].add(typing.id);
+            }
+        }
+        for (const dependencyName of typing.testDependencies) {
+            const latest = { name: dependencyName, majorVersion: "*" };
+            const dependencies = map.get(packageIdToKey(allPackages.tryResolve(latest)));
+            if (dependencies) {
+                dependencies[1].add(typing.id);
+            }
+        }
+    }
+    return new Map(map.values());
+}
+function packageIdToKey(pkg) {
+    return packages_1.getMangledNameForScopedPackage(pkg.name) + "/v" + pkg.majorVersion;
 }
 /** Returns all immediate subdirectories of the root directory that have changed. */
 async function gitChanges(log, definitelyTypedPath) {
@@ -88,8 +106,9 @@ async function gitChanges(log, definitelyTypedPath) {
             }
         }
     }
-    return util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, majorVersion => ({ name, majorVersion })));
+    return Array.from(util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, majorVersion => ({ name, majorVersion }))));
 }
+exports.gitChanges = gitChanges;
 /*
 We have to be careful about how we get the diff because travis uses a shallow clone.
 
@@ -148,6 +167,6 @@ function getDependencyFromFile(fileName) {
             return { name, majorVersion };
         }
     }
-    return { name, majorVersion: "latest" };
+    return { name, majorVersion: "*" };
 }
 //# sourceMappingURL=get-affected-packages.js.map

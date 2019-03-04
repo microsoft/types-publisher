@@ -50,6 +50,10 @@ class AllPackages {
     hasTypingFor(dep) {
         return this.tryGetTypingsData(dep) !== undefined;
     }
+    tryResolve(dep) {
+        const versions = this.data.get(getMangledNameForScopedPackage(dep.name));
+        return versions ? versions.get(dep.majorVersion).id : dep;
+    }
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
     getLatest(pkg) {
         return pkg.isLatest ? pkg : this.getLatestVersion(pkg.name);
@@ -68,7 +72,7 @@ class AllPackages {
     getTypingsData(id) {
         const pkg = this.tryGetTypingsData(id);
         if (!pkg) {
-            throw new Error(`No typings available for ${id}`);
+            throw new Error(`No typings available for ${JSON.stringify(id)}`);
         }
         return pkg;
     }
@@ -89,18 +93,14 @@ class AllPackages {
     allNotNeeded() {
         return this.notNeeded;
     }
-    /** Returns all of the dependences *that have typings*, ignoring others. */
-    *dependencyTypings(pkg) {
+    /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
+    *allDependencyTypings(pkg) {
         for (const { name, majorVersion } of pkg.dependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
                 yield versions.get(majorVersion);
             }
         }
-    }
-    /** Like 'dependencyTypings', but includes test dependencies. */
-    *allDependencyTypings(pkg) {
-        yield* this.dependencyTypings(pkg);
         for (const name of pkg.testDependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
@@ -120,6 +120,7 @@ function getMangledNameForScopedPackage(packageName) {
     }
     return packageName;
 }
+exports.getMangledNameForScopedPackage = getMangledNameForScopedPackage;
 exports.typesDataFilename = "definitions.json";
 function* flattenData(data) {
     for (const versions of data.values()) {

@@ -3,12 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const logging_1 = require("./util/logging");
-function testo(o) {
-    for (const k in o) {
-        test(k, o[k], 10000);
-    }
-}
-testo({
+const util_1 = require("./util/util");
+util_1.testo({
     async downloadDefinitelyTyped() {
         const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.azure, logging_1.loggerWithErrors()[0]);
         expect(await dt.exists("types")).toBe(true);

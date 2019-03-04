@@ -14,6 +14,7 @@ export declare class AllPackages {
     private constructor();
     getNotNeededPackage(name: string): NotNeededPackage;
     hasTypingFor(dep: PackageId): boolean;
+    tryResolve(dep: PackageId): PackageId;
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
     getLatest(pkg: TypingsData): TypingsData;
     private getLatestVersion;
@@ -25,11 +26,10 @@ export declare class AllPackages {
     allTypings(): ReadonlyArray<TypingsData>;
     allLatestTypings(): ReadonlyArray<TypingsData>;
     allNotNeeded(): ReadonlyArray<NotNeededPackage>;
-    /** Returns all of the dependences *that have typings*, ignoring others. */
-    dependencyTypings(pkg: TypingsData): Iterable<TypingsData>;
-    /** Like 'dependencyTypings', but includes test dependencies. */
+    /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
     allDependencyTypings(pkg: TypingsData): Iterable<TypingsData>;
 }
+export declare function getMangledNameForScopedPackage(packageName: string): string;
 export declare const typesDataFilename = "definitions.json";
 export declare type AnyPackage = NotNeededPackage | TypingsData;
 interface BaseRaw {
@@ -103,7 +103,7 @@ export interface TypingsDataRaw extends BaseRaw {
     readonly libraryMinorVersion: number;
     readonly minTsVersion: TypeScriptVersion;
     /**
-     * List of TS versions that have their own directoreies, and corresponding "typesVersions" in package.json.
+     * List of TS versions that have their own directories, and corresponding "typesVersions" in package.json.
      * Usually empty.
      */
     readonly typesVersions: ReadonlyArray<TypeScriptVersion>;
@@ -156,7 +156,7 @@ export interface PackageId {
     readonly name: string;
     readonly majorVersion: DependencyVersion;
 }
-interface TypesDataFile {
+export interface TypesDataFile {
     readonly [packageName: string]: TypingsVersionsRaw;
 }
 export declare function readNotNeededPackages(dt: FS): Promise<ReadonlyArray<NotNeededPackage>>;

@@ -35,10 +35,8 @@ function testerOptions(runFromDefinitelyTyped) {
 exports.testerOptions = testerOptions;
 async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     const allPackages = await packages_1.AllPackages.read(dt);
-    const { changedPackages, dependentPackages } = selection === "all"
-        ? { changedPackages: allPackages.allTypings(), dependentPackages: [] }
-        : selection === "affected"
-            ? await get_affected_packages_1.default(allPackages, logging_1.consoleLogger.info, definitelyTypedPath)
+    const { changedPackages, dependentPackages } = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
+        selection === "affected" ? await get_affected_packages_1.default(allPackages, await get_affected_packages_1.gitChanges(logging_1.consoleLogger.info, definitelyTypedPath))
             : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
     console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
     console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);

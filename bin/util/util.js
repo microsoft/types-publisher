@@ -407,10 +407,16 @@ function assertSorted(a, cb = (t) => t) {
     let prev = a[0];
     for (let i = 1; i < a.length; i++) {
         const x = a[i];
-        assert(cb(x) >= cb(prev), `${x} >= ${prev}`);
+        assert(cb(x) >= cb(prev), `${JSON.stringify(x)} >= ${JSON.stringify(prev)}`);
         prev = x;
     }
     return a;
 }
 exports.assertSorted = assertSorted;
+function testo(o) {
+    for (const k in o) {
+        test(k, o[k], 100000);
+    }
+}
+exports.testo = testo;
 //# sourceMappingURL=util.js.map
