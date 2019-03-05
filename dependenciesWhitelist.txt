@@ -8,6 +8,7 @@
 @sentry/browser
 @types/firebase
 @types/js-data
+@types/three
 @types/vue
 @types/webdriverio
 @types/winston
@@ -33,6 +34,7 @@ cordova-plugin-file
 cordova-plugin-file-transfer
 csstype
 decimal.js
+del
 dnd-core
 egg
 electron
