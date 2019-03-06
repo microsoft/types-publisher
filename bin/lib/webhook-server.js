@@ -10,15 +10,20 @@ const util_1 = require("../util/util");
 const rolling_logs_1 = require("./rolling-logs");
 const settings_1 = require("./settings");
 async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
-    const fullOne = updateOneAtATime(async (log, timeStamp) => {
+    const fullOne = updateOneAtATime(async (log, timestamp) => {
         log.info("");
         log.info("");
-        log.info(`# ${timeStamp}`);
+        log.info(`# ${timestamp}`);
         log.info("");
         log.info("Starting full...");
-        await full_1.default(dry, timeStamp, githubAccessToken, fetcher, options, log);
+        await full_1.default(dry, timestamp, githubAccessToken, fetcher, options, log);
     });
-    timers_1.setInterval(fullOne, 2000000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
+    timers_1.setInterval((log, timestamp) => {
+        const result = fullOne(log, timestamp);
+        if (!result)
+            return; // already working, so do nothing.
+        result.catch(e => { log.info(e.toString()); console.error(e); });
+    }, 2000000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
     return listenToGithub(key, fullOne);
 }
 exports.default = webhookServer;
