@@ -1,6 +1,6 @@
 import { testo } from "../util/util";
 import { AllPackages, License, NotNeededPackage, TypesDataFile, TypingsVersionsRaw, PackageId } from "../lib/packages";
-import getAffectedPackages from "./get-affected-packages";
+import { getAffectedPackages } from "./get-affected-packages";
 
 function createTypingsVersionRaw(
     name: string, dependencies: PackageId[], testDependencies: string[]

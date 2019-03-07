@@ -9,13 +9,25 @@ import { npmInstallFlags } from "../util/io";
 import { consoleLogger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
 import { exec, execAndThrowErrors, joinPaths, logUncaughtErrors, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
 
-import getAffectedPackages, { Affected, gitChanges, allDependencies } from "./get-affected-packages";
+import { getAffectedPackages, Affected, gitChanges, gitDiff, GitDiff, allDependencies } from "./get-affected-packages";
 
 if (!module.parent) {
-    const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
-    const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
-    logUncaughtErrors(
-        getDefinitelyTyped(options, loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    if (yargs.argv.affected) {
+        logUncaughtErrors(testAffectedOnly(Options.defaults));
+    }
+    else {
+        const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
+        const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
+        logUncaughtErrors(
+            getDefinitelyTyped(options, loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    }
+}
+
+async function testAffectedOnly(options: TesterOptions): Promise<void> {
+    const changes = getAffectedPackages(
+        await AllPackages.read(await getDefinitelyTyped(options, loggerWithErrors()[0])),
+        gitChanges(await gitDiff(consoleLogger.info, options.definitelyTypedPath)));
+    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
 }
 
 export function parseNProcesses(): number {
@@ -43,9 +55,16 @@ export default async function runTests(
     selection: "all" | "affected" | RegExp,
 ): Promise<void> {
     const allPackages = await AllPackages.read(dt);
+    const diffs = await gitDiff(consoleLogger.info, definitelyTypedPath);
+    if (diffs.map(d => d.file).includes("notNeededPackages.json")) {
+        console.log(diffs);
+        checkDeletedFiles(allPackages, diffs);
+        // TODO: Still need to check all dependents of the removed packages actually
+        return;
+    }
     const { changedPackages, dependentPackages }: Affected =
         selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
-        selection === "affected" ? await getAffectedPackages(allPackages, await gitChanges(consoleLogger.info, definitelyTypedPath))
+        selection === "affected" ? await getAffectedPackages(allPackages, gitChanges(diffs))
         : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
 
     console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
@@ -57,6 +76,25 @@ export default async function runTests(
 
     console.log("Testing...");
     await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
+}
+
+function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
+    diffs.filter(d => d.status === "D")
+    // 1. find all the deleted files and group by toplevel
+    // 2. Make sure that there are no non-deleted files under each toplevel deleted
+    // 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+    // 4. now check that entry in notNeededPackages (note: might want to check ALL entries ok)
+    //   a. xxxxxxxx
+    for (const diff of diffs) {
+        if (/^types/.test(diff.file) && allPackages.tryGetLatestVersion(diff.file)) {
+            throw new Error(`Unexpected changed package ${diff.file}.
+When deprecating a package, all changes must be deletions.`);
+        }
+        else if (diff.file !== "notNeededPackages.json") {
+            throw new Error(`Unexpected changed file ${diff.file}.
+When deprecating a package, all changes must be deletions.`);
+        }
+    }
 }
 
 async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsData>, typesPath: string, nProcesses: number): Promise<void> {

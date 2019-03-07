@@ -1,19 +1,12 @@
-import { getDefinitelyTyped } from "../get-definitely-typed";
-import { Options, TesterOptions } from "../lib/common";
 import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
 import { AllPackages, PackageBase, TypingsData, PackageId, DependencyVersion, getMangledNameForScopedPackage } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
-import { consoleLogger, Logger, loggerWithErrors } from "../util/logging";
-import { execAndThrowErrors, flatMap, logUncaughtErrors, mapDefined, mapIter, sort } from "../util/util";
+import { Logger } from "../util/logging";
+import { execAndThrowErrors, flatMap, mapDefined, mapIter, sort } from "../util/util";
 
-if (!module.parent) {
-    logUncaughtErrors(main(Options.defaults));
-}
-async function main(options: TesterOptions): Promise<void> {
-    const changes = getAffectedPackages(
-        await AllPackages.read(await getDefinitelyTyped(options, loggerWithErrors()[0])),
-        await gitChanges(consoleLogger.info, options.definitelyTypedPath));
-    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
+export interface GitDiff {
+    status: "A" | "D" | "M";
+    file: string
 }
 
 export interface Affected {
@@ -22,7 +15,7 @@ export interface Affected {
 }
 
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
-export default function getAffectedPackages(allPackages: AllPackages, changedPackageIds: PackageId[]): Affected {
+export function getAffectedPackages(allPackages: AllPackages, changedPackageIds: PackageId[]): Affected {
     const resolved = changedPackageIds.map(id => allPackages.tryResolve(id));
     // If a package doesn't exist, that's because it was deleted.
     const changed = mapDefined(resolved, id => allPackages.tryGetTypingsData(id));
@@ -108,11 +101,11 @@ function packageIdToKey(pkg: PackageId): string {
 }
 
 /** Returns all immediate subdirectories of the root directory that have changed. */
-export async function gitChanges(log: Logger, definitelyTypedPath: string): Promise<Array<PackageId>> {
+export function gitChanges(diffs: GitDiff[]): PackageId[] {
     const changedPackages = new Map<string, Set<DependencyVersion>>();
 
-    for (const fileName of await gitDiff(log, definitelyTypedPath)) {
-        const dep = getDependencyFromFile(fileName);
+    for (const diff of diffs) {
+        const dep = getDependencyFromFile(diff.file);
         if (dep) {
             const versions = changedPackages.get(dep.name);
             if (!versions) {
@@ -138,7 +131,7 @@ Travis runs:
 
 If editing this code, be sure to test on both full and shallow clones.
 */
-async function gitDiff(log: Logger, definitelyTypedPath: string): Promise<string[]> {
+export async function gitDiff(log: Logger, definitelyTypedPath: string): Promise<GitDiff[]> {
     try {
         await run(`git rev-parse --verify ${sourceBranch}`);
         // If this succeeds, we got the full clone.
@@ -148,14 +141,15 @@ async function gitDiff(log: Logger, definitelyTypedPath: string): Promise<string
         await run(`git branch ${sourceBranch} FETCH_HEAD`);
     }
 
-    // `git diff foo...bar` gets all changes from X to `bar` where X is the common ancestor of `foo` and `bar`.
-    // Source: https://git-scm.com/docs/git-diff
-    let diff = (await run(`git diff ${sourceBranch} --name-only`)).trim();
+    let diff = (await run(`git diff ${sourceBranch} --name-status`)).trim();
     if (diff === "") {
         // We are probably already on master, so compare to the last commit.
-        diff = (await run(`git diff ${sourceBranch}~1 --name-only`)).trim();
+        diff = (await run(`git diff ${sourceBranch}~1 --name-status`)).trim();
     }
-    return diff.split("\n");
+    return diff.split("\n").map(line => {
+        var [status, file] = line.split(/\s+/, 2);
+        return { status: status.trim(), file: file.trim() } as GitDiff;
+    });
 
     async function run(cmd: string): Promise<string> {
         log(`Running: ${cmd}`);
@@ -166,12 +160,12 @@ async function gitDiff(log: Logger, definitelyTypedPath: string): Promise<string
 }
 
 /**
- * For "types/a/b/c", returns { name: "a", version: "latest" }.
+ * For "types/a/b/c", returns { name: "a", version: "*" }.
  * For "types/a/v3/c", returns { name: "a", version: 3 }.
  * For "x", returns undefined.
  */
-function getDependencyFromFile(fileName: string): PackageId | undefined {
-    const parts = fileName.split("/");
+function getDependencyFromFile(file: string): PackageId | undefined {
+    const parts = file.split("/");
     if (parts.length <= 2) {
         // It's not in a typings directory at all.
         return undefined;
