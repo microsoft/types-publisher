@@ -35,7 +35,8 @@ testo({
 
     },
     tooManyDeletes() {
-        expect(() => checkDeletedFiles(allPackages, [{ status: "D", file: "oooooooooops.txt" }])).toThrow("Only oh no");
+        expect(() => checkDeletedFiles(allPackages, [{ status: "D", file: "oops.txt" }])).toThrow(
+            "Unexpected file deleted: oops.txt");
     },
     extraneousFile() {
         checkDeletedFiles(allPackages, [
@@ -44,6 +45,10 @@ testo({
             { status: "D", file: "types/jest/index.d.ts" },
             { status: "D", file: "types/jest/jest-tests.d.ts" },
         ]);
+    },
+    forgotToUpdateNotNeededJson() {
+        expect(() => checkDeletedFiles(AllPackages.from(typesData, []), [{status: "D", file: "types/jest/index.d.ts" }])).toThrow(
+            "Deleted package jest is not in notNeededPackages.json.");
     },
     // TODO: Test with dependents, etc etc
 });

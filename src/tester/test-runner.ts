@@ -84,20 +84,27 @@ export default async function runTests(
     await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
 }
 
+/**
+ * 1. find all the deleted files and group by toplevel
+ * 2. Make sure that there are no packages left with deleted entries
+ * 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+ */
 export function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
-    // 1. find all the deleted files and group by toplevel
     const toplevels = group(diffs.filter(d => d.status === "D"), d => {
-        const x = getDependencyFromFile(d.file)
-        if (!x) throw new Error(`Only oh no`);
-        return x.name;
+        const id = getDependencyFromFile(d.file)
+        if (!id) {
+            throw new Error(`Unexpected file deleted: ${d.file}
+When removing packages, you should only delete files that are a part of removed packages.`);
+        }
+        return id.name;
     });
-    console.log(toplevels)
     for (const toplevel of toplevels.keys()) {
-        // 2. Make sure that there are no packages left with deleted entries
         if (allPackages.hasTypingFor({ name: toplevel, majorVersion: "*" })) {
             throw new Error(`Please delete all files in ${toplevel} when adding it to notNeededPackages.json.`);
         }
-        // 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+        if (!allPackages.getNotNeededPackage(toplevel)) {
+            throw new Error(`Deleted package ${toplevel} is not in notNeededPackages.json.`);
+        }
     }
     // 4. now check that entry in notNeededPackages (note: might want to check ALL entries ok)
     //   a. xxxxxxxx
