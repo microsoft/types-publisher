@@ -3,17 +3,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = require("fs-extra");
 const fold = require("travis-fold");
 const yargs = require("yargs");
+const definition_parser_1 = require("../lib/definition-parser");
+const settings_1 = require("../lib/settings");
 const get_definitely_typed_1 = require("../get-definitely-typed");
 const common_1 = require("../lib/common");
 const packages_1 = require("../lib/packages");
+// import { CachedNpmInfoClient, NpmInfoVersion, UncachedNpmInfoClient } from "../lib/npm-client";
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 if (!module.parent) {
-    const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
-    const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
-    util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    if (yargs.argv.affected) {
+        util_1.logUncaughtErrors(testAffectedOnly(common_1.Options.defaults));
+    }
+    else {
+        const selection = yargs.argv.all ? "all" : yargs.argv._[0] ? new RegExp(yargs.argv._[0]) : "affected";
+        const options = testerOptions(!!yargs.argv.runFromDefinitelyTyped);
+        util_1.logUncaughtErrors(get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
+    }
+}
+async function testAffectedOnly(options) {
+    const changes = get_affected_packages_1.getAffectedPackages(await packages_1.AllPackages.read(await get_definitely_typed_1.getDefinitelyTyped(options, logging_1.loggerWithErrors()[0])), gitChanges(await gitDiff(logging_1.consoleLogger.info, options.definitelyTypedPath)));
+    console.log({ changedPackages: changes.changedPackages.map(t => t.desc), dependersLength: changes.dependentPackages.map(t => t.desc).length });
 }
 function parseNProcesses() {
     const str = yargs.argv.nProcesses;
@@ -35,8 +47,12 @@ function testerOptions(runFromDefinitelyTyped) {
 exports.testerOptions = testerOptions;
 async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     const allPackages = await packages_1.AllPackages.read(dt);
+    const diffs = await gitDiff(logging_1.consoleLogger.info, definitelyTypedPath);
+    if (diffs.map(d => d.file).includes("notNeededPackages.json")) {
+        checkDeletedFiles(allPackages, diffs);
+    }
     const { changedPackages, dependentPackages } = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
-        selection === "affected" ? await get_affected_packages_1.default(allPackages, await get_affected_packages_1.gitChanges(logging_1.consoleLogger.info, definitelyTypedPath))
+        selection === "affected" ? get_affected_packages_1.getAffectedPackages(allPackages, gitChanges(diffs))
             : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
     console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
     console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
@@ -47,6 +63,31 @@ async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
 }
 exports.default = runTests;
+/**
+ * 1. find all the deleted files and group by toplevel
+ * 2. Make sure that there are no packages left with deleted entries
+ * 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+ */
+function checkDeletedFiles(allPackages, diffs) {
+    const deletedPackages = new Set(diffs.filter(d => d.status === "D").map(d => {
+        const id = getDependencyFromFile(d.file);
+        if (!id) {
+            throw new Error(`Unexpected file deleted: ${d.file}
+When removing packages, you should only delete files that are a part of removed packages.`);
+        }
+        return id.name;
+    }));
+    for (const p of deletedPackages) {
+        if (allPackages.hasTypingFor({ name: p, majorVersion: "*" })) {
+            throw new Error(`Please delete all files in ${p} when adding it to notNeededPackages.json.`);
+        }
+        if (!allPackages.getNotNeededPackage(p)) {
+            throw new Error(`Deleted package ${p} is not in notNeededPackages.json.`);
+        }
+    }
+    return deletedPackages;
+}
+exports.checkDeletedFiles = checkDeletedFiles;
 async function doInstalls(allPackages, packages, typesPath, nProcesses) {
     console.log("Installing NPM dependencies...");
     // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
@@ -122,5 +163,85 @@ async function runCommand(log, cwd, cmd, args) {
     catch (e) {
         return e;
     }
+}
+/** Returns all immediate subdirectories of the root directory that have changed. */
+function gitChanges(diffs) {
+    const changedPackages = new Map();
+    for (const diff of diffs) {
+        const dep = getDependencyFromFile(diff.file);
+        if (dep) {
+            const versions = changedPackages.get(dep.name);
+            if (!versions) {
+                changedPackages.set(dep.name, new Set([dep.majorVersion]));
+            }
+            else {
+                versions.add(dep.majorVersion);
+            }
+        }
+    }
+    return Array.from(util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, majorVersion => ({ name, majorVersion }))));
+}
+exports.gitChanges = gitChanges;
+/*
+We have to be careful about how we get the diff because travis uses a shallow clone.
+
+Travis runs:
+    git clone --depth=50 https://github.com/DefinitelyTyped/DefinitelyTyped.git DefinitelyTyped
+    cd DefinitelyTyped
+    git fetch origin +refs/pull/123/merge
+    git checkout -qf FETCH_HEAD
+
+If editing this code, be sure to test on both full and shallow clones.
+*/
+async function gitDiff(log, definitelyTypedPath) {
+    try {
+        await run(`git rev-parse --verify ${settings_1.sourceBranch}`);
+        // If this succeeds, we got the full clone.
+    }
+    catch (_) {
+        // This is a shallow clone.
+        await run(`git fetch origin ${settings_1.sourceBranch}`);
+        await run(`git branch ${settings_1.sourceBranch} FETCH_HEAD`);
+    }
+    let diff = (await run(`git diff ${settings_1.sourceBranch} --name-status`)).trim();
+    if (diff === "") {
+        // We are probably already on master, so compare to the last commit.
+        diff = (await run(`git diff ${settings_1.sourceBranch}~1 --name-status`)).trim();
+    }
+    return diff.split("\n").map(line => {
+        var [status, file] = line.split(/\s+/, 2);
+        return { status: status.trim(), file: file.trim() };
+    });
+    async function run(cmd) {
+        log(`Running: ${cmd}`);
+        const stdout = await util_1.execAndThrowErrors(cmd, definitelyTypedPath);
+        log(stdout);
+        return stdout;
+    }
+}
+exports.gitDiff = gitDiff;
+/**
+ * For "types/a/b/c", returns { name: "a", version: "*" }.
+ * For "types/a/v3/c", returns { name: "a", version: 3 }.
+ * For "x", returns undefined.
+ */
+function getDependencyFromFile(file) {
+    const parts = file.split("/");
+    if (parts.length <= 2) {
+        // It's not in a typings directory at all.
+        return undefined;
+    }
+    const [typesDirName, name, subDirName] = parts; // Ignore any other parts
+    if (typesDirName !== settings_1.typesDirectoryName) {
+        return undefined;
+    }
+    if (subDirName) {
+        // Looks like "types/a/v3/c"
+        const majorVersion = definition_parser_1.parseMajorVersionFromDirectoryName(subDirName);
+        if (majorVersion !== undefined) {
+            return { name, majorVersion };
+        }
+    }
+    return { name, majorVersion: "*" };
 }
 //# sourceMappingURL=test-runner.js.map

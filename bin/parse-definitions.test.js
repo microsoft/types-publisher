@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const parse_definitions_1 = require("./parse-definitions");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const logging_1 = require("./util/logging");
-const util_1 = require("./util/util");
+const test_1 = require("./util/test");
 function createMockDT() {
     const root = new get_definitely_typed_1.Dir(undefined);
     root.set("notNeededPackages.json", `{
@@ -61,7 +61,7 @@ console.log(jQuery);
 `);
     return new get_definitely_typed_1.InMemoryDT(root, "DefinitelyTyped");
 }
-util_1.testo({
+test_1.testo({
     // async parseDefinitions() {
     //     const log = loggerWithErrors()[0]
     //     const dt = await getDefinitelyTyped(Options.defaults, log);

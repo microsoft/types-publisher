@@ -7,7 +7,6 @@ const moment = require("moment");
 const os = require("os");
 const sourceMapSupport = require("source-map-support");
 sourceMapSupport.install();
-const util_1 = require("util");
 function assertDefined(x) {
     assert(x !== undefined);
     return x;
@@ -80,10 +79,6 @@ async function mapAsyncOrdered(arr, mapper) {
     return out;
 }
 exports.mapAsyncOrdered = mapAsyncOrdered;
-function indent(str) {
-    return `\t${str.replace(/\n/g, "\n\t")}`;
-}
-exports.indent = indent;
 function unique(arr) {
     return [...new Set(arr)];
 }
@@ -153,10 +148,6 @@ async function execAndThrowErrors(cmd, cwd) {
     return stdout + stderr;
 }
 exports.execAndThrowErrors = execAndThrowErrors;
-function errorDetails(error) {
-    return error.stack || error.message || `Non-Error error: ${util_1.inspect(error)}`;
-}
-exports.errorDetails = errorDetails;
 /**
  * Returns the input that is better than all others, or `undefined` if there are no inputs.
  * @param isBetter Returns true if `a` should be preferred over `b`.
@@ -196,16 +187,6 @@ function mapValues(map, valueMapper) {
     return out;
 }
 exports.mapValues = mapValues;
-function multiMapAdd(map, key, value) {
-    const values = map.get(key);
-    if (values) {
-        values.push(value);
-    }
-    else {
-        map.set(key, [value]);
-    }
-}
-exports.multiMapAdd = multiMapAdd;
 function mapDefined(arr, mapper) {
     const out = [];
     for (const a of arr) {
@@ -240,15 +221,6 @@ function* flatMap(inputs, mapper) {
     }
 }
 exports.flatMap = flatMap;
-function some(iter, cb) {
-    for (const x of iter) {
-        if (cb(x)) {
-            return true;
-        }
-    }
-    return false;
-}
-exports.some = some;
 function sort(values, comparer) {
     return Array.from(values).sort(comparer);
 }
@@ -413,10 +385,4 @@ function assertSorted(a, cb = (t) => t) {
     return a;
 }
 exports.assertSorted = assertSorted;
-function testo(o) {
-    for (const k in o) {
-        test(k, o[k], 100000);
-    }
-}
-exports.testo = testo;
 //# sourceMappingURL=util.js.map

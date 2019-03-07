@@ -12,7 +12,7 @@ export declare class AllPackages {
     static readSingle(name: string): Promise<TypingsData>;
     static readSingleNotNeeded(name: string, dt: FS): Promise<NotNeededPackage>;
     private constructor();
-    getNotNeededPackage(name: string): NotNeededPackage;
+    getNotNeededPackage(name: string): NotNeededPackage | undefined;
     hasTypingFor(dep: PackageId): boolean;
     tryResolve(dep: PackageId): PackageId;
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */

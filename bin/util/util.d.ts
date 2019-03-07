@@ -14,7 +14,6 @@ export declare function filter<T>(iterable: Iterable<T>, predicate: (value: T) =
 export declare type Awaitable<T> = T | Promise<T>;
 export declare function filterNAtATimeOrdered<T>(n: number, inputs: ReadonlyArray<T>, shouldKeep: (input: T) => Awaitable<boolean>, progress?: ProgressOptions<T, boolean>): Promise<T[]>;
 export declare function mapAsyncOrdered<T, U>(arr: ReadonlyArray<T>, mapper: (t: T) => Promise<U>): Promise<U[]>;
-export declare function indent(str: string): string;
 export declare function unique<T>(arr: Iterable<T>): T[];
 export declare function logUncaughtErrors(promise: Promise<unknown> | (() => Promise<unknown>)): void;
 /** Always use "/" for consistency. (This affects package content hash.) */
@@ -34,7 +33,6 @@ export declare function exec(cmd: string, cwd?: string): Promise<{
 }>;
 /** Run a command and return the stdout, or if there was an error, throw. */
 export declare function execAndThrowErrors(cmd: string, cwd?: string): Promise<string>;
-export declare function errorDetails(error: Error): string;
 /**
  * Returns the input that is better than all others, or `undefined` if there are no inputs.
  * @param isBetter Returns true if `a` should be preferred over `b`.
@@ -42,12 +40,10 @@ export declare function errorDetails(error: Error): string;
 export declare function best<T>(inputs: Iterable<T>, isBetter: (a: T, b: T) => boolean): T | undefined;
 export declare function computeHash(content: string): string;
 export declare function mapValues<K, V1, V2>(map: Map<K, V1>, valueMapper: (value: V1) => V2): Map<K, V2>;
-export declare function multiMapAdd<K, V>(map: Map<K, V[]>, key: K, value: V): void;
 export declare function mapDefined<T, U>(arr: Iterable<T>, mapper: (t: T) => U | undefined): U[];
 export declare function mapDefinedAsync<T, U>(arr: Iterable<T>, mapper: (t: T) => Promise<U | undefined>): Promise<U[]>;
 export declare function mapIter<T, U>(inputs: Iterable<T>, mapper: (t: T) => U): Iterable<U>;
 export declare function flatMap<T, U>(inputs: Iterable<T>, mapper: (t: T) => Iterable<U>): Iterable<U>;
-export declare function some<T>(iter: IterableIterator<T>, cb: (t: T) => boolean): boolean;
 export declare function sort<T>(values: Iterable<T>, comparer?: (a: T, b: T) => number): T[];
 export declare function join<T>(values: Iterable<T>, joiner?: string): string;
 export interface RunWithChildProcessesOptions<In> {
@@ -79,7 +75,4 @@ export declare function unmangleScopedPackage(packageName: string): string | und
 export declare function split<T, U>(inputs: ReadonlyArray<T>, cb: (t: T) => U | undefined): [ReadonlyArray<T>, ReadonlyArray<U>];
 export declare function assertSorted(a: ReadonlyArray<string>): ReadonlyArray<string>;
 export declare function assertSorted<T>(a: ReadonlyArray<T>, cb: (t: T) => string): ReadonlyArray<T>;
-export declare function testo(o: {
-    [s: string]: () => void;
-}): void;
 export {};

@@ -8,7 +8,7 @@ async function readChangedPackages(allPackages) {
     const json = await common_1.readDataFile("calculate-versions", versionsFilename);
     return {
         changedTypings: json.changedTypings.map(({ id, version, latestVersion }) => ({ pkg: allPackages.getTypingsData(id), version, latestVersion })),
-        changedNotNeededPackages: json.changedNotNeededPackages.map(id => allPackages.getNotNeededPackage(id)),
+        changedNotNeededPackages: json.changedNotNeededPackages.map(id => util_1.assertDefined(allPackages.getNotNeededPackage(id))),
     };
 }
 exports.readChangedPackages = readChangedPackages;

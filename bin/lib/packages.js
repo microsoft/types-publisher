@@ -45,7 +45,7 @@ class AllPackages {
         return pkg;
     }
     getNotNeededPackage(name) {
-        return util_1.assertDefined(this.notNeeded.find(p => p.name === name));
+        return this.notNeeded.find(p => p.name === name);
     }
     hasTypingFor(dep) {
         return this.tryGetTypingsData(dep) !== undefined;
