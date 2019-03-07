@@ -7,6 +7,7 @@ import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { FS, getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
 import { AllPackages, DependencyVersion, PackageId, TypingsData } from "../lib/packages";
+// import { CachedNpmInfoClient, NpmInfoVersion, UncachedNpmInfoClient } from "../lib/npm-client";
 import { npmInstallFlags } from "../util/io";
 import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
 import { exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
@@ -65,8 +66,6 @@ export default async function runTests(
     const diffs = await gitDiff(consoleLogger.info, definitelyTypedPath);
     if (diffs.map(d => d.file).includes("notNeededPackages.json")) {
         checkDeletedFiles(allPackages, diffs);
-        // TODO: Still need to check all dependents of the removed packages actually
-        return;
     }
     const { changedPackages, dependentPackages }: Affected =
         selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
@@ -90,38 +89,23 @@ export default async function runTests(
  * 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
  */
 export function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
-    const toplevels = group(diffs.filter(d => d.status === "D"), d => {
+    const deletedPackages = new Set(diffs.filter(d => d.status === "D").map(d => {
         const id = getDependencyFromFile(d.file)
         if (!id) {
             throw new Error(`Unexpected file deleted: ${d.file}
 When removing packages, you should only delete files that are a part of removed packages.`);
         }
         return id.name;
-    });
-    for (const toplevel of toplevels.keys()) {
-        if (allPackages.hasTypingFor({ name: toplevel, majorVersion: "*" })) {
-            throw new Error(`Please delete all files in ${toplevel} when adding it to notNeededPackages.json.`);
+    }));
+    for (const p of deletedPackages) {
+        if (allPackages.hasTypingFor({ name: p, majorVersion: "*" })) {
+            throw new Error(`Please delete all files in ${p} when adding it to notNeededPackages.json.`);
         }
-        if (!allPackages.getNotNeededPackage(toplevel)) {
-            throw new Error(`Deleted package ${toplevel} is not in notNeededPackages.json.`);
-        }
-    }
-    // 4. now check that entry in notNeededPackages (note: might want to check ALL entries ok)
-    //   a. xxxxxxxx
-}
-
-function group<T>(l: T[], key: (x: T) => string): Map<string, T[]> {
-    const g = new Map<string, T[]>();
-    for (const x of l) {
-        const k = key(x);
-        if (g.has(k)) {
-            g.get(k)!.push(x);
-        }
-        else {
-            g.set(k, [x]);
+        if (!allPackages.getNotNeededPackage(p)) {
+            throw new Error(`Deleted package ${p} is not in notNeededPackages.json.`);
         }
     }
-    return g;
+    return deletedPackages;
 }
 
 async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsData>, typesPath: string, nProcesses: number): Promise<void> {

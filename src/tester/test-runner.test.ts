@@ -50,5 +50,13 @@ testo({
         expect(() => checkDeletedFiles(AllPackages.from(typesData, []), [{status: "D", file: "types/jest/index.d.ts" }])).toThrow(
             "Deleted package jest is not in notNeededPackages.json.");
     },
+    scoped() {
+        checkDeletedFiles(
+            AllPackages.from(
+                typesData,
+                [new NotNeededPackage({ typingsPackageName: "ember__object", libraryName: "@ember/object", asOfVersion: "1.0.0", sourceRepoURL: "ember.js" })]),
+            [{ status: "D", file: "types/ember__object/index.d.ts" }]);
+    },
+    // TODO: Test npm info (and with scoped names)
     // TODO: Test with dependents, etc etc
 });
