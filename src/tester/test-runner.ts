@@ -80,8 +80,8 @@ export default async function runTests(
     await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
 }
 
-function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
-    diffs.filter(d => d.status === "D")
+export function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
+    group(diffs.filter(d => d.status === "D"), d => getDependencyFromFile(d.file)!.name);
     // 1. find all the deleted files and group by toplevel
     // 2. Make sure that there are no non-deleted files under each toplevel deleted
     // 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
@@ -97,6 +97,20 @@ When deprecating a package, all changes must be deletions.`);
 When deprecating a package, all changes must be deletions.`);
         }
     }
+}
+
+function group<T>(l: T[], key: (x: T) => string): Map<string, T[]> {
+    const g = new Map<string, T[]>();
+    for (const x of l) {
+        const k = key(x);
+        if (g.has(k)) {
+            g.get(k)!.push(x);
+        }
+        else {
+            g.set(k, [x]);
+        }
+    }
+    return g;
 }
 
 async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsData>, typesPath: string, nProcesses: number): Promise<void> {

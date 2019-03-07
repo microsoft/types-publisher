@@ -428,9 +428,3 @@ export function assertSorted<T>(a: ReadonlyArray<T>, cb: (t: T) => string = (t: 
     }
     return a;
 }
-
-export function testo(o: { [s: string]: () => void }) {
-    for (const k in o) {
-        test(k, o[k], 100_000);
-    }
-}
