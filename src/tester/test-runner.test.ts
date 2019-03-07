@@ -1,6 +1,6 @@
 import { testo, createTypingsVersionRaw } from "../util/test";
 import { AllPackages, NotNeededPackage, TypesDataFile } from "../lib/packages";
-import { checkDeletedFiles } from "./test-runner";
+import { checkDeletedFiles, GitDiff } from "./test-runner";
 
 const typesData: TypesDataFile = {
     jquery: createTypingsVersionRaw("jquery", [], []),
@@ -11,19 +11,31 @@ const typesData: TypesDataFile = {
     "unknown-test": createTypingsVersionRaw("unknown-test", [], ["WAT"]),
 };
 
-const notNeeded = [
+const jestNotNeeded = [
     new NotNeededPackage({ typingsPackageName: "jest", libraryName: "jest", asOfVersion: "100.0.0", sourceRepoURL: "jest.com" })
 ];
-const allPackages = AllPackages.from(typesData, notNeeded);
+const allPackages = AllPackages.from(typesData, jestNotNeeded);
+
+const deleteJestDiffs: GitDiff[] = [
+    { status: "M", file: "notNeededPackages.json" },
+    { status: "D", file: "types/jest/index.d.ts" },
+    { status: "D", file: "types/jest/jest-tests.d.ts" },
+];
 
 
 testo({
     ok() {
-        checkDeletedFiles(allPackages, [
-            { status: "M", file: "notNeededPackages.json" },
-            { status: "D", file: "types/jest/index.d.ts" },
-            { status: "D", file: "types/jest/jest-tests.d.ts" },
-        ]);
+        checkDeletedFiles(allPackages, deleteJestDiffs);
+    },
+    forgotToDeleteFiles() {
+        expect(() =>
+        checkDeletedFiles(
+            AllPackages.from({ jest: createTypingsVersionRaw("jest", [], []) }, jestNotNeeded),
+            deleteJestDiffs)).toThrow('Please delete all files in jest');
+
+    },
+    tooManyDeletes() {
+        expect(() => checkDeletedFiles(allPackages, [{ status: "D", file: "oooooooooops.txt" }])).toThrow("Only oh no");
     },
     extraneousFile() {
         checkDeletedFiles(allPackages, [

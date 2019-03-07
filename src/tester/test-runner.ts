@@ -11,7 +11,7 @@ import { npmInstallFlags } from "../util/io";
 import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
 import { exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
 
-import { getAffectedPackages, Affected, GitDiff, allDependencies } from "./get-affected-packages";
+import { getAffectedPackages, Affected, allDependencies } from "./get-affected-packages";
 
 if (!module.parent) {
     if (yargs.argv.affected) {
@@ -23,6 +23,11 @@ if (!module.parent) {
         logUncaughtErrors(
             getDefinitelyTyped(options, loggerWithErrors()[0]).then(dt => runTests(dt, options.definitelyTypedPath, parseNProcesses(), selection)));
     }
+}
+
+export interface GitDiff {
+    status: "A" | "D" | "M";
+    file: string
 }
 
 async function testAffectedOnly(options: TesterOptions): Promise<void> {
@@ -59,7 +64,6 @@ export default async function runTests(
     const allPackages = await AllPackages.read(dt);
     const diffs = await gitDiff(consoleLogger.info, definitelyTypedPath);
     if (diffs.map(d => d.file).includes("notNeededPackages.json")) {
-        console.log(diffs);
         checkDeletedFiles(allPackages, diffs);
         // TODO: Still need to check all dependents of the removed packages actually
         return;
@@ -81,22 +85,22 @@ export default async function runTests(
 }
 
 export function checkDeletedFiles(allPackages: AllPackages, diffs: GitDiff[]) {
-    group(diffs.filter(d => d.status === "D"), d => getDependencyFromFile(d.file)!.name);
     // 1. find all the deleted files and group by toplevel
-    // 2. Make sure that there are no non-deleted files under each toplevel deleted
-    // 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+    const toplevels = group(diffs.filter(d => d.status === "D"), d => {
+        const x = getDependencyFromFile(d.file)
+        if (!x) throw new Error(`Only oh no`);
+        return x.name;
+    });
+    console.log(toplevels)
+    for (const toplevel of toplevels.keys()) {
+        // 2. Make sure that there are no packages left with deleted entries
+        if (allPackages.hasTypingFor({ name: toplevel, majorVersion: "*" })) {
+            throw new Error(`Please delete all files in ${toplevel} when adding it to notNeededPackages.json.`);
+        }
+        // 3. make sure that each toplevel deleted has a matching entry in notNeededPackages
+    }
     // 4. now check that entry in notNeededPackages (note: might want to check ALL entries ok)
     //   a. xxxxxxxx
-    for (const diff of diffs) {
-        if (/^types/.test(diff.file) && allPackages.tryGetLatestVersion(diff.file)) {
-            throw new Error(`Unexpected changed package ${diff.file}.
-When deprecating a package, all changes must be deletions.`);
-        }
-        else if (diff.file !== "notNeededPackages.json") {
-            throw new Error(`Unexpected changed file ${diff.file}.
-When deprecating a package, all changes must be deletions.`);
-        }
-    }
 }
 
 function group<T>(l: T[], key: (x: T) => string): Map<string, T[]> {

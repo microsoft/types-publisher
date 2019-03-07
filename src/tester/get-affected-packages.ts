@@ -1,11 +1,6 @@
 import { AllPackages, PackageBase, TypingsData, PackageId, getMangledNameForScopedPackage } from "../lib/packages";
 import { mapDefined, mapIter, sort } from "../util/util";
 
-export interface GitDiff {
-    status: "A" | "D" | "M";
-    file: string
-}
-
 export interface Affected {
     readonly changedPackages: ReadonlyArray<TypingsData>;
     readonly dependentPackages: ReadonlyArray<TypingsData>;
