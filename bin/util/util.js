@@ -7,8 +7,8 @@ const moment = require("moment");
 const os = require("os");
 const sourceMapSupport = require("source-map-support");
 sourceMapSupport.install();
-function assertDefined(x) {
-    assert(x !== undefined);
+function assertDefined(x, message) {
+    assert(x !== undefined, message);
     return x;
 }
 exports.assertDefined = assertDefined;
