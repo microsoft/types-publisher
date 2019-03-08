@@ -7,7 +7,7 @@ import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { FS, getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
 import { AllPackages, DependencyVersion, PackageId, TypingsData } from "../lib/packages";
-// import { CachedNpmInfoClient, NpmInfoVersion, UncachedNpmInfoClient } from "../lib/npm-client";
+import { CachedNpmInfoClient, NpmInfoVersion, UncachedNpmInfoClient } from "../lib/npm-client";
 import { npmInstallFlags } from "../util/io";
 import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
 import { exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
@@ -65,7 +65,14 @@ export default async function runTests(
     const allPackages = await AllPackages.read(dt);
     const diffs = await gitDiff(consoleLogger.info, definitelyTypedPath);
     if (diffs.map(d => d.file).includes("notNeededPackages.json")) {
-        checkDeletedFiles(allPackages, diffs);
+        const deleteds = checkDeletedFiles(allPackages, diffs);
+        let client: CachedNpmInfoClient; // bet I can get one of THESE easily
+        for (const d of deleteds) {
+            const info = await client.fetchAndCacheNpmInfo(d);
+            if (info) {
+                info.versions.has('1.1.1')
+            }
+        }
     }
     const { changedPackages, dependentPackages }: Affected =
         selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
@@ -105,7 +112,12 @@ When removing packages, you should only delete files that are a part of removed 
             throw new Error(`Deleted package ${p} is not in notNeededPackages.json.`);
         }
     }
-    return deletedPackages;
+    return deletedPackages; // because probably step 4 is async, ugh
+    // 4. now check that entry in notNeededPackages (note: might want to check ALL entries ok)
+    //   b. libraryName must exist on npm (and preferably/optionally have been the libraryName in just-deleted header)
+    //   c. sourceRepoURL must exist and be the npm homepage
+    //   d. asOfVersion must be newer than `@types/name@latest` on npm
+    //   e. `name@asOfVersion` must exist on npm
 }
 
 async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsData>, typesPath: string, nProcesses: number): Promise<void> {
