@@ -68,19 +68,11 @@ export default async function runTests(
     const diffs = await gitDiff(consoleLogger.info, definitelyTypedPath);
     if (diffs.find(d => d.file === "notNeededPackages.json")) {
         const uncached = new UncachedNpmInfoClient()
-        CachedNpmInfoClient.with(uncached, async client => {
+        await CachedNpmInfoClient.with(uncached, async client => {
             for (const deleted of getNotNeededPackages(allPackages, diffs)) {
-                // 1. get npm info for source package (eg @babel/parser) and typings package (eg @types/babel__parser)
-                console.log(deleted.libraryName)
-                console.log(deleted.fullNpmName)
                 const source = await client.fetchAndCacheNpmInfo(deleted.libraryName) // eg @babel/parser
                 const typings = await client.fetchAndCacheNpmInfo(deleted.fullNpmName) // eg @types/babel__parser
                 checkNotNeededPackage(deleted, source, typings);
-            // if (info) {
-            //     info.versions.has('1.1.1')
-            // }
-                console.log(source)
-                console.log(typings)
             }
         });
     }
