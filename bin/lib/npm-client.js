@@ -89,8 +89,8 @@ class UncachedNpmInfoClient {
     }
     // See https://github.com/npm/download-counts
     async getDownloads(packageNames) {
-        // NPM uses a different API if there's only a single name, so ensure there's at least 2.
-        const names = packageNames.length === 1 ? [...packageNames, "dummy"] : packageNames;
+        // NPM uses a different API if there's only a single name, so ensure there's at least 2 for every batch of 128.
+        const names = (packageNames.length % 128) === 1 ? [...packageNames, "dummy"] : packageNames;
         const nameGroups = Array.from(splitToFixedSizeGroups(names, 128)); // NPM has a limit of 128 packages at a time.
         const out = [];
         for (const nameGroup of nameGroups) {
@@ -103,7 +103,7 @@ class UncachedNpmInfoClient {
                 throw new Error(data.error);
             }
             for (const key in data) {
-                assert(key === names[out.length]);
+                assert(key === names[out.length], `at index ${out.length} of ${Object.keys(data)} : ${key} !== ${names[out.length]}`);
                 out.push(data[key] ? data[key].downloads : 0);
             }
         }
