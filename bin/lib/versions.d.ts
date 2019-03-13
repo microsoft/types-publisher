@@ -1,6 +1,5 @@
-import { LoggerWithErrors } from "../util/logging";
-import { CachedNpmInfoClient, UncachedNpmInfoClient } from "./npm-client";
-import { AllPackages, NotNeededPackage, TypingsData } from "./packages";
+import { AllPackages, NotNeededPackage, PackageId, TypingsData } from "./packages";
+export declare const versionsFilename = "versions.json";
 export interface ChangedTyping {
     readonly pkg: TypingsData;
     /** This is the version to be published, meaning it's the version that doesn't exist yet. */
@@ -8,13 +7,20 @@ export interface ChangedTyping {
     /** For a non-latest version, this is the latest version; publishing an old version updates the 'latest' tag and we want to change it back. */
     readonly latestVersion: string | undefined;
 }
-export declare function readChangedPackages(allPackages: AllPackages): Promise<ChangedPackages>;
+export interface ChangedPackagesJson {
+    readonly changedTypings: ReadonlyArray<ChangedTypingJson>;
+    readonly changedNotNeededPackages: ReadonlyArray<string>;
+}
+export interface ChangedTypingJson {
+    readonly id: PackageId;
+    readonly version: string;
+    readonly latestVersion?: string;
+}
 export interface ChangedPackages {
     readonly changedTypings: ReadonlyArray<ChangedTyping>;
     readonly changedNotNeededPackages: ReadonlyArray<NotNeededPackage>;
 }
-export declare function computeAndSaveChangedPackages(allPackages: AllPackages, log: LoggerWithErrors, client: CachedNpmInfoClient): Promise<ChangedPackages>;
-export declare function getLatestTypingVersion(pkg: TypingsData, client: CachedNpmInfoClient): Promise<string>;
+export declare function readChangedPackages(allPackages: AllPackages): Promise<ChangedPackages>;
 /** Version of a package published to NPM. */
 export declare class Semver {
     readonly major: number;
@@ -28,11 +34,3 @@ export declare class Semver {
     equals(sem: Semver): boolean;
     greaterThan(sem: Semver): boolean;
 }
-export interface ProcessedNpmInfo {
-    readonly version: Semver;
-    readonly highestSemverVersion: Semver;
-    readonly contentHash: string;
-    readonly lastModified: Date;
-}
-/** For use by publish-registry only. */
-export declare function fetchAndProcessNpmInfo(escapedPackageName: string, client: UncachedNpmInfoClient): Promise<ProcessedNpmInfo>;

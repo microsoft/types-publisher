@@ -26,7 +26,7 @@ if (!module.parent) {
 async function publishRegistry(dt, allPackages, dry, client) {
     const [log, logResult] = logging_1.logger();
     log("=== Publishing types-registry ===");
-    const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } = await versions_1.fetchAndProcessNpmInfo(packageName, client);
+    const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } = await fetchAndProcessNpmInfo(packageName, client);
     // Don't include not-needed packages in the registry.
     const registryJsonData = await npm_client_1.CachedNpmInfoClient.with(client, cachedClient => generateRegistry(allPackages.allLatestTypings(), cachedClient));
     const registry = JSON.stringify(registryJsonData);
@@ -186,5 +186,17 @@ async function generateRegistry(typings, client) {
         });
         return out;
     }
+}
+async function fetchAndProcessNpmInfo(escapedPackageName, client) {
+    const info = util_1.assertDefined(await client.fetchNpmInfo(escapedPackageName));
+    const version = versions_1.Semver.parse(util_1.assertDefined(info.distTags.get("latest")));
+    const { distTags, versions, time } = info;
+    const highestSemverVersion = getLatestVersion(versions.keys());
+    assert.strictEqual(highestSemverVersion.versionString, distTags.get("next"));
+    const contentHash = versions.get(version.versionString).typesPublisherContentHash || "";
+    return { version, highestSemverVersion, contentHash, lastModified: new Date(time.get("modified")) };
+}
+function getLatestVersion(versions) {
+    return util_1.best(util_1.mapDefined(versions, v => versions_1.Semver.tryParse(v)), (a, b) => a.greaterThan(b));
 }
 //# sourceMappingURL=publish-registry.js.map

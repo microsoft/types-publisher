@@ -7,7 +7,7 @@ export interface NpmInfoRaw {
     };
     readonly versions: NpmInfoRawVersions;
     readonly time: {
-        readonly modified: string;
+        readonly [s: string]: string;
     };
 }
 export interface NpmInfoRawVersions {
@@ -16,7 +16,7 @@ export interface NpmInfoRawVersions {
 export interface NpmInfo {
     readonly distTags: Map<string, string>;
     readonly versions: Map<string, NpmInfoVersion>;
-    readonly timeModified: string;
+    readonly time: Map<string, string>;
 }
 export interface NpmInfoVersion {
     readonly typesPublisherContentHash?: string;

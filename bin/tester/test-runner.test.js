@@ -48,7 +48,7 @@ test_1.testo({
 const empty = {
     distTags: new Map(),
     versions: new Map(),
-    timeModified: ""
+    time: new Map(),
 };
 test_1.testo({
     missingSource() {
@@ -64,25 +64,25 @@ test_1.testo({
             .toThrow("@types/jest is missing the \"latest\" tag");
     },
     deprecatedSameVersion() {
-        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "100.0.0"]]), versions: new Map(), timeModified: "" }))
+        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "100.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
             .toThrow(`The specified version 100.0.0 of jest must be newer than the version
 it is supposed to replace, 100.0.0 of @types/jest.`);
     },
     deprecatedOlderVersion() {
-        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "999.0.0"]]), versions: new Map(), timeModified: "" }))
+        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "999.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
             .toThrow(`The specified version 100.0.0 of jest must be newer than the version
 it is supposed to replace, 999.0.0 of @types/jest.`);
     },
     missingNpmVersion() {
-        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), timeModified: "" }))
+        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
             .toThrow(`The specified version 100.0.0 of jest is not on npm.`);
     },
     olderNpmVersion() {
-        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], { distTags: new Map(), versions: new Map([["50.0.0", {}]]), timeModified: "" }, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), timeModified: "" }))
+        expect(() => test_runner_1.checkNotNeededPackage(jestNotNeeded[0], { distTags: new Map(), versions: new Map([["50.0.0", {}]]), time: new Map([["modified", ""]]) }, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
             .toThrow(`The specified version 100.0.0 of jest is not on npm.`);
     },
     ok() {
-        test_runner_1.checkNotNeededPackage(jestNotNeeded[0], { distTags: new Map(), versions: new Map([["100.0.0", {}]]), timeModified: "" }, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), timeModified: "" });
+        test_runner_1.checkNotNeededPackage(jestNotNeeded[0], { distTags: new Map(), versions: new Map([["100.0.0", {}]]), time: new Map([["modified", ""]]) }, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) });
     },
 });
 //# sourceMappingURL=test-runner.test.js.map

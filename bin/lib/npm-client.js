@@ -159,14 +159,14 @@ function npmInfoFromJson(n) {
         distTags: util_1.recordToMap(n["dist-tags"], util_1.identity),
         // Callback ensures we remove any other properties
         versions: util_1.recordToMap(n.versions, ({ typesPublisherContentHash, deprecated }) => ({ typesPublisherContentHash, deprecated })),
-        timeModified: n.time.modified,
+        time: util_1.recordToMap(n.time),
     };
 }
 function jsonFromNpmInfo(n) {
     return {
         "dist-tags": util_1.mapToRecord(n.distTags),
         versions: util_1.mapToRecord(n.versions),
-        time: { modified: n.timeModified },
+        time: util_1.mapToRecord(n.time),
     };
 }
 function promisifyVoid(callsBack) {
