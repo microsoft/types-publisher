@@ -33,7 +33,7 @@ async function common(client, pkg, log, dry) {
 }
 async function deprecateNotNeededPackage(client, pkg, dry = false, log) {
     if (dry) {
-        log("(dry) Skip deprecate not needed package " + pkg.fullNpmName);
+        log("(dry) Skip deprecate not needed package " + pkg.fullNpmName + " at " + pkg.version.versionString);
     }
     else {
         log(`Deprecating ${pkg.fullNpmName} at ${pkg.version.versionString} with message: ${pkg.deprecatedMessage()}.`);

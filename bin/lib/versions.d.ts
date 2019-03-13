@@ -1,4 +1,6 @@
+import { Logger } from "../util/logging";
 import { AllPackages, NotNeededPackage, PackageId, TypingsData } from "./packages";
+import { CachedNpmInfoClient } from "./npm-client";
 export declare const versionsFilename = "versions.json";
 export interface ChangedTyping {
     readonly pkg: TypingsData;
@@ -21,6 +23,12 @@ export interface ChangedPackages {
     readonly changedNotNeededPackages: ReadonlyArray<NotNeededPackage>;
 }
 export declare function readChangedPackages(allPackages: AllPackages): Promise<ChangedPackages>;
+/**
+ * When we fail to publish a deprecated package, it leaves behind an entry in the time property.
+ * So the keys of 'time' give the actual 'latest'.
+ * If that's not equal to the expected latest, try again by bumping the patch version of the last attempt by 1.
+ */
+export declare function skipBadPublishes(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): NotNeededPackage;
 /** Version of a package published to NPM. */
 export declare class Semver {
     readonly major: number;

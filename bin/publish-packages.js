@@ -84,9 +84,11 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             }
         }
     }
-    for (const n of changedPackages.changedNotNeededPackages) {
-        await package_publisher_1.publishNotNeededPackage(client, n, dry, log);
-    }
+    npm_client_1.CachedNpmInfoClient.with(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
+        for (const n of changedPackages.changedNotNeededPackages) {
+            await package_publisher_1.publishNotNeededPackage(client, versions_1.skipBadPublishes(n, infoClient, log), dry, log);
+        }
+    });
     await logging_1.writeLog("publishing.md", logResult());
     console.log("Done!");
 }

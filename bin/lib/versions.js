@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const util_1 = require("../util/util");
 const common_1 = require("./common");
+const packages_1 = require("./packages");
 exports.versionsFilename = "versions.json";
 async function readChangedPackages(allPackages) {
     const json = await common_1.readDataFile("calculate-versions", exports.versionsFilename);
@@ -11,6 +12,36 @@ async function readChangedPackages(allPackages) {
     };
 }
 exports.readChangedPackages = readChangedPackages;
+/**
+ * When we fail to publish a deprecated package, it leaves behind an entry in the time property.
+ * So the keys of 'time' give the actual 'latest'.
+ * If that's not equal to the expected latest, try again by bumping the patch version of the last attempt by 1.
+ */
+function skipBadPublishes(pkg, client, log) {
+    // because this is called right after isAlreadyDeprecated, we can rely on the cache being up-to-date
+    const info = util_1.assertDefined(client.getNpmInfoFromCache(pkg.fullEscapedNpmName));
+    const latest = util_1.assertDefined(info.distTags.get("latest"));
+    const ver = Semver.parse(findActualLatest(info.time));
+    const modifiedTime = util_1.assertDefined(info.time.get("modified"));
+    if (ver.versionString !== latest) {
+        log(`Previous deprecation failed at ${modifiedTime} ... Bumping from version ${ver.versionString}.`);
+        return new packages_1.NotNeededPackage({
+            asOfVersion: new Semver(ver.major, ver.minor, ver.patch + 1).versionString,
+            libraryName: pkg.libraryName,
+            sourceRepoURL: pkg.sourceRepoURL,
+            typingsPackageName: pkg.name,
+        });
+    }
+    return pkg;
+}
+exports.skipBadPublishes = skipBadPublishes;
+function findActualLatest(times) {
+    const actual = util_1.best(times, ([_, v], [bestK, bestV]) => (bestK === "modified") ? true : new Date(v) > new Date(bestV));
+    if (!actual) {
+        throw new Error("failed to find actual latest");
+    }
+    return actual[0];
+}
 /** Version of a package published to NPM. */
 class Semver {
     constructor(major, minor, patch) {

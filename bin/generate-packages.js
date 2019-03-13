@@ -55,37 +55,8 @@ async function generateTypingPackage(typing, packages, version, dt) {
         map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
 async function generateNotNeededPackage(pkg, client, log) {
-    const packageJson = createNotNeededPackageJSON(skipBadPublishes(pkg, client, log));
+    const packageJson = createNotNeededPackageJSON(versions_1.skipBadPublishes(pkg, client, log));
     await writeCommonOutputs(pkg, packageJson, pkg.readme());
-}
-/**
- * When we fail to publish a deprecated package, it leaves behind an entry in the time property.
- * So the keys of 'time' give the actual 'latest'.
- * If that's not equal to the expected latest, try again by bumping the patch version of the last attempt by 1.
- */
-function skipBadPublishes(pkg, client, log) {
-    // because this is called right after isAlreadyDeprecated, we can rely on the cache being up-to-date
-    const info = util_1.assertDefined(client.getNpmInfoFromCache(pkg.fullEscapedNpmName));
-    const latest = util_1.assertDefined(info.distTags.get("latest"));
-    const ver = versions_1.Semver.parse(findActualLatest(info.time));
-    const modifiedTime = util_1.assertDefined(info.time.get("modified"));
-    if (ver.versionString !== latest) {
-        log(`Previous deprecation failed at ${modifiedTime} ... Bumping from version ${ver.versionString}.`);
-        return new packages_1.NotNeededPackage({
-            asOfVersion: new versions_1.Semver(ver.major, ver.minor, ver.patch + 1).versionString,
-            libraryName: pkg.libraryName,
-            sourceRepoURL: pkg.sourceRepoURL,
-            typingsPackageName: pkg.name,
-        });
-    }
-    return pkg;
-}
-function findActualLatest(times) {
-    const actual = util_1.best(times, ([_, v], [bestK, bestV]) => (bestK === "modified") ? true : new Date(v) > new Date(bestV));
-    if (!actual) {
-        throw new Error("failed to find actual latest");
-    }
-    return actual[0];
 }
 async function writeCommonOutputs(pkg, packageJson, readme) {
     await fs_extra_2.mkdir(pkg.outputDirectory);
