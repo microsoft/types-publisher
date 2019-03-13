@@ -12,7 +12,11 @@ if (!module.parent) {
     logUncaughtErrors(async () => calculateVersions(await getDefinitelyTyped(Options.defaults, log), new UncachedNpmInfoClient(), log));
 }
 
-export default async function calculateVersions(dt: FS, uncachedClient: UncachedNpmInfoClient, log: LoggerWithErrors): Promise<ChangedPackages> {
+export default async function calculateVersions(
+    dt: FS,
+    uncachedClient: UncachedNpmInfoClient,
+    log: LoggerWithErrors
+): Promise<ChangedPackages> {
     log.info("=== Calculating versions ===");
     return CachedNpmInfoClient.with(uncachedClient, async client => {
         log.info("Reading packages...");
@@ -24,7 +28,8 @@ export default async function calculateVersions(dt: FS, uncachedClient: Uncached
 async function computeAndSaveChangedPackages(
     allPackages: AllPackages,
     log: LoggerWithErrors,
-    client: CachedNpmInfoClient): Promise<ChangedPackages> {
+    client: CachedNpmInfoClient
+): Promise<ChangedPackages> {
     log.info("Computing changed packages...");
     const cp = await computeChangedPackages(allPackages, log, client);
     const json: ChangedPackagesJson = {
@@ -38,7 +43,8 @@ async function computeAndSaveChangedPackages(
 async function computeChangedPackages(
     allPackages: AllPackages,
     log: LoggerWithErrors,
-    client: CachedNpmInfoClient): Promise<ChangedPackages> {
+    client: CachedNpmInfoClient
+): Promise<ChangedPackages> {
     const changedTypings = await mapDefinedAsync(allPackages.allTypings(), async pkg => {
         const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ true, log);
         if (needsPublish) {
@@ -61,17 +67,12 @@ async function computeChangedPackages(
 }
 
 
-/** Returns undefined if the package does not exist. */
-interface TypesPackageVersionInfo {
-    readonly version: string;
-    readonly needsPublish: boolean;
-}
-
 async function fetchTypesPackageVersionInfo(
     pkg: TypingsData,
     client: CachedNpmInfoClient,
     canPublish: boolean,
-    log?: LoggerWithErrors): Promise<TypesPackageVersionInfo> {
+    log?: LoggerWithErrors
+): Promise<{ version: string, needsPublish: boolean }> {
     let info = client.getNpmInfoFromCache(pkg.fullEscapedNpmName);
     let latestVersion = info && getHighestVersionForMajor(info.versions, pkg);
     let latestVersionInfo = latestVersion && assertDefined(info!.versions.get(latestVersion.versionString));
