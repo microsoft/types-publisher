@@ -228,11 +228,11 @@ interface ProcessedNpmInfo {
 async function fetchAndProcessNpmInfo(escapedPackageName: string, client: UncachedNpmInfoClient): Promise<ProcessedNpmInfo> {
     const info = assertDefined(await client.fetchNpmInfo(escapedPackageName));
     const version = Semver.parse(assertDefined(info.distTags.get("latest")));
-    const { distTags, versions, timeModified } = info;
+    const { distTags, versions, time } = info;
     const highestSemverVersion = getLatestVersion(versions.keys());
     assert.strictEqual(highestSemverVersion.versionString, distTags.get("next"));
     const contentHash = versions.get(version.versionString)!.typesPublisherContentHash || "";
-    return { version, highestSemverVersion, contentHash, lastModified: new Date(timeModified) };
+    return { version, highestSemverVersion, contentHash, lastModified: new Date(time.get("modified")!) };
 }
 
 function getLatestVersion(versions: Iterable<string>): Semver {

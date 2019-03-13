@@ -7,17 +7,17 @@ import {
     AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
 } from "./lib/packages";
 import { sourceBranch, outputDirPath } from "./lib/settings";
-import { ChangedPackages, readChangedPackages } from "./lib/versions";
+import { ChangedPackages, Semver, readChangedPackages } from "./lib/versions";
 import { writeFile } from "./util/io";
-import { logger, loggerWithErrors, writeLog } from "./util/logging";
+import { logger, loggerWithErrors, writeLog, Logger } from "./util/logging";
 import { writeTgz } from "./util/tgz";
-import { assertNever, joinPaths, logUncaughtErrors, sortObjectKeys } from "./util/util";
+import { assertDefined, assertNever, best, joinPaths, logUncaughtErrors, sortObjectKeys } from "./util/util";
 import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
 import { mkdir, mkdirp, readFileSync } from "fs-extra";
 import * as path from "path";
+import { CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
 
-const mitLicense = readFileSync(joinPaths(__dirname, "..", "..", "LICENSE"), "utf-8");
-
+const mitLicense = readFileSync(joinPaths(__dirname, "..", "LICENSE"), "utf-8");
 
 if (!module.parent) {
     const tgz = !!yargs.argv.tgz;
@@ -31,7 +31,7 @@ if (!module.parent) {
 
 export default async function generatePackages(dt: FS, allPackages: AllPackages, changedPackages: ChangedPackages, tgz = false): Promise<void> {
     const [log, logResult] = logger();
-    log("\n## Generating packages\n");
+    log("\n## Generating packages");
 
     await emptyDir(outputDirPath);
 
@@ -43,12 +43,12 @@ export default async function generatePackages(dt: FS, allPackages: AllPackages,
         log(` * ${pkg.libraryName}`);
     }
     log("## Generating deprecated packages");
-    for (const pkg of changedPackages.changedNotNeededPackages) {
-        log(` * ${pkg.libraryName}`);
-        
-        await generateNotNeededPackage(pkg);
-    }
-
+    CachedNpmInfoClient.with(new UncachedNpmInfoClient(), async client => {
+        for (const pkg of changedPackages.changedNotNeededPackages) {
+            log(` * ${pkg.libraryName}`);
+            await generateNotNeededPackage(pkg, client, log);
+        }
+    });
     await writeLog("package-generator.md", logResult());
 }
 async function generateTypingPackage(typing: TypingsData, packages: AllPackages, version: string, dt: FS): Promise<void> {
@@ -61,9 +61,41 @@ async function generateTypingPackage(typing: TypingsData, packages: AllPackages,
                       map(async file => writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
 
-async function generateNotNeededPackage(pkg: NotNeededPackage): Promise<void> {
-    const packageJson = createNotNeededPackageJSON(pkg);
+async function generateNotNeededPackage(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): Promise<void> {
+    const packageJson = createNotNeededPackageJSON(skipBadPublishes(pkg, client, log));
     await writeCommonOutputs(pkg, packageJson, pkg.readme());
+}
+
+/**
+ * When we fail to publish a deprecated package, it leaves behind an entry in the time property.
+ * So the keys of 'time' give the actual 'latest'.
+ * If that's not equal to the expected latest, try again by bumping the patch version of the last attempt by 1.
+ */
+function skipBadPublishes(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger) {
+    // because this is called right after isAlreadyDeprecated, we can rely on the cache being up-to-date
+    const info = assertDefined(client.getNpmInfoFromCache(pkg.fullEscapedNpmName));
+    const latest = assertDefined(info.distTags.get("latest"));
+    const ver = Semver.parse(findActualLatest(info.time));
+    const modifiedTime = assertDefined(info.time.get("modified"));
+    if (ver.versionString !== latest) {
+        log(`Previous deprecation failed at ${modifiedTime} ... Bumping from version ${ver.versionString}.`);
+        return new NotNeededPackage({
+            asOfVersion: new Semver(ver.major, ver.minor, ver.patch + 1).versionString,
+            libraryName: pkg.libraryName,
+            sourceRepoURL: pkg.sourceRepoURL,
+            typingsPackageName: pkg.name,
+        });
+    }
+    return pkg;
+}
+
+function findActualLatest(times: Map<string,string>) {
+    const actual = best(
+        times, ([_,v], [bestK,bestV]) => (bestK === "modified") ? true : new Date(v) > new Date(bestV));
+    if (!actual) {
+        throw new Error("failed to find actual latest");
+    }
+    return actual[0];
 }
 
 async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string): Promise<void> {
