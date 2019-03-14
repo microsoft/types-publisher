@@ -22,11 +22,11 @@ function skipBadPublishes(pkg, client, log) {
     const info = util_1.assertDefined(client.getNpmInfoFromCache(pkg.fullEscapedNpmName));
     const latest = util_1.assertDefined(info.distTags.get("latest"));
     const ver = Semver.parse(findActualLatest(info.time));
-    const modifiedTime = util_1.assertDefined(info.time.get("modified"));
-    if (ver.versionString !== latest) {
-        log(`Previous deprecation failed at ${modifiedTime} ... Bumping from version ${ver.versionString}.`);
+    if (ver.versionString !== latest || !util_1.assertDefined(info.versions.get(ver.versionString)).deprecated) {
+        const plusOne = new Semver(ver.major, ver.minor, ver.patch + 1);
+        log(`Previous deprecation ${ver.versionString} failed, instead using ${plusOne.versionString}.`);
         return new packages_1.NotNeededPackage({
-            asOfVersion: new Semver(ver.major, ver.minor, ver.patch + 1).versionString,
+            asOfVersion: plusOne.versionString,
             libraryName: pkg.libraryName,
             sourceRepoURL: pkg.sourceRepoURL,
             typingsPackageName: pkg.name,

@@ -31,6 +31,9 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     if (dry) {
         log("=== DRY RUN ===");
     }
+    else {
+        log("=== Publishing packages ===");
+    }
     const client = await npm_client_1.NpmPublishClient.create();
     for (const cp of changedPackages.changedTypings) {
         log(`Publishing ${cp.pkg.desc}...`);
