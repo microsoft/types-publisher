@@ -15,7 +15,7 @@ import { assertNever, joinPaths, logUncaughtErrors, sortObjectKeys } from "./uti
 import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
 import { mkdir, mkdirp, readFileSync } from "fs-extra";
 import * as path from "path";
-import { CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
+import { withNpmCache, CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
 
 const mitLicense = readFileSync(joinPaths(__dirname, "..", "LICENSE"), "utf-8");
 
@@ -43,7 +43,7 @@ export default async function generatePackages(dt: FS, allPackages: AllPackages,
         log(` * ${pkg.libraryName}`);
     }
     log("## Generating deprecated packages");
-    CachedNpmInfoClient.with(new UncachedNpmInfoClient(), async client => {
+    withNpmCache(new UncachedNpmInfoClient(), async client => {
         for (const pkg of changedPackages.changedNotNeededPackages) {
             log(` * ${pkg.libraryName}`);
             await generateNotNeededPackage(pkg, client, log);
