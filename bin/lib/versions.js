@@ -20,11 +20,12 @@ exports.readChangedPackages = readChangedPackages;
 function skipBadPublishes(pkg, client, log) {
     // because this is called right after isAlreadyDeprecated, we can rely on the cache being up-to-date
     const info = util_1.assertDefined(client.getNpmInfoFromCache(pkg.fullEscapedNpmName));
-    const latest = util_1.assertDefined(info.distTags.get("latest"));
-    const ver = Semver.parse(findActualLatest(info.time));
-    if (ver.versionString !== latest || !util_1.assertDefined(info.versions.get(ver.versionString)).deprecated) {
-        const plusOne = new Semver(ver.major, ver.minor, ver.patch + 1);
-        log(`Previous deprecation ${ver.versionString} failed, instead using ${plusOne.versionString}.`);
+    const notNeeded = pkg.version;
+    const latest = Semver.parse(findActualLatest(info.time));
+    if (latest.equals(notNeeded) || latest.greaterThan(notNeeded) ||
+        info.versions.has(notNeeded.versionString) && !util_1.assertDefined(info.versions.get(notNeeded.versionString)).deprecated) {
+        const plusOne = new Semver(latest.major, latest.minor, latest.patch + 1);
+        log(`Deprecation of ${notNeeded.versionString} failed, instead using ${plusOne.versionString}.`);
         return new packages_1.NotNeededPackage({
             asOfVersion: plusOne.versionString,
             libraryName: pkg.libraryName,
