@@ -87,7 +87,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             }
         }
     }
-    npm_client_1.CachedNpmInfoClient.with(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
+    npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
         for (const n of changedPackages.changedNotNeededPackages) {
             await package_publisher_1.publishNotNeededPackage(client, versions_1.skipBadPublishes(n, infoClient, log), dry, log);
         }

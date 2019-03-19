@@ -52,13 +52,11 @@ async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     const diffs = await gitDiff(logging_1.consoleLogger.info, definitelyTypedPath);
     if (diffs.find(d => d.file === "notNeededPackages.json")) {
         const uncached = new npm_client_1.UncachedNpmInfoClient();
-        await npm_client_1.CachedNpmInfoClient.with(uncached, async (client) => {
-            for (const deleted of getNotNeededPackages(allPackages, diffs)) {
-                const source = await client.fetchAndCacheNpmInfo(deleted.libraryName); // eg @babel/parser
-                const typings = await client.fetchAndCacheNpmInfo(deleted.fullNpmName); // eg @types/babel__parser
-                checkNotNeededPackage(deleted, source, typings);
-            }
-        });
+        for (const deleted of getNotNeededPackages(allPackages, diffs)) {
+            const source = await uncached.fetchNpmInfo(deleted.libraryName); // eg @babel/parser
+            const typings = await uncached.fetchNpmInfo(deleted.fullNpmName); // eg @types/babel__parser
+            checkNotNeededPackage(deleted, source, typings);
+        }
     }
     const { changedPackages, dependentPackages } = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
         selection === "affected" ? get_affected_packages_1.getAffectedPackages(allPackages, gitChanges(diffs))

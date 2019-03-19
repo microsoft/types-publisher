@@ -36,7 +36,9 @@ function skipBadPublishes(pkg, client, log) {
 }
 exports.skipBadPublishes = skipBadPublishes;
 function findActualLatest(times) {
-    const actual = util_1.best(times, ([_, v], [bestK, bestV]) => (bestK === "modified") ? true : new Date(v) > new Date(bestV));
+    const actual = util_1.best(times, ([k, v], [bestK, bestV]) => (bestK === "modified" || bestK === "created") ? true :
+        (k === "modified" || k === "created") ? false :
+            new Date(v) > new Date(bestV));
     if (!actual) {
         throw new Error("failed to find actual latest");
     }

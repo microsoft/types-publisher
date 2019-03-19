@@ -37,7 +37,7 @@ async function generatePackages(dt, allPackages, changedPackages, tgz = false) {
         log(` * ${pkg.libraryName}`);
     }
     log("## Generating deprecated packages");
-    npm_client_1.CachedNpmInfoClient.with(new npm_client_1.UncachedNpmInfoClient(), async (client) => {
+    npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (client) => {
         for (const pkg of changedPackages.changedNotNeededPackages) {
             log(` * ${pkg.libraryName}`);
             await generateNotNeededPackage(pkg, client, log);
@@ -51,8 +51,7 @@ async function generateTypingPackage(typing, packages, version, dt) {
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
     const packageJson = createPackageJSON(typing, version, packages);
     await writeCommonOutputs(typing, packageJson, createReadme(typing));
-    await Promise.all(typing.files.
-        map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
 }
 async function generateNotNeededPackage(pkg, client, log) {
     const packageJson = createNotNeededPackageJSON(versions_1.skipBadPublishes(pkg, client, log));

@@ -14,7 +14,7 @@ if (!module.parent) {
 }
 async function calculateVersions(dt, uncachedClient, log) {
     log.info("=== Calculating versions ===");
-    return npm_client_1.CachedNpmInfoClient.with(uncachedClient, async (client) => {
+    return npm_client_1.withNpmCache(uncachedClient, async (client) => {
         log.info("* Reading packages...");
         const packages = await packages_1.AllPackages.read(dt);
         return computeAndSaveChangedPackages(packages, log, client);

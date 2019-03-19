@@ -14,52 +14,40 @@ function packageUrl(packageName) {
     return url_1.resolve(settings_1.npmRegistry, packageName);
 }
 const cacheFile = util_1.joinPaths(__dirname, "..", "..", "cache", "npmInfo.json");
-class CachedNpmInfoClient {
-    constructor(uncachedClient, cache) {
-        this.uncachedClient = uncachedClient;
-        this.cache = cache;
+async function withNpmCache(uncachedClient, cb) {
+    const log = logging_1.loggerWithErrors()[0];
+    let unroll;
+    log.info(`Checking for cache file at ${cacheFile}...`);
+    const cacheFileExists = await fs_extra_1.pathExists(cacheFile);
+    if (cacheFileExists) {
+        log.info("Reading cache file...");
+        const cachedJson = await io_1.readJson(cacheFile);
+        log.info(`Cache file ${cacheFile} exists, copying to map...`);
+        unroll = util_1.recordToMap(cachedJson, npmInfoFromJson);
     }
-    static async with(uncachedClient, cb) {
-        const log = logging_1.loggerWithErrors()[0];
-        let unroll;
-        log.info(`Checking for cache file at ${cacheFile}...`);
-        const cacheFileExists = await fs_extra_1.pathExists(cacheFile);
-        if (cacheFileExists) {
-            log.info("Reading cache file...");
-            const cache = await io_1.readJson(cacheFile);
-            log.info(`Cache file ${cacheFile} exists, copying to map...`);
-            unroll = util_1.recordToMap(cache, npmInfoFromJson);
-        }
-        else {
-            log.info("Cache file doesn't exist, using empty map.");
-            unroll = new Map();
-        }
-        const client = new this(uncachedClient, unroll);
-        const res = await cb(client);
-        await client.writeCache();
-        return res;
+    else {
+        log.info("Cache file doesn't exist, using empty map.");
+        unroll = new Map();
     }
+    const res = await cb({ getNpmInfoFromCache, fetchAndCacheNpmInfo });
+    log.info("Writing npm cache.");
+    await fs_extra_1.ensureFile(cacheFile);
+    await io_1.writeJson(cacheFile, util_1.mapToRecord(unroll, jsonFromNpmInfo));
+    return res;
     /** May return old info -- caller should check that this looks up-to-date. */
-    getNpmInfoFromCache(escapedPackageName) {
-        return this.cache.get(escapedPackageName);
+    function getNpmInfoFromCache(escapedPackageName) {
+        return unroll.get(escapedPackageName);
     }
     /** Call this when the result of getNpmInfoFromCache looks potentially out-of-date. */
-    async fetchAndCacheNpmInfo(escapedPackageName) {
-        const info = await this.uncachedClient.fetchNpmInfo(escapedPackageName);
+    async function fetchAndCacheNpmInfo(escapedPackageName) {
+        const info = await uncachedClient.fetchNpmInfo(escapedPackageName);
         if (info) {
-            this.cache.set(escapedPackageName, info);
+            unroll.set(escapedPackageName, info);
         }
         return info;
     }
-    async writeCache() {
-        await fs_extra_1.ensureFile(cacheFile);
-        await io_1.writeJson(cacheFile, util_1.mapToRecord(this.cache, jsonFromNpmInfo));
-    }
-    formatKeys() {
-        return Array.from(this.cache.keys()).join(", ");
-    }
 }
-exports.CachedNpmInfoClient = CachedNpmInfoClient;
+exports.withNpmCache = withNpmCache;
 class UncachedNpmInfoClient {
     constructor() {
         this.fetcher = new io_1.Fetcher();

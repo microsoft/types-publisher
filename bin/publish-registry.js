@@ -28,7 +28,7 @@ async function publishRegistry(dt, allPackages, dry, client) {
     log("=== Publishing types-registry ===");
     const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } = await fetchAndProcessNpmInfo(packageName, client);
     // Don't include not-needed packages in the registry.
-    const registryJsonData = await npm_client_1.CachedNpmInfoClient.with(client, cachedClient => generateRegistry(allPackages.allLatestTypings(), cachedClient));
+    const registryJsonData = await npm_client_1.withNpmCache(client, cachedClient => generateRegistry(allPackages.allLatestTypings(), cachedClient));
     const registry = JSON.stringify(registryJsonData);
     const newContentHash = util_1.computeHash(registry);
     assert.strictEqual(oldVersion.major, 0);
@@ -170,7 +170,7 @@ async function generateRegistry(typings, client) {
         const info = client.getNpmInfoFromCache(typing.fullEscapedNpmName);
         if (!info) {
             const missings = typings.filter(t => !client.getNpmInfoFromCache(t.fullEscapedNpmName)).map(t => t.fullEscapedNpmName);
-            throw new Error(`${missings} not found in ${client.formatKeys()}`);
+            throw new Error(`${missings} not found in cached npm info.`);
         }
         entries[typing.name] = filterTags(info.distTags);
     }
