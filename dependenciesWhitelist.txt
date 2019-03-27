@@ -75,6 +75,7 @@ popper.js
 postcss
 preact
 probot
+prom-client
 protobufjs
 protractor
 quill-delta
