@@ -106,4 +106,5 @@ vue
 vue-router
 vuex
 winston
+xmlbuilder
 zipkin
