@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var get_definitely_typed_1 = require("./get-definitely-typed");
 exports.getDefinitelyTyped = get_definitely_typed_1.getDefinitelyTyped;
 var npm_client_1 = require("./lib/npm-client");
+exports.withNpmCache = npm_client_1.withNpmCache;
 exports.NpmPublishClient = npm_client_1.NpmPublishClient;
 exports.UncachedNpmInfoClient = npm_client_1.UncachedNpmInfoClient;
 var packages_1 = require("./lib/packages");
