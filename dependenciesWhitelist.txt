@@ -28,6 +28,7 @@ axe-core
 axios
 bignumber.js
 broadcast-channel
+cac
 chalk
 chokidar
 cordova-plugin-camera
