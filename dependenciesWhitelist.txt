@@ -94,6 +94,7 @@ redux-thunk
 rollup
 rxjs
 safe-buffer
+sequelize
 should
 smooth-scrollbar
 scroll-into-view-if-needed
