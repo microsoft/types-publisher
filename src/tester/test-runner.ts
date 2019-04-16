@@ -15,6 +15,7 @@ import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../ut
 import { assertDefined, exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
 
 import { getAffectedPackages, Affected, allDependencies } from "./get-affected-packages";
+import { dirname } from "path";
 
 if (!module.parent) {
     if (yargs.argv.affected) {
@@ -167,8 +168,8 @@ async function doRunTests(
     if (fold.isTravis()) { console.log(fold.start("tests")); }
     await runWithListeningChildProcesses({
         inputs: packages.map(p => ({ path: p.subDirectoryPath, onlyTestTsNext: !changed.has(p), expectOnly: !changed.has(p) })),
-        commandLineArgs: ["--listen"],
-        workerFile: require.resolve("dtslint"),
+        commandLineArgs: [],
+        workerFile: joinPaths(dirname(require.resolve("types-publisher")), "tester/test-worker.js"),
         nProcesses,
         cwd: typesPath,
         handleOutput(output): void {
@@ -176,7 +177,6 @@ async function doRunTests(
             if (status === "OK") {
                 console.log(`${path} OK`);
             } else {
-                console.error(`${path} failing:`);
                 console.error(status);
                 allFailures.push([path, status]);
             }
