@@ -202,7 +202,6 @@ async function doRunTests(
         return;
     }
 
-
     console.error("\n\n=== ERRORS ===\n");
 
     for (const [path, error] of allFailures) {
