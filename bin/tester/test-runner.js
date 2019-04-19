@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
+const os = require("os");
+const fs_1 = require("fs");
 const fold = require("travis-fold");
 const yargs = require("yargs");
 const versions_1 = require("../lib/versions");
@@ -15,6 +17,7 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
+const perfDir = util_1.joinPaths(os.homedir(), ".dts", "perf");
 if (!module.parent) {
     if (yargs.argv.affected) {
         util_1.logUncaughtErrors(testAffectedOnly(common_1.Options.defaults));
@@ -155,6 +158,16 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
     if (fold.isTravis()) {
         console.log(fold.end("tests"));
     }
+    console.log("\n\n=== PERFORMANCE ===\n");
+    console.log("{");
+    for (const change of changed) {
+        const path = util_1.joinPaths(perfDir, change.name + ".json");
+        if (fs_1.existsSync(path)) {
+            const perf = JSON.parse(fs_1.readFileSync(path, "utf8"));
+            console.log(`  "${change.name}": ${perf[change.name].typeCount},`);
+        }
+    }
+    console.log("}");
     if (allFailures.length === 0) {
         return;
     }
