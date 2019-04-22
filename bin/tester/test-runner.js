@@ -142,6 +142,8 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
         commandLineArgs: ["--listen"],
         workerFile: require.resolve("dtslint"),
         nProcesses,
+        crashRecovery: true,
+        crashRecoveryMaxOldSpaceSize: 0,
         cwd: typesPath,
         handleOutput(output) {
             const { path, status } = output;
@@ -152,6 +154,17 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
                 console.error(`${path} failing:`);
                 console.error(status);
                 allFailures.push([path, status]);
+            }
+        },
+        handleCrash(input, state) {
+            switch (state) {
+                case 1 /* Retry */:
+                    console.log(`${input.path} Out of memory: retrying`);
+                    break;
+                case 2 /* RetryWithMoreMemory */:
+                    console.log(`${input.path} Out of memory: retrying with increased memory (4096M)`);
+                    break;
+                default:
             }
         },
     });
