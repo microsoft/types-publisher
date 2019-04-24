@@ -145,24 +145,34 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
         crashRecovery: true,
         crashRecoveryMaxOldSpaceSize: 0,
         cwd: typesPath,
-        handleOutput(output) {
+        handleStart(input, processIndex) {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
+            console.log(`${prefix}${input.path} START`);
+        },
+        handleOutput(output, processIndex) {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
             const { path, status } = output;
             if (status === "OK") {
-                console.log(`${path} OK`);
+                console.log(`${prefix}${path} OK`);
             }
             else {
-                console.error(`${path} failing:`);
-                console.error(status);
+                console.error(`${prefix}${path} failing:`);
+                console.error(prefix ? status.split(/\r?\n/).map(line => `${prefix}${line}`).join("\n") : status);
                 allFailures.push([path, status]);
             }
         },
-        handleCrash(input, state) {
+        handleCrash(input, state, processIndex) {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
             switch (state) {
                 case 1 /* Retry */:
-                    console.log(`${input.path} Out of memory: retrying`);
+                    console.warn(`${prefix}${input.path} Out of memory: retrying`);
                     break;
                 case 2 /* RetryWithMoreMemory */:
-                    console.log(`${input.path} Out of memory: retrying with increased memory (4096M)`);
+                    console.warn(`${prefix}${input.path} Out of memory: retrying with increased memory (4096M)`);
+                    break;
+                case 3 /* Crashed */:
+                    console.error(`${prefix}${input.path} Out of memory: failed`);
+                    allFailures.push([input.path, "Out of memory"]);
                     break;
                 default:
             }

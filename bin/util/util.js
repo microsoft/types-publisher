@@ -6,7 +6,6 @@ const crypto = require("crypto");
 const moment = require("moment");
 const os = require("os");
 const sourceMapSupport = require("source-map-support");
-const yargs = require("yargs");
 sourceMapSupport.install();
 function assertDefined(x, message) {
     assert(x !== undefined, message);
@@ -14,6 +13,7 @@ function assertDefined(x, message) {
 }
 exports.assertDefined = assertDefined;
 const progress_1 = require("./progress");
+const DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE = 4096;
 function parseJson(text) {
     try {
         return JSON.parse(text);
@@ -283,121 +283,242 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
     });
 }
 exports.runWithChildProcesses = runWithChildProcesses;
-function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize = 4096, handleCrash }) {
+function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize = DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE, handleStart, handleCrash }) {
     return new Promise((resolve, reject) => {
         let inputIndex = 0;
         let processesLeft = nProcesses;
         let rejected = false;
-        const allChildren = new Set();
-        const argv = yargs(process.execArgv).argv;
-        const maxOldSpaceSize = argv.max_old_space_size || argv.maxOldSpaceSize || 0;
+        const runningChildren = new Set();
+        const maxOldSpaceSize = getMaxOldSpaceSize(process.execArgv) || 0;
         for (let i = 0; i < nProcesses; i++) {
             if (inputIndex === inputs.length) {
                 processesLeft--;
                 continue;
             }
+            const processIndex = nProcesses > 1 ? i + 1 : undefined;
             let child;
             let crashRecoveryState = 0 /* Normal */;
-            let currentInput = inputs[inputIndex];
-            inputIndex++;
+            let currentInput;
             const onMessage = (outputMessage) => {
-                const oldCrashRecoveryState = crashRecoveryState;
-                crashRecoveryState = 0 /* Normal */;
-                handleOutput(outputMessage);
-                if (inputIndex === inputs.length) {
-                    processesLeft--;
-                    if (processesLeft === 0) {
-                        resolve();
-                    }
-                    child.kill();
-                }
-                else {
-                    currentInput = inputs[inputIndex];
-                    inputIndex++;
-                    if (oldCrashRecoveryState === 2 /* RetryWithMoreMemory */) {
-                        // succeeded when running with more memory. Restart the child with less memory
-                        restartChild();
+                try {
+                    const oldCrashRecoveryState = crashRecoveryState;
+                    crashRecoveryState = 0 /* Normal */;
+                    handleOutput(outputMessage, processIndex);
+                    if (inputIndex === inputs.length) {
+                        stopChild(/*done*/ true);
                     }
                     else {
-                        child.send(currentInput);
+                        if (oldCrashRecoveryState !== 0 /* Normal */) {
+                            // retry attempt succeeded, restart the child for further tests.
+                            console.log(`${processIndex}> Restarting...`);
+                            restartChild(nextTask, process.execArgv);
+                        }
+                        else {
+                            nextTask();
+                        }
                     }
                 }
+                catch (e) {
+                    onError(e);
+                }
             };
-            const onClose = (code, signal) => {
-                if (rejected || inputIndex === inputs.length) {
+            const onClose = () => {
+                if (rejected || !runningChildren.has(child)) {
                     return;
                 }
-                // `134` seems to be the exit code used by Node when it runs out of memory.
-                if (crashRecovery && code === 134 && signal === null) {
+                try {
+                    // treat any unhandled closures of the child as a crash
+                    if (crashRecovery) {
+                        switch (crashRecoveryState) {
+                            case 0 /* Normal */:
+                                crashRecoveryState = 1 /* Retry */;
+                                break;
+                            case 1 /* Retry */:
+                                // skip crash recovery if we're already passing a value for --max_old_space_size that
+                                // is >= crashRecoveryMaxOldSpaceSize
+                                crashRecoveryState = maxOldSpaceSize < crashRecoveryMaxOldSpaceSize
+                                    ? 2 /* RetryWithMoreMemory */
+                                    : crashRecoveryState = 3 /* Crashed */;
+                                break;
+                            default:
+                                crashRecoveryState = 3 /* Crashed */;
+                        }
+                    }
+                    else {
+                        crashRecoveryState = 3 /* Crashed */;
+                    }
+                    if (handleCrash) {
+                        handleCrash(currentInput, crashRecoveryState, processIndex);
+                    }
                     switch (crashRecoveryState) {
-                        case 0 /* Normal */:
-                            crashRecoveryState = 1 /* Retry */;
-                            if (handleCrash) {
-                                handleCrash(currentInput, crashRecoveryState);
-                            }
-                            restartChild();
-                            return;
                         case 1 /* Retry */:
-                            // skip crash recovery if we're already passing a value for --max_old_space_size that is >= crashRecoveryMaxOldSpaceSize
-                            if (maxOldSpaceSize < crashRecoveryMaxOldSpaceSize) {
-                                crashRecoveryState = 2 /* RetryWithMoreMemory */;
-                                if (handleCrash) {
-                                    handleCrash(currentInput, crashRecoveryState);
-                                }
-                                restartChild([...getExecArgvWithoutMaxOldSpaceSize(), `--max_old_space_size=${crashRecoveryMaxOldSpaceSize}`]);
-                                return;
+                            restartChild(resumeTask, process.execArgv);
+                            break;
+                        case 2 /* RetryWithMoreMemory */:
+                            restartChild(resumeTask, [
+                                ...getExecArgvWithoutMaxOldSpaceSize(),
+                                `--max_old_space_size=${crashRecoveryMaxOldSpaceSize}`,
+                            ]);
+                            break;
+                        case 3 /* Crashed */:
+                            crashRecoveryState = 0 /* Normal */;
+                            if (inputIndex === inputs.length) {
+                                stopChild(/*done*/ true);
+                            }
+                            else {
+                                restartChild(nextTask, process.execArgv);
                             }
                             break;
                         default:
+                            assert.fail(`${processIndex}> Unexpected crashRecoveryState: ${crashRecoveryState}`);
                     }
                 }
-                fail();
+                catch (e) {
+                    onError(e);
+                }
             };
-            const onError = () => {
-                fail();
+            const onError = (err) => {
+                child.removeAllListeners();
+                runningChildren.delete(child);
+                fail(err);
             };
-            const startChild = (execArgv) => {
-                child = child_process_1.fork(workerFile, commandLineArgs, { cwd, execArgv });
-                allChildren.add(child);
-                child.on("message", onMessage);
-                child.on("close", onClose);
-                child.on("error", onError);
-                child.send(currentInput);
+            const startChild = (taskAction, execArgv) => {
+                try {
+                    child = child_process_1.fork(workerFile, commandLineArgs, { cwd, execArgv });
+                    runningChildren.add(child);
+                }
+                catch (e) {
+                    fail(e);
+                    return;
+                }
+                try {
+                    let closed = false;
+                    const thisChild = child;
+                    const onChildClosed = () => {
+                        // Don't invoke `onClose` more than once for a single child.
+                        if (!closed && child === thisChild) {
+                            closed = true;
+                            onClose();
+                        }
+                    };
+                    const onChildDisconnectedOrExited = () => {
+                        if (!closed && thisChild === child) {
+                            // Invoke `onClose` after enough time has elapsed to allow `close` to be triggered.
+                            // This is to ensure our `onClose` logic gets called in some conditions
+                            const timeout = 1000;
+                            setTimeout(onChildClosed, timeout);
+                        }
+                    };
+                    child.on("message", onMessage);
+                    child.on("close", onChildClosed);
+                    child.on("disconnect", onChildDisconnectedOrExited);
+                    child.on("exit", onChildDisconnectedOrExited);
+                    child.on("error", onError);
+                    taskAction();
+                }
+                catch (e) {
+                    onError(e);
+                }
             };
-            const restartChild = (execArgv) => {
-                child.kill();
-                allChildren.delete(child);
-                startChild(execArgv);
-            };
-            startChild(process.execArgv);
-        }
-        function fail() {
-            if (!rejected) {
-                rejected = true;
-                for (const child of allChildren) {
+            const stopChild = (done) => {
+                try {
+                    assert(runningChildren.has(child), `${processIndex}> Child not running`);
+                    if (done) {
+                        processesLeft--;
+                        if (processesLeft === 0) {
+                            resolve();
+                        }
+                    }
+                    runningChildren.delete(child);
+                    child.removeAllListeners();
                     child.kill();
                 }
-                reject(new Error(`Something went wrong in ${runWithListeningChildProcesses.name}`));
+                catch (e) {
+                    onError(e);
+                }
+            };
+            const restartChild = (taskAction, execArgv) => {
+                try {
+                    assert(runningChildren.has(child), `${processIndex}> Child not running`);
+                    console.log(`${processIndex}> Restarting...`);
+                    stopChild(/*done*/ false);
+                    startChild(taskAction, execArgv);
+                }
+                catch (e) {
+                    onError(e);
+                }
+            };
+            const resumeTask = () => {
+                try {
+                    assert(runningChildren.has(child), `${processIndex}> Child not running`);
+                    child.send(currentInput);
+                }
+                catch (e) {
+                    onError(e);
+                }
+            };
+            const nextTask = () => {
+                try {
+                    assert(runningChildren.has(child), `${processIndex}> Child not running`);
+                    currentInput = inputs[inputIndex];
+                    inputIndex++;
+                    if (handleStart) {
+                        handleStart(currentInput, processIndex);
+                    }
+                    child.send(currentInput);
+                }
+                catch (e) {
+                    onError(e);
+                }
+            };
+            startChild(nextTask, process.execArgv);
+        }
+        function fail(err) {
+            if (!rejected) {
+                rejected = true;
+                for (const child of runningChildren) {
+                    try {
+                        child.removeAllListeners();
+                        child.kill();
+                    }
+                    catch {
+                        // do nothing
+                    }
+                }
+                const message = err ? `: ${err.message}` : "";
+                reject(new Error(`Something went wrong in ${runWithListeningChildProcesses.name}${message}`));
             }
         }
     });
 }
 exports.runWithListeningChildProcesses = runWithListeningChildProcesses;
+const maxOldSpaceSizeRegExp = /^--max[-_]old[-_]space[-_]size(?:$|=(\d+))/;
+function getMaxOldSpaceSizeArg(argv) {
+    for (let index = 0; index < argv.length; index++) {
+        const match = maxOldSpaceSizeRegExp.exec(argv[index]);
+        if (match) {
+            const value = match[1] ? parseInt(match[1], 10) :
+                argv[index + 1] ? parseInt(argv[index + 1], 10) :
+                    undefined;
+            const size = match[1] ? 1 : 2; // tslint:disable-line:no-magic-numbers
+            return { index, size, value };
+        }
+    }
+    return undefined;
+}
+function getMaxOldSpaceSize(argv) {
+    const arg = getMaxOldSpaceSizeArg(argv);
+    return arg && arg.value;
+}
 let execArgvWithoutMaxOldSpaceSize;
 function getExecArgvWithoutMaxOldSpaceSize() {
     if (!execArgvWithoutMaxOldSpaceSize) {
         // remove --max_old_space_size from execArgv
         const execArgv = process.execArgv.slice();
-        const maxOldSpaceSizeRegExp = /^--max[-_]old[-_]space[-_]size($|=)/;
-        let maxOldSpaceSizeIndex = execArgv.findIndex(arg => maxOldSpaceSizeRegExp.test(arg));
-        while (maxOldSpaceSizeIndex !== -1) {
-            if (execArgv[maxOldSpaceSizeIndex].length === "--max_old_space_size".length) {
-                execArgv.splice(maxOldSpaceSizeIndex, 2);
-            }
-            else {
-                execArgv.splice(maxOldSpaceSizeIndex, 1);
-            }
-            maxOldSpaceSizeIndex = execArgv.findIndex(arg => maxOldSpaceSizeRegExp.test(arg));
+        let maxOldSpaceSizeArg = getMaxOldSpaceSizeArg(execArgv);
+        while (maxOldSpaceSizeArg) {
+            execArgv.splice(maxOldSpaceSizeArg.index, maxOldSpaceSizeArg.size);
+            maxOldSpaceSizeArg = getMaxOldSpaceSizeArg(execArgv);
         }
         execArgvWithoutMaxOldSpaceSize = execArgv;
     }
