@@ -538,7 +538,7 @@ export function runWithListeningChildProcesses<In>(
                     try {
                         child.removeAllListeners();
                         child.kill();
-                    } catch {
+                    } catch (e) {
                         // do nothing
                     }
                 }
