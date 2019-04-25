@@ -119,7 +119,7 @@ class NpmPublishClient {
         const readme = await io_1.readFile(util_1.joinPaths(publishedDirectory, "README.md"));
         return new Promise((resolve, reject) => {
             const body = tgz_1.createTgz(publishedDirectory, reject);
-            const metadata = { readme, ...packageJson };
+            const metadata = Object.assign({ readme }, packageJson);
             if (dry) {
                 log("(dry) Skip publish of " + publishedDirectory);
             }

@@ -481,7 +481,7 @@ function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, n
                         child.removeAllListeners();
                         child.kill();
                     }
-                    catch {
+                    catch (_a) {
                         // do nothing
                     }
                 }
