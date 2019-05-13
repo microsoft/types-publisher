@@ -5,6 +5,7 @@
 @babel/template
 @babel/traverse
 @babel/types
+@material-ui/core
 @sentry/browser
 @types/firebase
 @types/hoist-non-react-statics
@@ -16,6 +17,7 @@
 @types/wonder-commonlib
 @types/wonder-frp
 @uirouter/angularjs
+abort-controller
 activex-helpers
 ajv
 anydb-sql
