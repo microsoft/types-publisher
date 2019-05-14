@@ -259,13 +259,13 @@ export function join<T>(values: Iterable<T>, joiner = ", "): string {
 export interface RunWithChildProcessesOptions<In> {
     readonly inputs: ReadonlyArray<In>;
     readonly commandLineArgs: string[];
-    readonly execArgv?: string[];
+    readonly execArgv?: string[] | ((childIndex: number) => string[]);
     readonly workerFile: string;
     readonly nProcesses: number;
     handleOutput(output: unknown): void;
 }
 export function runWithChildProcesses<In>(
-    { inputs, commandLineArgs, workerFile, nProcesses, handleOutput, execArgv }: RunWithChildProcessesOptions<In>,
+    { inputs, commandLineArgs, workerFile, nProcesses, handleOutput, execArgv = [] }: RunWithChildProcessesOptions<In>,
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const nPerProcess = Math.floor(inputs.length / nProcesses);
@@ -273,6 +273,7 @@ export function runWithChildProcesses<In>(
         let rejected = false;
         const allChildren: ChildProcess[] = [];
         for (let i = 0; i < nProcesses; i++) {
+            const combinedExecArgv = process.execArgv.concat(typeof execArgv === "function" ? execArgv(i) : execArgv);
             const lo = nPerProcess * i;
             const hi = i === nProcesses - 1 ? inputs.length : lo + nPerProcess;
             let outputsLeft = hi - lo; // Expect one output per input
@@ -281,7 +282,7 @@ export function runWithChildProcesses<In>(
                 processesLeft--;
                 continue;
             }
-            const child = fork(workerFile, commandLineArgs, execArgv && { execArgv });
+            const child = fork(workerFile, commandLineArgs, { execArgv: combinedExecArgv });
             allChildren.push(child);
             child.send(inputs.slice(lo, hi));
             child.on("message", outputMessage => {
@@ -326,7 +327,7 @@ export const enum CrashRecoveryState {
 interface RunWithListeningChildProcessesOptions<In> {
     readonly inputs: ReadonlyArray<In>;
     readonly commandLineArgs: string[];
-    readonly execArgv?: string[];
+    readonly execArgv?: string[] | ((childIndex: number) => string[]);
     readonly workerFile: string;
     readonly nProcesses: number;
     readonly cwd: string;
@@ -345,10 +346,10 @@ export function runWithListeningChildProcesses<In>(
         let inputIndex = 0;
         let processesLeft = nProcesses;
         let rejected = false;
-        const combinedExecArgv = process.execArgv.concat(execArgv);
         const runningChildren = new Set<ChildProcess>();
-        const maxOldSpaceSize = getMaxOldSpaceSize(combinedExecArgv) || 0;
         for (let i = 0; i < nProcesses; i++) {
+            const combinedExecArgv = process.execArgv.concat(typeof execArgv === "function" ? execArgv(i) : execArgv);
+            const maxOldSpaceSize = getMaxOldSpaceSize(combinedExecArgv) || 0;
             if (inputIndex === inputs.length) {
                 processesLeft--;
                 continue;
