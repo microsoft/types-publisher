@@ -259,12 +259,13 @@ export function join<T>(values: Iterable<T>, joiner = ", "): string {
 export interface RunWithChildProcessesOptions<In> {
     readonly inputs: ReadonlyArray<In>;
     readonly commandLineArgs: string[];
+    readonly execArgv?: string[];
     readonly workerFile: string;
     readonly nProcesses: number;
     handleOutput(output: unknown): void;
 }
 export function runWithChildProcesses<In>(
-    { inputs, commandLineArgs, workerFile, nProcesses, handleOutput }: RunWithChildProcessesOptions<In>,
+    { inputs, commandLineArgs, workerFile, nProcesses, handleOutput, execArgv }: RunWithChildProcessesOptions<In>,
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const nPerProcess = Math.floor(inputs.length / nProcesses);
@@ -280,7 +281,7 @@ export function runWithChildProcesses<In>(
                 processesLeft--;
                 continue;
             }
-            const child = fork(workerFile, commandLineArgs);
+            const child = fork(workerFile, commandLineArgs, execArgv && { execArgv });
             allChildren.push(child);
             child.send(inputs.slice(lo, hi));
             child.on("message", outputMessage => {
@@ -325,6 +326,7 @@ export const enum CrashRecoveryState {
 interface RunWithListeningChildProcessesOptions<In> {
     readonly inputs: ReadonlyArray<In>;
     readonly commandLineArgs: string[];
+    readonly execArgv?: string[];
     readonly workerFile: string;
     readonly nProcesses: number;
     readonly cwd: string;
@@ -337,14 +339,15 @@ interface RunWithListeningChildProcessesOptions<In> {
 export function runWithListeningChildProcesses<In>(
     { inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery,
       crashRecoveryMaxOldSpaceSize = DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE,
-      handleStart, handleCrash }: RunWithListeningChildProcessesOptions<In>,
+      handleStart, handleCrash, execArgv = [] }: RunWithListeningChildProcessesOptions<In>,
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         let inputIndex = 0;
         let processesLeft = nProcesses;
         let rejected = false;
+        const combinedExecArgv = process.execArgv.concat(execArgv);
         const runningChildren = new Set<ChildProcess>();
-        const maxOldSpaceSize = getMaxOldSpaceSize(process.execArgv) || 0;
+        const maxOldSpaceSize = getMaxOldSpaceSize(combinedExecArgv) || 0;
         for (let i = 0; i < nProcesses; i++) {
             if (inputIndex === inputs.length) {
                 processesLeft--;
@@ -367,7 +370,7 @@ export function runWithListeningChildProcesses<In>(
                         if (oldCrashRecoveryState !== CrashRecoveryState.Normal) {
                             // retry attempt succeeded, restart the child for further tests.
                             console.log(`${processIndex}> Restarting...`);
-                            restartChild(nextTask, process.execArgv);
+                            restartChild(nextTask, combinedExecArgv);
                         } else {
                             nextTask();
                         }
@@ -409,7 +412,7 @@ export function runWithListeningChildProcesses<In>(
 
                     switch (crashRecoveryState) {
                         case CrashRecoveryState.Retry:
-                            restartChild(resumeTask, process.execArgv);
+                            restartChild(resumeTask, combinedExecArgv);
                             break;
                         case CrashRecoveryState.RetryWithMoreMemory:
                             restartChild(resumeTask, [
@@ -422,7 +425,7 @@ export function runWithListeningChildProcesses<In>(
                             if (inputIndex === inputs.length) {
                                 stopChild(/*done*/ true);
                             } else {
-                                restartChild(nextTask, process.execArgv);
+                                restartChild(nextTask, combinedExecArgv);
                             }
                             break;
                         default:
@@ -528,7 +531,7 @@ export function runWithListeningChildProcesses<In>(
                 }
             };
 
-            startChild(nextTask, process.execArgv);
+            startChild(nextTask, combinedExecArgv);
         }
 
         function fail(err?: Error): void {
