@@ -283,13 +283,14 @@ function runWithChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses
     });
 }
 exports.runWithChildProcesses = runWithChildProcesses;
-function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize = DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE, handleStart, handleCrash }) {
+function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize = DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE, handleStart, handleCrash, softTimeoutMs = Infinity }) {
     return new Promise((resolve, reject) => {
         let inputIndex = 0;
         let processesLeft = nProcesses;
         let rejected = false;
         const runningChildren = new Set();
         const maxOldSpaceSize = getMaxOldSpaceSize(process.execArgv) || 0;
+        const startTime = Date.now();
         for (let i = 0; i < nProcesses; i++) {
             if (inputIndex === inputs.length) {
                 processesLeft--;
@@ -304,7 +305,7 @@ function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, n
                     const oldCrashRecoveryState = crashRecoveryState;
                     crashRecoveryState = 0 /* Normal */;
                     handleOutput(outputMessage, processIndex);
-                    if (inputIndex === inputs.length) {
+                    if (inputIndex === inputs.length || Date.now() - startTime > softTimeoutMs) {
                         stopChild(/*done*/ true);
                     }
                     else {
@@ -362,7 +363,7 @@ function runWithListeningChildProcesses({ inputs, commandLineArgs, workerFile, n
                             break;
                         case 3 /* Crashed */:
                             crashRecoveryState = 0 /* Normal */;
-                            if (inputIndex === inputs.length) {
+                            if (inputIndex === inputs.length || Date.now() - startTime > softTimeoutMs) {
                                 stopChild(/*done*/ true);
                             }
                             else {

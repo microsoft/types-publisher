@@ -68,11 +68,12 @@ interface RunWithListeningChildProcessesOptions<In> {
     readonly cwd: string;
     readonly crashRecovery?: boolean;
     readonly crashRecoveryMaxOldSpaceSize?: number;
+    readonly softTimeoutMs?: number;
     handleOutput(output: unknown, processIndex: number | undefined): void;
     handleStart?(input: In, processIndex: number | undefined): void;
     handleCrash?(input: In, state: CrashRecoveryState, processIndex: number | undefined): void;
 }
-export declare function runWithListeningChildProcesses<In>({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize, handleStart, handleCrash }: RunWithListeningChildProcessesOptions<In>): Promise<void>;
+export declare function runWithListeningChildProcesses<In>({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize, handleStart, handleCrash, softTimeoutMs }: RunWithListeningChildProcessesOptions<In>): Promise<void>;
 export declare function assertNever(_: never): never;
 export declare function recordToMap<T>(record: Record<string, T>): Map<string, T>;
 export declare function recordToMap<T, U>(record: Record<string, T>, cb: (t: T) => U): Map<string, U>;
