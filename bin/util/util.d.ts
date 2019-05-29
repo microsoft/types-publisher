@@ -54,15 +54,26 @@ export interface RunWithChildProcessesOptions<In> {
     handleOutput(output: unknown): void;
 }
 export declare function runWithChildProcesses<In>({ inputs, commandLineArgs, workerFile, nProcesses, handleOutput }: RunWithChildProcessesOptions<In>): Promise<void>;
+export declare const enum CrashRecoveryState {
+    Normal = 0,
+    Retry = 1,
+    RetryWithMoreMemory = 2,
+    Crashed = 3
+}
 interface RunWithListeningChildProcessesOptions<In> {
     readonly inputs: ReadonlyArray<In>;
     readonly commandLineArgs: string[];
     readonly workerFile: string;
     readonly nProcesses: number;
     readonly cwd: string;
-    handleOutput(output: unknown): void;
+    readonly crashRecovery?: boolean;
+    readonly crashRecoveryMaxOldSpaceSize?: number;
+    readonly softTimeoutMs?: number;
+    handleOutput(output: unknown, processIndex: number | undefined): void;
+    handleStart?(input: In, processIndex: number | undefined): void;
+    handleCrash?(input: In, state: CrashRecoveryState, processIndex: number | undefined): void;
 }
-export declare function runWithListeningChildProcesses<In>({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput }: RunWithListeningChildProcessesOptions<In>): Promise<void>;
+export declare function runWithListeningChildProcesses<In>({ inputs, commandLineArgs, workerFile, nProcesses, cwd, handleOutput, crashRecovery, crashRecoveryMaxOldSpaceSize, handleStart, handleCrash, softTimeoutMs }: RunWithListeningChildProcessesOptions<In>): Promise<void>;
 export declare function assertNever(_: never): never;
 export declare function recordToMap<T>(record: Record<string, T>): Map<string, T>;
 export declare function recordToMap<T, U>(record: Record<string, T>, cb: (t: T) => U): Map<string, U>;
