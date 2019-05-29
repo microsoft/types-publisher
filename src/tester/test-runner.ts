@@ -14,7 +14,7 @@ import { AllPackages, DependencyVersion, PackageId, TypingsData, NotNeededPackag
 import { UncachedNpmInfoClient, NpmInfo } from "../lib/npm-client";
 import { npmInstallFlags } from "../util/io";
 import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
-import { assertDefined, exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
+import { assertDefined, exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, nAtATime, numberOfOsProcesses, runWithListeningChildProcesses, CrashRecoveryState } from "../util/util";
 
 import { getAffectedPackages, Affected, allDependencies } from "./get-affected-packages";
 
@@ -173,15 +173,38 @@ async function doRunTests(
         commandLineArgs: ["--listen"],
         workerFile: require.resolve("dtslint"),
         nProcesses,
+        crashRecovery: true,
+        crashRecoveryMaxOldSpaceSize: 0, // disable retry with more memory
         cwd: typesPath,
-        handleOutput(output): void {
+        handleStart(input, processIndex): void {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
+            console.log(`${prefix}${input.path} START`);
+        },
+        handleOutput(output, processIndex): void {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
             const { path, status } = output as { path: string, status: string };
             if (status === "OK") {
-                console.log(`${path} OK`);
+                console.log(`${prefix}${path} OK`);
             } else {
-                console.error(`${path} failing:`);
-                console.error(status);
+                console.error(`${prefix}${path} failing:`);
+                console.error(prefix ? status.split(/\r?\n/).map(line => `${prefix}${line}`).join("\n") : status);
                 allFailures.push([path, status]);
+            }
+        },
+        handleCrash(input, state, processIndex) {
+            const prefix = processIndex === undefined ? "" : `${processIndex}> `;
+            switch (state) {
+                case CrashRecoveryState.Retry:
+                    console.warn(`${prefix}${input.path} Out of memory: retrying`);
+                    break;
+                case CrashRecoveryState.RetryWithMoreMemory:
+                    console.warn(`${prefix}${input.path} Out of memory: retrying with increased memory (4096M)`);
+                    break;
+                case CrashRecoveryState.Crashed:
+                    console.error(`${prefix}${input.path} Out of memory: failed`);
+                    allFailures.push([input.path, "Out of memory"]);
+                    break;
+                default:
             }
         },
     });
