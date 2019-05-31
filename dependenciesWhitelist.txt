@@ -107,6 +107,7 @@ three
 tslint
 tweetnacl
 typescript
+utility-types
 vue
 vue-router
 vuex
