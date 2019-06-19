@@ -145,7 +145,7 @@ function createReadme(typing) {
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {
-        lines.push(`This package contains type definitions for ${typing.libraryName} ( ${typing.projectName} ).`);
+        lines.push(`This package contains type definitions for ${typing.libraryName} (${typing.projectName}).`);
     }
     else {
         lines.push(`This package contains type definitions for ${typing.libraryName}.`);
@@ -161,7 +161,7 @@ function createReadme(typing) {
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");
     lines.push("# Credits");
-    const contributors = typing.contributors.map(({ name, url }) => `${name} <${url}>`).join(", ");
+    const contributors = typing.contributors.map(({ name, url }) => `${name} <${url}>`).join(", ").replace(/, ([^,]+)$/, ", and $1");
     lines.push(`These definitions were written by ${contributors}.`);
     lines.push("");
     return lines.join("\r\n");
