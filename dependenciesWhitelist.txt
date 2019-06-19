@@ -5,6 +5,10 @@
 @babel/template
 @babel/traverse
 @babel/types
+@jest/environment
+@jest/fake-timers
+@jest/transform
+@jest/types
 @material-ui/core
 @sentry/browser
 @types/firebase
@@ -33,6 +37,7 @@ broadcast-channel
 cac
 chalk
 chokidar
+commander
 cordova-plugin-camera
 cordova-plugin-file
 cordova-plugin-file-transfer
@@ -57,10 +62,16 @@ hoist-non-react-statics
 immutable
 indefinite-observable
 inversify
+jest-diff
+jest-environment-node
+jest-environment-jsdom
+jest-mock
+jest-snapshot
 jointjs
 levelup
 localforage
 log4js
+loglevel
 knex
 magic-string
 mali
@@ -84,6 +95,7 @@ protobufjs
 protractor
 quill-delta
 raven-js
+re-resizable
 react-dnd
 react-native-maps
 react-native-svg
@@ -102,11 +114,13 @@ scroll-into-view-if-needed
 source-map
 styled-components
 sw-toolbox
+swagger-parser
 terser
 three
 tslint
 tweetnacl
 typescript
+utility-types
 vue
 vue-router
 vuex
