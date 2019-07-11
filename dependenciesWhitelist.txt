@@ -34,6 +34,7 @@ aws-sdk
 axe-core
 axios
 bignumber.js
+bookshelf
 broadcast-channel
 cac
 chalk
@@ -56,6 +57,7 @@ expect
 fast-glob
 fastify
 flatpickr
+form-data
 google-auth-library
 google-gax
 graphql-tools
