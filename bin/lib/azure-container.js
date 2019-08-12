@@ -63,7 +63,7 @@ class BlobWriter {
     createBlobFromStream(blobName, stream) {
         const options = {
             contentSettings: {
-                contentEncoding: "GZIP",
+                contentEncoding: "gzip",
                 contentType: "application/json; charset=utf-8",
             },
         };
@@ -78,7 +78,7 @@ async function readBlob(blobName) {
         const req = https.get(url, res => {
             switch (res.statusCode) {
                 case 200:
-                    if (res.headers["content-encoding"] !== "GZIP") {
+                    if (res.headers["content-encoding"] !== "gzip") {
                         reject(new Error(`${url} is not gzipped`));
                     }
                     else {
