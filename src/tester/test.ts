@@ -27,7 +27,7 @@ async function main(options: TesterOptions, nProcesses: number, all: boolean): P
     }
     catch (e) {
         if (!all) {
-            (await getAffectedPackagesFromDiff(dt, options.definitelyTypedPath, "affected")).dependentPackages.map(t => t.desc);
+            await getAffectedPackagesFromDiff(dt, options.definitelyTypedPath, "affected")
         }
 
         throw e;

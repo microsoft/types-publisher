@@ -4,7 +4,7 @@ import { mapDefined, mapIter, sort } from "../util/util";
 export interface Affected {
     readonly changedPackages: ReadonlyArray<TypingsData>;
     readonly dependentPackages: ReadonlyArray<TypingsData>;
-    allPackages: AllPackages
+    allPackages: AllPackages;
 }
 
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
