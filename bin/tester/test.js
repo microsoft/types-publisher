@@ -19,7 +19,15 @@ async function main(options, nProcesses, all) {
     const log = logging_1.loggerWithErrors()[0];
     const dt = await get_definitely_typed_1.getDefinitelyTyped(options, log);
     await parse_definitions_1.default(dt, { nProcesses, definitelyTypedPath: options.definitelyTypedPath }, log);
-    await check_parse_results_1.default(/*includeNpmChecks*/ false, dt, options, new npm_client_1.UncachedNpmInfoClient());
+    try {
+        await check_parse_results_1.default(/*includeNpmChecks*/ false, dt, options, new npm_client_1.UncachedNpmInfoClient());
+    }
+    catch (e) {
+        if (!all) {
+            await test_runner_1.getAffectedPackagesFromDiff(dt, options.definitelyTypedPath, "affected");
+        }
+        throw e;
+    }
     await test_runner_1.default(dt, options.definitelyTypedPath, nProcesses, all ? "all" : "affected");
 }
 //# sourceMappingURL=test.js.map

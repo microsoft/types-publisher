@@ -8,7 +8,7 @@ function getAffectedPackages(allPackages, changedPackageIds) {
     // If a package doesn't exist, that's because it was deleted.
     const changed = util_1.mapDefined(resolved, id => allPackages.tryGetTypingsData(id));
     const dependent = util_1.mapIter(collectDependers(resolved, getReverseDependencies(allPackages, resolved)), p => allPackages.getTypingsData(p));
-    return { changedPackages: changed, dependentPackages: sortPackages(dependent) };
+    return { changedPackages: changed, dependentPackages: sortPackages(dependent), allPackages };
 }
 exports.getAffectedPackages = getAffectedPackages;
 /** Every package name in the original list, plus their dependencies (incl. dependencies' dependencies). */

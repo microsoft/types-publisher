@@ -51,6 +51,15 @@ function testerOptions(runFromDefinitelyTyped) {
 }
 exports.testerOptions = testerOptions;
 async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
+    const { changedPackages, dependentPackages, allPackages } = await getAffectedPackagesFromDiff(dt, definitelyTypedPath, selection);
+    console.log(`Running with ${nProcesses} processes.`);
+    const typesPath = `${definitelyTypedPath}/types`;
+    await doInstalls(allPackages, [...changedPackages, ...dependentPackages], typesPath, nProcesses);
+    console.log("Testing...");
+    await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
+}
+exports.default = runTests;
+async function getAffectedPackagesFromDiff(dt, definitelyTypedPath, selection) {
     const allPackages = await packages_1.AllPackages.read(dt);
     const diffs = await gitDiff(logging_1.consoleLogger.info, definitelyTypedPath);
     if (diffs.find(d => d.file === "notNeededPackages.json")) {
@@ -61,18 +70,14 @@ async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
             checkNotNeededPackage(deleted, source, typings);
         }
     }
-    const { changedPackages, dependentPackages } = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [] } :
-        selection === "affected" ? get_affected_packages_1.getAffectedPackages(allPackages, gitChanges(diffs))
-            : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [] };
-    console.log(`Testing ${changedPackages.length} changed packages: ${changedPackages.map(t => t.desc)}`);
-    console.log(`Testing ${dependentPackages.length} dependent packages: ${dependentPackages.map(t => t.desc)}`);
-    console.log(`Running with ${nProcesses} processes.`);
-    const typesPath = `${definitelyTypedPath}/types`;
-    await doInstalls(allPackages, [...changedPackages, ...dependentPackages], typesPath, nProcesses);
-    console.log("Testing...");
-    await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
+    const affected = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [], allPackages }
+        : selection === "affected" ? get_affected_packages_1.getAffectedPackages(allPackages, gitChanges(diffs))
+            : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [], allPackages };
+    console.log(`Testing ${affected.changedPackages.length} changed packages: ${affected.changedPackages.map(t => t.desc)}`);
+    console.log(`Testing ${affected.dependentPackages.length} dependent packages: ${affected.dependentPackages.map(t => t.desc)}`);
+    return affected;
 }
-exports.default = runTests;
+exports.getAffectedPackagesFromDiff = getAffectedPackagesFromDiff;
 /**
  * 1. find all the deleted files and group by toplevel
  * 2. Make sure that there are no packages left with deleted entries

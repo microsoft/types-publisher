@@ -10,6 +10,7 @@ export interface GitDiff {
 export declare function parseNProcesses(): number;
 export declare function testerOptions(runFromDefinitelyTyped: boolean): TesterOptions;
 export default function runTests(dt: FS, definitelyTypedPath: string, nProcesses: number, selection: "all" | "affected" | RegExp): Promise<void>;
+export declare function getAffectedPackagesFromDiff(dt: FS, definitelyTypedPath: string, selection: "all" | "affected" | RegExp): Promise<import("./get-affected-packages").Affected>;
 /**
  * 1. find all the deleted files and group by toplevel
  * 2. Make sure that there are no packages left with deleted entries

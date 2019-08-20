@@ -2,6 +2,7 @@ import { AllPackages, TypingsData, PackageId } from "../lib/packages";
 export interface Affected {
     readonly changedPackages: ReadonlyArray<TypingsData>;
     readonly dependentPackages: ReadonlyArray<TypingsData>;
+    allPackages: AllPackages;
 }
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */
 export declare function getAffectedPackages(allPackages: AllPackages, changedPackageIds: PackageId[]): Affected;
