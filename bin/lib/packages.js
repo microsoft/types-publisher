@@ -129,6 +129,10 @@ function* flattenData(data) {
 }
 /** Prefer to use `AnyPackage` instead of this. */
 class PackageBase {
+    constructor(data) {
+        this.name = data.typingsPackageName;
+        this.libraryName = data.libraryName;
+    }
     static compare(a, b) { return a.name.localeCompare(b.name); }
     get unescapedName() {
         return util_1.unmangleScopedPackage(this.name) || this.name;
@@ -136,10 +140,6 @@ class PackageBase {
     /** Short description for debug output. */
     get desc() {
         return this.isLatest ? this.name : `${this.name} v${this.major}`;
-    }
-    constructor(data) {
-        this.name = data.typingsPackageName;
-        this.libraryName = data.libraryName;
     }
     isNotNeeded() {
         return this instanceof NotNeededPackage;
@@ -165,7 +165,6 @@ function getFullNpmName(packageName) {
 }
 exports.getFullNpmName = getFullNpmName;
 class NotNeededPackage extends PackageBase {
-    get license() { return "MIT" /* MIT */; }
     constructor(raw) {
         super(raw);
         this.sourceRepoURL = raw.sourceRepoURL;
@@ -177,6 +176,7 @@ class NotNeededPackage extends PackageBase {
         assert(raw.libraryName && raw.typingsPackageName && raw.sourceRepoURL && raw.asOfVersion);
         this.version = versions_1.Semver.parse(raw.asOfVersion);
     }
+    get license() { return "MIT" /* MIT */; }
     get major() { return this.version.major; }
     get minor() { return this.version.minor; }
     // A not-needed package has no other versions. (TODO: allow that?)
