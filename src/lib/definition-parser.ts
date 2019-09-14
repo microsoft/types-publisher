@@ -93,15 +93,21 @@ async function combineDataForAllTypesVersions(
     });
     const allTypesVersions = [dataForRoot, ...dataForOtherTypesVersions];
 
+    interface OptionalPackageJSON { readonly license?: unknown; readonly dependencies?: unknown; peerDependencies?: unknown; }
+
     // tslint:disable-next-line await-promise (tslint bug)
-    const packageJson = hasPackageJson ? await fs.readJson(packageJsonName) as { readonly license?: unknown, readonly dependencies?: unknown } : {};
+    const packageJson = hasPackageJson ? await fs.readJson(packageJsonName) as OptionalPackageJSON : {};
     const license = getLicenseFromPackageJson(packageJson.license);
-    const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonName);
+    const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonName, /* checkWhitelist */ true);
+    const packageJsonPeerDependencies = checkPackageJsonDependencies(packageJson.peerDependencies, packageJsonName, /* checkWhitelist */ false);
 
     const files = Array.from(flatMap(allTypesVersions, ({ typescriptVersion, declFiles }) =>
         declFiles.map(file =>
             typescriptVersion === undefined ? file : `ts${typescriptVersion}/${file}`)));
 
+    // Get all package dependencies and remove any peer dependencies from them
+    const dependencies = getAllUniqueValues<"dependencies", PackageId>(allTypesVersions, "dependencies")
+                           .filter(dep => !packageJsonPeerDependencies.find(peerDep => peerDep.name === dep.name));
     return {
         libraryName,
         typingsPackageName,
@@ -113,11 +119,12 @@ async function combineDataForAllTypesVersions(
         typesVersions,
         files,
         license,
+        dependencies,
         // TODO: Explicit type arguments shouldn't be necessary. https://github.com/Microsoft/TypeScript/issues/27507
-        dependencies: getAllUniqueValues<"dependencies", PackageId>(allTypesVersions, "dependencies"),
         testDependencies: getAllUniqueValues<"testDependencies", string>(allTypesVersions, "testDependencies"),
         pathMappings: getAllUniqueValues<"pathMappings", PathMapping>(allTypesVersions, "pathMappings"),
         packageJsonDependencies,
+        packageJsonPeerDependencies,
         contentHash: await hash(hasPackageJson ? [...files, packageJsonName] : files, mapDefined(allTypesVersions, a => a.tsconfigPathsForHash), fs),
         globals: getAllUniqueValues<"globals", string>(allTypesVersions, "globals"),
         declaredModules: getAllUniqueValues<"declaredModules", string>(allTypesVersions, "declaredModules"),
@@ -179,7 +186,7 @@ async function getTypingDataForSingleTypesVersion(
     return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles, tsconfigPathsForHash };
 }
 
-function checkPackageJsonDependencies(dependencies: unknown, path: string): ReadonlyArray<PackageJsonDependency> {
+function checkPackageJsonDependencies(dependencies: unknown, path: string, checkWhitelist: boolean): ReadonlyArray<PackageJsonDependency> {
     if (dependencies === undefined) { // tslint:disable-line strict-type-predicates (false positive)
         return [];
     }
@@ -190,7 +197,7 @@ function checkPackageJsonDependencies(dependencies: unknown, path: string): Read
     const deps: PackageJsonDependency[] = [];
 
     for (const dependencyName in dependencies) {
-        if (!dependenciesWhitelist.has(dependencyName)) {
+        if (checkWhitelist && !dependenciesWhitelist.has(dependencyName)) {
             const msg = dependencyName.startsWith("@types/")
                 ? `Don't use a 'package.json' for @types dependencies unless this package relies on
 an old version of types that have since been moved to the source repo.
