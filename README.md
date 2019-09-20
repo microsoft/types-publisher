@@ -500,3 +500,9 @@ The most useful logs are in LogFiles/Application.
 Instead of waiting for someone to push to DefinitelyTyped,
 you should test out your new deployment by running `npm run make-production-server-run`,
 which will trigger a full build .
+
+## Deployment
+
+- 1. Change the `package.json` version
+- 1. Commit and create a corresponding tag
+- 1. Push the tag and a [GitHub Action](.github/workflows/deploy_on_tag.yml) will deploy to npm
