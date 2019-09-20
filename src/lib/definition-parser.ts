@@ -93,21 +93,22 @@ async function combineDataForAllTypesVersions(
     });
     const allTypesVersions = [dataForRoot, ...dataForOtherTypesVersions];
 
-    interface OptionalPackageJSON { readonly license?: unknown; readonly dependencies?: unknown; peerDependencies?: unknown; }
+    interface OptionalPackageJSON { readonly license?: unknown; readonly dependencies?: unknown; devDependencies?: unknown; }
 
     // tslint:disable-next-line await-promise (tslint bug)
     const packageJson = hasPackageJson ? await fs.readJson(packageJsonName) as OptionalPackageJSON : {};
     const license = getLicenseFromPackageJson(packageJson.license);
     const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonName, /* checkWhitelist */ true);
-    const packageJsonPeerDependencies = checkPackageJsonDependencies(packageJson.peerDependencies, packageJsonName, /* checkWhitelist */ false);
+    const packageJsonDevDependencies = checkPackageJsonDependencies(packageJson.devDependencies, packageJsonName, /* checkWhitelist */ false);
 
     const files = Array.from(flatMap(allTypesVersions, ({ typescriptVersion, declFiles }) =>
         declFiles.map(file =>
             typescriptVersion === undefined ? file : `ts${typescriptVersion}/${file}`)));
 
     // Get all package dependencies and remove any peer dependencies from them
-    const dependencies = getAllUniqueValues<"dependencies", PackageId>(allTypesVersions, "dependencies")
-                           .filter(dep => !packageJsonPeerDependencies.find(peerDep => peerDep.name === dep.name));
+    const allDependencies = getAllUniqueValues<"dependencies", PackageId>(allTypesVersions, "dependencies")
+    const dependencies = allDependencies.filter(dep => !packageJsonDevDependencies.find(devDep => devDep.name === dep.name));
+
     return {
         libraryName,
         typingsPackageName,
@@ -124,7 +125,7 @@ async function combineDataForAllTypesVersions(
         testDependencies: getAllUniqueValues<"testDependencies", string>(allTypesVersions, "testDependencies"),
         pathMappings: getAllUniqueValues<"pathMappings", PathMapping>(allTypesVersions, "pathMappings"),
         packageJsonDependencies,
-        packageJsonPeerDependencies,
+        packageJsonDevDependencies,
         contentHash: await hash(hasPackageJson ? [...files, packageJsonName] : files, mapDefined(allTypesVersions, a => a.tsconfigPathsForHash), fs),
         globals: getAllUniqueValues<"globals", string>(allTypesVersions, "globals"),
         declaredModules: getAllUniqueValues<"declaredModules", string>(allTypesVersions, "declaredModules"),

@@ -111,7 +111,7 @@ function createPackageJSON(typing: TypingsData, version: string, packages: AllPa
         },
         scripts: {},
         dependencies: getDependencies(typing.packageJsonDependencies, typing, packages),
-        peerDependencies: getPeerDependencies(typing.peerDependencies),
+        devDependencies: getDevDependencies(typing.getDevDependencies),
         typesPublisherContentHash: typing.contentHash,
         typeScriptVersion: typing.minTypeScriptVersion,
     };
@@ -121,7 +121,7 @@ function createPackageJSON(typing: TypingsData, version: string, packages: AllPa
 
 const definitelyTypedURL = "https://github.com/DefinitelyTyped/DefinitelyTyped";
 
-/** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies`. */
+/** Adds inferred dependencies to `dependencies`, if they are not already specified in `dependencies`. */
 function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDependency>, typing: TypingsData, allPackages: AllPackages): Dependencies {
     const dependencies: Dependencies = {};
     for (const { name, version } of packageJsonDependencies) {
@@ -138,7 +138,8 @@ function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDepen
     return sortObjectKeys(dependencies);
 }
 
-function getPeerDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDependency>): Dependencies {
+/** Just splits and sorts the dependencies, does not add the inferred types */
+function getDevDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDependency>): Dependencies {
     const dependencies: Dependencies = {};
     for (const { name, version } of packageJsonDependencies) {
         dependencies[name] = version;
@@ -194,8 +195,8 @@ function createReadme(typing: TypingsData): string {
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
     const dependencies = Array.from(typing.dependencies).map(d => getFullNpmName(d.name));
     lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
-    const peerDependencies = Array.from(typing.peerDependencies).map(d => getFullNpmName(d.name));
-    lines.push(` * Peer Dependencies: ${peerDependencies.length ? peerDependencies.join(", ") : "none"}`);
+    const devDependencies = Array.from(typing.getDevDependencies.map(d => getFullNpmName(d.name)));
+    lines.push(` * Dev Dependencies: ${devDependencies.length ? devDependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");
 

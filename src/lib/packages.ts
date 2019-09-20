@@ -312,8 +312,8 @@ export interface TypingsDataRaw extends BaseRaw {
     // List of dependencies which indicate they should come from npm, not def typed
     readonly packageJsonDependencies: ReadonlyArray<PackageJsonDependency>;
 
-    // These should be removed from the packageJsonDependencies above 
-    readonly packageJsonPeerDependencies: ReadonlyArray<PackageJsonDependency>;
+    // These should be removed from the packageJsonDependencies above
+    readonly packageJsonDevDependencies: ReadonlyArray<PackageJsonDependency>;
 
     // A hash computed from all files from this definition
     readonly contentHash: string;
@@ -424,8 +424,8 @@ export class TypingsData extends PackageBase {
         return this.data.dependencies;
     }
 
-    get peerDependencies(): ReadonlyArray<PackageJsonDependency> {
-        return this.data.packageJsonPeerDependencies;
+    get getDevDependencies(): ReadonlyArray<PackageJsonDependency> {
+        return this.data.packageJsonDevDependencies;
     }
 
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
