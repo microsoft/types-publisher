@@ -9,10 +9,10 @@ import { createTgz } from "../util/tgz";
 import { identity, joinPaths, mapToRecord, recordToMap } from "../util/util";
 
 import { getSecret, Secret } from "./secrets";
-import { npmApi, npmRegistry, npmRegistryHostName } from "./settings";
+import { npmApi, githubRegistry, npmRegistry, npmRegistryHostName } from "./settings";
 
-function packageUrl(packageName: string): string {
-    return resolveUrl(npmRegistry, packageName);
+function packageUrl(packageName: string, backup: boolean): string {
+    return resolveUrl(backup ? githubRegistry : npmRegistry, packageName);
 }
 
 const cacheFile = joinPaths(__dirname, "..", "..", "cache", "npmInfo.json");
@@ -141,41 +141,43 @@ function splitToFixedSizeGroups(names: ReadonlyArray<string>, chunkSize: number)
 }
 
 export class NpmPublishClient {
-    static async create(config?: RegClient.Config): Promise<NpmPublishClient> {
-        const token = await getSecret(Secret.NPM_TOKEN);
+    static async create(config?: RegClient.Config, backup?: boolean): Promise<NpmPublishClient> {
+        const token = await getSecret(backup ? Secret.GITHUB_PUBLISH_ACCESS_TOKEN : Secret.NPM_TOKEN);
         return new this(new RegClient(config), { token });
     }
 
     private constructor(private readonly client: RegClient, private readonly auth: RegClient.Credentials) {}
 
-    async publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger): Promise<void> {
+    async publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger, backup?: boolean): Promise<void> {
         const readme = await readFile(joinPaths(publishedDirectory, "README.md"));
 
         return new Promise<void>((resolve, reject) => {
             const body = createTgz(publishedDirectory, reject);
             const metadata = { readme, ...packageJson };
+            const registry = backup ? githubRegistry : npmRegistry;
             if (dry) {
-                log("(dry) Skip publish of " + publishedDirectory);
+                log(`(dry) Skip publish of ${publishedDirectory} to ${registry}`);
             }
             resolve(dry ? undefined : promisifyVoid(cb => {
-                this.client.publish(npmRegistry, { access: "public", auth: this.auth, metadata, body }, cb);
+                this.client.publish(registry, { access: "public", auth: this.auth, metadata, body }, cb);
             }));
         });
     }
 
-    tag(packageName: string, version: string, tag: string, dry: boolean, log: Logger): Promise<void> {
+    tag(packageName: string, version: string, distTag: string, dry: boolean, log: Logger, backup?: boolean): Promise<void> {
+        const registry = backup ? githubRegistry : npmRegistry;
         return promisifyVoid(cb => {
             if (dry) {
-                log(`(dry) Skip tag of ${packageName}@${tag} as ${version}`);
+                log(`(dry) Skip tag of ${packageName}@${distTag} as ${version}`);
             }
             else {
-                this.client.tag(packageUrl(packageName), { version, tag, auth: this.auth }, cb);
+                this.client.distTags.add(registry, { package: packageName, version, distTag, auth: this.auth }, cb);
             };
         });
     }
 
     deprecate(packageName: string, version: string, message: string): Promise<void> {
-        const url = packageUrl(packageName.replace("/", "%2f"));
+        const url = packageUrl(packageName.replace("/", "%2f"), /*backup*/ false);
         const params = {
             message,
             version,

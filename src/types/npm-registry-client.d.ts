@@ -5,6 +5,9 @@ declare class RegClient {
     publish(uri: string, params: RegClient.PublishParams, cb: (error: Error) => void): void;
     tag(uri: string, params: RegClient.TagParams, cb: (error: Error) => void): void;
     deprecate(uri: string, params: RegClient.DeprecateParams, cb: (error: Error, data: unknown, raw: string, response: unknown) => void): void;
+    distTags: {
+        add(uri: string, params: RegClient.AddTagParams, cb: (error: Error) => void): void;
+    }
 }
 
 declare namespace RegClient {
@@ -19,6 +22,12 @@ declare namespace RegClient {
         metadata: {};
         access: "public" | "restricted";
         body: NodeJS.ReadableStream;
+        auth: Credentials;
+    }
+    interface AddTagParams {
+        package: string;
+        version: string;
+        distTag: string;
         auth: Credentials;
     }
     interface TagParams {
