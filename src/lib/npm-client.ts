@@ -163,8 +163,15 @@ export class NpmPublishClient {
         });
     }
 
-    tag(packageName: string, version: string, tag: string): Promise<void> {
-        return promisifyVoid(cb => { this.client.tag(packageUrl(packageName), { version, tag, auth: this.auth }, cb); });
+    tag(packageName: string, version: string, tag: string, dry: boolean, log: Logger): Promise<void> {
+        return promisifyVoid(cb => {
+            if (dry) {
+                log(`(dry) Skip tag of ${packageName}@${tag} as ${version}`);
+            }
+            else {
+                this.client.tag(packageUrl(packageName), { version, tag, auth: this.auth }, cb);
+            };
+        });
     }
 
     deprecate(packageName: string, version: string, message: string): Promise<void> {

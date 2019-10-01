@@ -51,7 +51,7 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
         // If so, we should just update it to "latest" now.
         log("Old version of types-registry was never tagged latest, so updating");
         await validateIsSubset(await readNotNeededPackages(dt), log);
-        await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest");
+        await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest", dry, log);
     } else if (oldContentHash !== newContentHash && isAWeekAfter(lastModified)) {
         log("New packages have been added, so publishing a new registry.");
         await publish(await publishClient(), packageJson, newVersion, dry, log);
@@ -94,10 +94,15 @@ async function generate(registry: string, packageJson: {}): Promise<void> {
 async function publish(client: NpmPublishClient, packageJson: {}, version: string, dry: boolean, log: Logger): Promise<void> {
     await client.publish(registryOutputPath, packageJson, dry, log);
     // Sleep for 60 seconds to let NPM update.
-    await sleep(60);
+    if (dry) {
+        log("(dry) Skipping 60 second sleep...")
+    }
+    else {
+        await sleep(60);
+    }
     // Don't set it as "latest" until *after* it's been validated.
     await validate(log);
-    await client.tag(packageName, version, "latest");
+    await client.tag(packageName, version, "latest", dry, log);
 }
 
 async function installForValidate(log: Logger): Promise<void> {
