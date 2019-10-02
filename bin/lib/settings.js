@@ -4,7 +4,9 @@ const fs_1 = require("fs");
 const path_1 = require("path");
 /** URL of the NPM registry to upload to. */
 exports.npmRegistryHostName = "registry.npmjs.org";
+exports.githubRegistryHostName = "npm.pkg.github.com";
 exports.npmRegistry = `https://${exports.npmRegistryHostName}/`;
+exports.githubRegistry = `https://${exports.githubRegistryHostName}/`;
 exports.npmApi = "api.npmjs.org";
 /** Note: this is 'types' and not '@types' */
 exports.scopeName = "types";

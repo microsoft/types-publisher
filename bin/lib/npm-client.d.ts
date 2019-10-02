@@ -34,11 +34,12 @@ export declare class UncachedNpmInfoClient {
     getDownloads(packageNames: ReadonlyArray<string>): Promise<ReadonlyArray<number>>;
 }
 export declare class NpmPublishClient {
-    private readonly client;
-    private readonly auth;
-    static create(config?: RegClient.Config): Promise<NpmPublishClient>;
+    private client;
+    private auth;
+    private registry;
+    static create(config?: RegClient.Config, registryName?: "github" | "npm"): Promise<NpmPublishClient>;
     private constructor();
     publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger): Promise<void>;
-    tag(packageName: string, version: string, tag: string): Promise<void>;
+    tag(packageName: string, version: string, distTag: string, dry: boolean, log: Logger): Promise<void>;
     deprecate(packageName: string, version: string, message: string): Promise<void>;
 }

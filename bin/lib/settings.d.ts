@@ -1,6 +1,8 @@
 /** URL of the NPM registry to upload to. */
 export declare const npmRegistryHostName = "registry.npmjs.org";
+export declare const githubRegistryHostName = "npm.pkg.github.com";
 export declare const npmRegistry: string;
+export declare const githubRegistry: string;
 export declare const npmApi = "api.npmjs.org";
 /** Note: this is 'types' and not '@types' */
 export declare const scopeName = "types";

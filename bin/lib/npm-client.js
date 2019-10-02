@@ -10,9 +10,6 @@ const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
-function packageUrl(packageName) {
-    return url_1.resolve(settings_1.npmRegistry, packageName);
-}
 const cacheFile = util_1.joinPaths(__dirname, "..", "..", "cache", "npmInfo.json");
 async function withNpmCache(uncachedClient, cb) {
     const log = logging_1.loggerWithErrors()[0];
@@ -107,13 +104,18 @@ function splitToFixedSizeGroups(names, chunkSize) {
     return out;
 }
 class NpmPublishClient {
-    constructor(client, auth) {
+    constructor(client, auth, registry) {
         this.client = client;
         this.auth = auth;
+        this.registry = registry;
     }
-    static async create(config) {
-        const token = await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN);
-        return new this(new RegClient(config), { token });
+    static async create(config, registryName = "npm") {
+        if (registryName === "github") {
+            return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
+        }
+        else {
+            return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN) }, settings_1.npmRegistry);
+        }
     }
     async publish(publishedDirectory, packageJson, dry, log) {
         const readme = await io_1.readFile(util_1.joinPaths(publishedDirectory, "README.md"));
@@ -121,18 +123,24 @@ class NpmPublishClient {
             const body = tgz_1.createTgz(publishedDirectory, reject);
             const metadata = Object.assign({ readme }, packageJson);
             if (dry) {
-                log("(dry) Skip publish of " + publishedDirectory);
+                log(`(dry) Skip publish of ${publishedDirectory} to ${this.registry}`);
             }
             resolve(dry ? undefined : promisifyVoid(cb => {
-                this.client.publish(settings_1.npmRegistry, { access: "public", auth: this.auth, metadata, body }, cb);
+                this.client.publish(this.registry, { access: "public", auth: this.auth, metadata, body }, cb);
             }));
         });
     }
-    tag(packageName, version, tag) {
-        return promisifyVoid(cb => { this.client.tag(packageUrl(packageName), { version, tag, auth: this.auth }, cb); });
+    tag(packageName, version, distTag, dry, log) {
+        if (dry) {
+            log(`(dry) Skip tag of ${packageName}@${distTag} as ${version}`);
+            return Promise.resolve();
+        }
+        return promisifyVoid(cb => {
+            this.client.distTags.add(this.registry, { package: packageName, version, distTag, auth: this.auth }, cb);
+        });
     }
     deprecate(packageName, version, message) {
-        const url = packageUrl(packageName.replace("/", "%2f"));
+        const url = url_1.resolve(settings_1.npmRegistry, packageName.replace("/", "%2f"));
         const params = {
             message,
             version,
