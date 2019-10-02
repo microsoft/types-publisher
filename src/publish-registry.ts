@@ -30,16 +30,16 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
     const [log, logResult] = logger();
     log("=== Publishing types-registry ===");
 
-    const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } =
+    const { npmVersion, highestSemverVersion, npmContentHash, lastModified } =
         await fetchAndProcessNpmInfo(typesRegistry, client);
-    assert.strictEqual(oldVersion.major, 0);
-    assert.strictEqual(oldVersion.minor, 1);
+    assert.strictEqual(npmVersion.major, 0);
+    assert.strictEqual(npmVersion.minor, 1);
 
     // Don't include not-needed packages in the registry.
     const registryJsonData = await withNpmCache(client, cachedClient => generateRegistry(allPackages.allLatestTypings(), cachedClient));
     const registry = JSON.stringify(registryJsonData);
     const newContentHash = computeHash(registry);
-    const newVersion = `0.1.${oldVersion.patch + 1}`;
+    const newVersion = `0.1.${npmVersion.patch + 1}`;
 
     await publishToRegistry("github");
     await publishToRegistry("npm");
@@ -51,18 +51,18 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
         await generate(registry, packageJson);
 
         const publishClient = () => NpmPublishClient.create({ defaultTag: "next" }, registryName);
-        if (!highestSemverVersion.equals(oldVersion)) {
+        if (!highestSemverVersion.equals(npmVersion)) {
             // There was an error in the last publish and types-registry wasn't validated.
             // This may have just been due to a timeout, so test if types-registry@next is a subset of the one we're about to publish.
             // If so, we should just update it to "latest" now.
             log("Old version of types-registry was never tagged latest, so updating");
             await validateIsSubset(await readNotNeededPackages(dt), log);
             await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest", dry, log);
-        } else if (oldContentHash !== newContentHash && isTenMinutesAfter(lastModified)) {
+        } else if (npmContentHash !== newContentHash && isTenMinutesAfter(lastModified)) {
             log("New packages have been added, so publishing a new registry.");
             await publish(await publishClient(), packageName, packageJson, newVersion, dry, log);
         } else {
-            const reason = oldContentHash === newContentHash ? "Was modified less than a week ago" : "No new packages published";
+            const reason = npmContentHash === newContentHash ? "No new packages published" : "Was modified less than a week ago";
             log(`${reason}, so no need to publish new registry.`);
             // Just making sure...
             await validate(log);
@@ -189,7 +189,7 @@ function generatePackageJson(name: string, registryName: "github" | "npm", versi
         repository: {
             type: "git",
             url: registryName === "github"
-                ? "https://github.com/TestTypePublishing/TypePublishing.git"
+                ? "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
                 : "https://github.com/Microsoft/types-publisher.git",
         },
         keywords: [
@@ -243,20 +243,20 @@ async function generateRegistry(typings: ReadonlyArray<TypingsData>, client: Cac
 }
 
 interface ProcessedNpmInfo {
-    readonly version: Semver;
+    readonly npmVersion: Semver;
     readonly highestSemverVersion: Semver;
-    readonly contentHash: string;
+    readonly npmContentHash: string;
     readonly lastModified: Date;
 }
 
 async function fetchAndProcessNpmInfo(escapedPackageName: string, client: UncachedNpmInfoClient): Promise<ProcessedNpmInfo> {
     const info = assertDefined(await client.fetchNpmInfo(escapedPackageName));
-    const version = Semver.parse(assertDefined(info.distTags.get("latest")));
+    const npmVersion = Semver.parse(assertDefined(info.distTags.get("latest")));
     const { distTags, versions, time } = info;
     const highestSemverVersion = getLatestVersion(versions.keys());
     assert.strictEqual(highestSemverVersion.versionString, distTags.get("next"));
-    const contentHash = versions.get(version.versionString)!.typesPublisherContentHash || "";
-    return { version, highestSemverVersion, contentHash, lastModified: new Date(time.get("modified")!) };
+    const npmContentHash = versions.get(npmVersion.versionString)!.typesPublisherContentHash || "";
+    return { npmVersion, highestSemverVersion, npmContentHash, lastModified: new Date(time.get("modified")!) };
 }
 function getLatestVersion(versions: Iterable<string>): Semver {
     return best(mapDefined(versions, v => Semver.tryParse(v)), (a, b) => a.greaterThan(b))!;
