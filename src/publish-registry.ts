@@ -40,8 +40,14 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
     const registry = JSON.stringify(registryJsonData);
     const newContentHash = computeHash(registry);
     const newVersion = `0.1.${npmVersion.patch + 1}`;
+    const isTimeForNewVersion = isTenMinutesAfter(lastModified);
 
-    await publishToRegistry("github");
+    try {
+        await publishToRegistry("github");
+    } catch(e) {
+        // log and continue
+        log("publishing to github failed: " + e.toString());
+    }
     await publishToRegistry("npm");
     await writeLog("publish-registry.md", logResult());
 
@@ -58,7 +64,7 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
             log("Old version of types-registry was never tagged latest, so updating");
             await validateIsSubset(await readNotNeededPackages(dt), log);
             await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest", dry, log);
-        } else if (npmContentHash !== newContentHash && isTenMinutesAfter(lastModified)) {
+        } else if (npmContentHash !== newContentHash && isTimeForNewVersion) {
             log("New packages have been added, so publishing a new registry.");
             await publish(await publishClient(), packageName, packageJson, newVersion, dry, log);
         } else {

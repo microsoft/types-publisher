@@ -163,13 +163,12 @@ export class NpmPublishClient {
     }
 
     tag(packageName: string, version: string, distTag: string, dry: boolean, log: Logger): Promise<void> {
+        if (dry) {
+            log(`(dry) Skip tag of ${packageName}@${distTag} as ${version}`);
+            return Promise.resolve();
+        }
         return promisifyVoid(cb => {
-            if (dry) {
-                log(`(dry) Skip tag of ${packageName}@${distTag} as ${version}`);
-                cb(undefined);
-            } else {
-                this.client.distTags.add(this.registry, { package: packageName, version, distTag, auth: this.auth }, cb);
-            }
+            this.client.distTags.add(this.registry, { package: packageName, version, distTag, auth: this.auth }, cb);
         });
     }
 
