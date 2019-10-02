@@ -102,8 +102,7 @@ async function publish(client: NpmPublishClient, packageName: string, packageJso
     // Sleep for 60 seconds to let NPM update.
     if (dry) {
         log("(dry) Skipping 60 second sleep...");
-    }
-    else {
+    } else {
         log("Sleeping for 60 seconds ...");
         await sleep(60);
     }
@@ -124,7 +123,7 @@ async function installForValidate(log: Logger): Promise<void> {
     });
 
     const npmPath = joinPaths(__dirname, "..", "node_modules", "npm", "bin", "npm-cli.js");
-    const cmd = `node ${npmPath} install types-registry@next ${npmInstallFlags}`
+    const cmd = `node ${npmPath} install types-registry@next ${npmInstallFlags}`;
     log(cmd);
     const err = (await execAndThrowErrors(cmd, validateOutputPath)).trim();
     if (err) {
@@ -182,7 +181,7 @@ function assertJsonNewer(newer: { [s: string]: any }, older: { [s: string]: any 
 }
 
 function generatePackageJson(name: string, registryName: "github" | "npm", version: string, typesPublisherContentHash: string): object {
-    let json = {
+    const json = {
         name,
         version,
         description: "A registry of TypeScript declaration file packages published within the @types scope.",
@@ -204,7 +203,7 @@ function generatePackageJson(name: string, registryName: "github" | "npm", versi
         typesPublisherContentHash,
     };
     if (registryName === "github") {
-        (json as any).publishConfig = { "registry": "https://npm.pkg.github.com/" };
+        (json as any).publishConfig = { registry: "https://npm.pkg.github.com/" };
     }
     return json;
 }
@@ -261,4 +260,3 @@ async function fetchAndProcessNpmInfo(escapedPackageName: string, client: Uncach
 function getLatestVersion(versions: Iterable<string>): Semver {
     return best(mapDefined(versions, v => Semver.tryParse(v)), (a, b) => a.greaterThan(b))!;
 }
-
