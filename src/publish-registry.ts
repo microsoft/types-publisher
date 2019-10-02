@@ -4,13 +4,13 @@ import * as yargs from "yargs";
 
 import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options } from "./lib/common";
-import { withNpmCache, CachedNpmInfoClient, NpmPublishClient, UncachedNpmInfoClient } from "./lib/npm-client";
+import { CachedNpmInfoClient, NpmPublishClient, UncachedNpmInfoClient, withNpmCache } from "./lib/npm-client";
 import { AllPackages, NotNeededPackage, readNotNeededPackages, TypingsData } from "./lib/packages";
 import { outputDirPath, validateOutputPath } from "./lib/settings";
 import { Semver } from "./lib/versions";
 import { npmInstallFlags, readJson, sleep, writeFile, writeJson } from "./util/io";
 import { logger, Logger, loggerWithErrors, writeLog } from "./util/logging";
-import { /*assertDefined, best,*/ computeHash, execAndThrowErrors, joinPaths, logUncaughtErrors/*, mapDefined*/ } from "./util/util";
+import { assertDefined, best, computeHash, execAndThrowErrors, joinPaths, logUncaughtErrors, mapDefined } from "./util/util";
 
 const typesRegistry = "types-registry";
 const registryOutputPath = joinPaths(outputDirPath, typesRegistry);
@@ -22,64 +22,64 @@ if (!module.parent) {
     const dry = !!yargs.argv.dry;
     logUncaughtErrors(async () => {
         const dt = await getDefinitelyTyped(Options.defaults, loggerWithErrors()[0]);
-        // TODO: Pass around paths/urls instead of a hilarious boolean | undefined
         // TODO: grep all uses of `npm` in the code base anyway (at least uses of the identifiers in settings.ts)
-
-        // 4. somewhere you need an authToken
-        // //npm.pkg.github.com/:_authToken=GITHUB_PUBLISH_ACCESS_TOKEN
-        // (this is probably just part of telling NpmClient to use `this.auth = getSecret(Secret.GITHUB_PUBLISH_ACCESS_TOKEN)`
+        // TODO: Make sure distTags works for npm as well.
         await publishRegistry(dt, await AllPackages.read(dt), dry, new UncachedNpmInfoClient());
     });
 }
 
 export default async function publishRegistry(dt: FS, allPackages: AllPackages, dry: boolean, client: UncachedNpmInfoClient): Promise<void> {
-    const publishToGithub = true;
     const [log, logResult] = logger();
     log("=== Publishing types-registry ===");
 
-    const oldVersion = new Semver(0, 1, 6); // TEMP for TESTING
-    const highestSemverVersion = new Semver(0, 1, 6); // TEMP for TESTING
-    // const { /*version: oldVersion,*/ highestSemverVersion, /*contentHash: oldContentHash, lastModified*/ } =
-        // await fetchAndProcessNpmInfo(typesRegistry, client);
+    const { version: oldVersion, highestSemverVersion, contentHash: oldContentHash, lastModified } =
+        await fetchAndProcessNpmInfo(typesRegistry, client);
+    assert.strictEqual(oldVersion.major, 0);
+    assert.strictEqual(oldVersion.minor, 1);
 
     // Don't include not-needed packages in the registry.
     const registryJsonData = await withNpmCache(client, cachedClient => generateRegistry(allPackages.allLatestTypings(), cachedClient));
     const registry = JSON.stringify(registryJsonData);
     const newContentHash = computeHash(registry);
-
-    assert.strictEqual(oldVersion.major, 0);
-    assert.strictEqual(oldVersion.minor, 1);
     const newVersion = `0.1.${oldVersion.patch + 1}`;
-    const packageJson = generatePackageJson(newVersion, newContentHash, publishToGithub);
-    await generate(registry, packageJson);
 
-    const publishClient = () => NpmPublishClient.create({ defaultTag: "next" }, publishToGithub);
-    if (!highestSemverVersion.equals(oldVersion)) {
-        // There was an error in the last publish and types-registry wasn't validated.
-        // This may have just been due to a timeout, so test if types-registry@next is a subset of the one we're about to publish.
-        // If so, we should just update it to "latest" now.
-        log("Old version of types-registry was never tagged latest, so updating");
-        await validateIsSubset(await readNotNeededPackages(dt), log);
-        await (await publishClient()).tag(publishToGithub ? "@testtypepublishing/parseltongue" : typesRegistry, highestSemverVersion.versionString, "latest", dry, log);
-    } else { //else if (oldContentHash !== newContentHash && isAWeekAfter(lastModified)) {
-        log("New packages have been added, so publishing a new registry.");
-        await publish(await publishClient(), packageJson, newVersion, publishToGithub, dry, log);
-    // } else {
-    //     const reason = oldContentHash === newContentHash ? "Was modified less than a week ago" : "No new packages published";
-    //     log(`${reason}, so no need to publish new registry.`);
-    //     // Just making sure...
-    //     await validate(log);
+    await publishToRegistry("github");
+    await publishToRegistry("npm");
+    await writeLog("publish-registry.md", logResult());
+
+    async function publishToRegistry(registryName: "github" | "npm") {
+        // TEMP for TESTING (should be @definitelytyped/types-registry)
+        const packageName = registryName === "github" ? "@testtypepublishing/" + typesRegistry : typesRegistry;
+        const packageJson = generatePackageJson(packageName, registryName, newVersion, newContentHash);
+        await generate(registry, packageJson);
+
+        const publishClient = () => NpmPublishClient.create({ defaultTag: "next" }, registryName);
+        if (!highestSemverVersion.equals(oldVersion)) {
+            // There was an error in the last publish and types-registry wasn't validated.
+            // This may have just been due to a timeout, so test if types-registry@next is a subset of the one we're about to publish.
+            // If so, we should just update it to "latest" now.
+            log("Old version of types-registry was never tagged latest, so updating");
+            await validateIsSubset(await readNotNeededPackages(dt), log);
+            await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest", dry, log);
+        } else if (oldContentHash !== newContentHash && isTenMinutesAfter(lastModified)) {
+            log("New packages have been added, so publishing a new registry.");
+            await publish(await publishClient(), packageName, packageJson, newVersion, dry, log);
+        } else {
+            const reason = oldContentHash === newContentHash ? "Was modified less than a week ago" : "No new packages published";
+            log(`${reason}, so no need to publish new registry.`);
+            // Just making sure...
+            await validate(log);
+        }
     }
 
-    await writeLog("publish-registry.md", logResult());
 }
 
-// const millisecondsPerDay = 1000 * 60 * 60 * 24;
-// function isAWeekAfter(time: Date): boolean {
-//     const diff = Date.now() - time.getTime();
-//     const days = diff / millisecondsPerDay;
-//     return days > 7;
-// }
+const millisecondsPerMinute = 1000 * 60;
+function isTenMinutesAfter(time: Date): boolean {
+    const diff = Date.now() - time.getTime();
+    const minutes = diff / millisecondsPerMinute;
+    return minutes > 10;
+}
 
 async function generate(registry: string, packageJson: {}): Promise<void> {
     await emptyDir(registryOutputPath);
@@ -100,20 +100,19 @@ async function generate(registry: string, packageJson: {}): Promise<void> {
     }
 }
 
-async function publish(client: NpmPublishClient, packageJson: {}, version: string, publishToGithub: boolean, dry: boolean, log: Logger): Promise<void> {
-    await client.publish(registryOutputPath, packageJson, dry, log, publishToGithub);
+async function publish(client: NpmPublishClient, packageName: string, packageJson: {}, version: string, dry: boolean, log: Logger): Promise<void> {
+    await client.publish(registryOutputPath, packageJson, dry, log);
     // Sleep for 60 seconds to let NPM update.
     if (dry) {
-        log("(dry) Skipping 60 second sleep...")
+        log("(dry) Skipping 60 second sleep...");
     }
     else {
         log("Sleeping for 60 seconds ...");
-        // TEMP for TESTING
-        await sleep(6);
+        await sleep(60);
     }
     // Don't set it as "latest" until *after* it's been validated.
     await validate(log);
-    await client.tag(publishToGithub ? "@testtypepublishing/parseltongue" : typesRegistry, version, "latest", dry, log, publishToGithub);
+    await client.tag(packageName, version, "latest", dry, log);
 }
 
 async function installForValidate(log: Logger): Promise<void> {
@@ -141,9 +140,9 @@ const validateTypesRegistryPath = joinPaths(validateOutputPath, "node_modules", 
 async function validate(log: Logger): Promise<void> {
     await installForValidate(log);
     const output = joinPaths(registryOutputPath, "index.json");
-    const node_modules = joinPaths(validateTypesRegistryPath, "index.json");
-    log(`Checking that ${output} is newer than ${node_modules}`);
-    assertJsonNewer(await readJson(output), await readJson(node_modules), log);
+    const nodeModules = joinPaths(validateTypesRegistryPath, "index.json");
+    log(`Checking that ${output} is newer than ${nodeModules}`);
+    assertJsonNewer(await readJson(output), await readJson(nodeModules), log);
 }
 
 async function validateIsSubset(notNeeded: ReadonlyArray<NotNeededPackage>, log: Logger): Promise<void> {
@@ -185,16 +184,16 @@ function assertJsonNewer(newer: { [s: string]: any }, older: { [s: string]: any 
     }
 }
 
-function generatePackageJson(version: string, typesPublisherContentHash: string, backup: boolean): object {
-    // TEMP for TESTING (should be @definitelytyped/types-registry)
-    const name = backup ? "@testtypepublishing/" + "parseltongue" : typesRegistry;
+function generatePackageJson(name: string, registryName: "github" | "npm", version: string, typesPublisherContentHash: string): object {
     let json = {
         name,
         version,
         description: "A registry of TypeScript declaration file packages published within the @types scope.",
         repository: {
             type: "git",
-            url: backup ? "https://github.com/TestTypePublishing/TypePublishing.git" : "https://github.com/Microsoft/types-publisher.git",
+            url: registryName === "github"
+                ? "https://github.com/TestTypePublishing/TypePublishing.git"
+                : "https://github.com/Microsoft/types-publisher.git",
         },
         keywords: [
             "TypeScript",
@@ -207,7 +206,7 @@ function generatePackageJson(version: string, typesPublisherContentHash: string,
         license: "MIT",
         typesPublisherContentHash,
     };
-    if (backup) {
+    if (registryName === "github") {
         (json as any).publishConfig = { "registry": "https://npm.pkg.github.com/" };
     }
     return json;
@@ -246,23 +245,23 @@ async function generateRegistry(typings: ReadonlyArray<TypingsData>, client: Cac
     }
 }
 
-// interface ProcessedNpmInfo {
-//     readonly version: Semver;
-//     readonly highestSemverVersion: Semver;
-//     readonly contentHash: string;
-//     readonly lastModified: Date;
-// }
+interface ProcessedNpmInfo {
+    readonly version: Semver;
+    readonly highestSemverVersion: Semver;
+    readonly contentHash: string;
+    readonly lastModified: Date;
+}
 
-// async function fetchAndProcessNpmInfo(escapedPackageName: string, client: UncachedNpmInfoClient): Promise<ProcessedNpmInfo> {
-//     const info = assertDefined(await client.fetchNpmInfo(escapedPackageName));
-//     const version = Semver.parse(assertDefined(info.distTags.get("latest")));
-//     const { distTags, versions, time } = info;
-//     const highestSemverVersion = getLatestVersion(versions.keys());
-//     assert.strictEqual(highestSemverVersion.versionString, distTags.get("next"));
-//     const contentHash = versions.get(version.versionString)!.typesPublisherContentHash || "";
-//     return { version, highestSemverVersion, contentHash, lastModified: new Date(time.get("modified")!) };
-// }
-// function getLatestVersion(versions: Iterable<string>): Semver {
-//     return best(mapDefined(versions, v => Semver.tryParse(v)), (a, b) => a.greaterThan(b))!;
-// }
+async function fetchAndProcessNpmInfo(escapedPackageName: string, client: UncachedNpmInfoClient): Promise<ProcessedNpmInfo> {
+    const info = assertDefined(await client.fetchNpmInfo(escapedPackageName));
+    const version = Semver.parse(assertDefined(info.distTags.get("latest")));
+    const { distTags, versions, time } = info;
+    const highestSemverVersion = getLatestVersion(versions.keys());
+    assert.strictEqual(highestSemverVersion.versionString, distTags.get("next"));
+    const contentHash = versions.get(version.versionString)!.typesPublisherContentHash || "";
+    return { version, highestSemverVersion, contentHash, lastModified: new Date(time.get("modified")!) };
+}
+function getLatestVersion(versions: Iterable<string>): Semver {
+    return best(mapDefined(versions, v => Semver.tryParse(v)), (a, b) => a.greaterThan(b))!;
+}
 
