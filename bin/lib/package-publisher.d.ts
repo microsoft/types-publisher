@@ -6,4 +6,4 @@ export declare function publishTypingsPackage(client: NpmPublishClient, changedT
 export declare function publishNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry: boolean, log: Logger): Promise<void>;
 export declare function deprecateNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry: boolean | undefined, log: Logger): Promise<void>;
 export declare function updateTypeScriptVersionTags(pkg: AnyPackage, version: string, client: NpmPublishClient, log: Logger, dry: boolean): Promise<void>;
-export declare function updateLatestTag(fullEscapedNpmName: string, version: string, client: NpmPublishClient, log: Logger, dry: boolean): Promise<void>;
+export declare function updateLatestTag(fullNpmName: string, version: string, client: NpmPublishClient, log: Logger, dry: boolean): Promise<void>;
