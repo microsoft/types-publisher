@@ -22,8 +22,6 @@ if (!module.parent) {
     const dry = !!yargs.argv.dry;
     logUncaughtErrors(async () => {
         const dt = await getDefinitelyTyped(Options.defaults, loggerWithErrors()[0]);
-        // TODO: grep all uses of `npm` in the code base anyway (at least uses of the identifiers in settings.ts)
-        // TODO: Make sure distTags works for npm as well.
         await publishRegistry(dt, await AllPackages.read(dt), dry, new UncachedNpmInfoClient());
     });
 }
@@ -48,8 +46,7 @@ export default async function publishRegistry(dt: FS, allPackages: AllPackages, 
     await writeLog("publish-registry.md", logResult());
 
     async function publishToRegistry(registryName: "github" | "npm") {
-        // TEMP for TESTING (should be @definitelytyped/types-registry)
-        const packageName = registryName === "github" ? "@testtypepublishing/" + typesRegistry : typesRegistry;
+        const packageName = registryName === "github" ? "@definitelytyped/" + typesRegistry : typesRegistry;
         const packageJson = generatePackageJson(packageName, registryName, newVersion, newContentHash);
         await generate(registry, packageJson);
 
