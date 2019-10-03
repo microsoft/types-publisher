@@ -34,7 +34,7 @@ async function publishRegistry(dt, allPackages, dry, client) {
     const registry = JSON.stringify(registryJsonData);
     const newContentHash = util_1.computeHash(registry);
     const newVersion = `0.1.${npmVersion.patch + 1}`;
-    const isTimeForNewVersion = isTenMinutesAfter(lastModified);
+    const isTimeForNewVersion = isSevenDaysAfter(lastModified);
     try {
         await publishToRegistry("github");
     }
@@ -70,11 +70,11 @@ async function publishRegistry(dt, allPackages, dry, client) {
     }
 }
 exports.default = publishRegistry;
-const millisecondsPerMinute = 1000 * 60;
-function isTenMinutesAfter(time) {
+const millisecondsPerDay = 1000 * 60 * 60 * 24;
+function isSevenDaysAfter(time) {
     const diff = Date.now() - time.getTime();
-    const minutes = diff / millisecondsPerMinute;
-    return minutes > 10;
+    const days = diff / millisecondsPerDay;
+    return days > 7;
 }
 async function generate(registry, packageJson) {
     await fs_extra_1.emptyDir(registryOutputPath);
