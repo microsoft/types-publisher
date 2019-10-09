@@ -39,7 +39,8 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
         log(`Publishing ${cp.pkg.desc}...`);
         await package_publisher_1.publishTypingsPackage(client, cp, dry, log);
         const commits = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/commits?path=types%2f${cp.pkg.subDirectoryPath}`, githubAccessToken, fetcher);
-        if (commits.length > 0) {
+        const firstCommit = commits[0];
+        if (firstCommit && !firstCommit.commit.message.includes("#no-publishing-comment")) {
             log("Found related commits; hash: " + commits[0].sha);
             const prs = await queryGithub(`search/issues?q=is:pr%20is:merged%20${commits[0].sha}`, githubAccessToken, fetcher);
             let latestPr = 0;
