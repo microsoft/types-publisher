@@ -42,9 +42,9 @@ export declare abstract class PackageBase {
     /** Note: for "foo__bar" this is still "foo__bar", not "@foo/bar". */
     readonly name: string;
     readonly libraryName: string;
-    readonly unescapedName: string;
+    get unescapedName(): string;
     /** Short description for debug output. */
-    readonly desc: string;
+    get desc(): string;
     constructor(data: BaseRaw);
     isNotNeeded(): this is NotNeededPackage;
     abstract readonly isLatest: boolean;
@@ -53,12 +53,12 @@ export declare abstract class PackageBase {
     abstract readonly globals: ReadonlyArray<string>;
     abstract readonly minTypeScriptVersion: TypeScriptVersion;
     /** '@types/foo' for a package 'foo'. */
-    readonly fullNpmName: string;
+    get fullNpmName(): string;
     /** '@types%2ffoo' for a package 'foo'. */
-    readonly fullEscapedNpmName: string;
+    get fullEscapedNpmName(): string;
     abstract readonly major: number;
-    readonly id: PackageId;
-    readonly outputDirectory: string;
+    get id(): PackageId;
+    get outputDirectory(): string;
 }
 export declare function getFullNpmName(packageName: string): string;
 interface NotNeededPackageRaw extends BaseRaw {
@@ -72,16 +72,16 @@ interface NotNeededPackageRaw extends BaseRaw {
 }
 export declare class NotNeededPackage extends PackageBase {
     readonly version: Semver;
-    readonly license: License.MIT;
+    get license(): License.MIT;
     readonly sourceRepoURL: string;
     constructor(raw: NotNeededPackageRaw);
-    readonly major: number;
-    readonly minor: number;
-    readonly isLatest: boolean;
-    readonly projectName: string;
-    readonly declaredModules: ReadonlyArray<string>;
-    readonly globals: ReadonlyArray<string>;
-    readonly minTypeScriptVersion: TypeScriptVersion;
+    get major(): number;
+    get minor(): number;
+    get isLatest(): boolean;
+    get projectName(): string;
+    get declaredModules(): ReadonlyArray<string>;
+    get globals(): ReadonlyArray<string>;
+    get minTypeScriptVersion(): TypeScriptVersion;
     readme(): string;
     deprecatedMessage(): string;
 }
@@ -133,23 +133,23 @@ export declare class TypingsData extends PackageBase {
     private readonly data;
     readonly isLatest: boolean;
     constructor(data: TypingsDataRaw, isLatest: boolean);
-    readonly testDependencies: ReadonlyArray<string>;
-    readonly contributors: ReadonlyArray<Author>;
-    readonly major: number;
-    readonly minor: number;
-    readonly minTypeScriptVersion: TypeScriptVersion;
-    readonly typesVersions: ReadonlyArray<TypeScriptVersion>;
-    readonly files: ReadonlyArray<string>;
-    readonly license: License;
-    readonly packageJsonDependencies: ReadonlyArray<PackageJsonDependency>;
-    readonly contentHash: string;
-    readonly declaredModules: ReadonlyArray<string>;
-    readonly projectName: string;
-    readonly globals: ReadonlyArray<string>;
-    readonly pathMappings: ReadonlyArray<PathMapping>;
-    readonly dependencies: ReadonlyArray<PackageId>;
+    get testDependencies(): ReadonlyArray<string>;
+    get contributors(): ReadonlyArray<Author>;
+    get major(): number;
+    get minor(): number;
+    get minTypeScriptVersion(): TypeScriptVersion;
+    get typesVersions(): ReadonlyArray<TypeScriptVersion>;
+    get files(): ReadonlyArray<string>;
+    get license(): License;
+    get packageJsonDependencies(): ReadonlyArray<PackageJsonDependency>;
+    get contentHash(): string;
+    get declaredModules(): ReadonlyArray<string>;
+    get projectName(): string;
+    get globals(): ReadonlyArray<string>;
+    get pathMappings(): ReadonlyArray<PathMapping>;
+    get dependencies(): ReadonlyArray<PackageId>;
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
-    readonly subDirectoryPath: string;
+    get subDirectoryPath(): string;
 }
 /** Uniquely identifies a package. */
 export interface PackageId {

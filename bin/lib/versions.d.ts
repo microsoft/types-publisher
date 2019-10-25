@@ -38,7 +38,7 @@ export declare class Semver {
     static fromRaw({ major, minor, patch }: Semver): Semver;
     static tryParse(semver: string): Semver | undefined;
     constructor(major: number, minor: number, patch: number);
-    readonly versionString: string;
+    get versionString(): string;
     equals(sem: Semver): boolean;
     greaterThan(sem: Semver): boolean;
 }
