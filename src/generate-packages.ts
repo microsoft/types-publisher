@@ -91,7 +91,7 @@ async function outputFilePath(pkg: AnyPackage, filename: string): Promise<string
 
 interface Dependencies { [name: string]: string; }
 
-function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages): string {
+export function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages): string {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out: {} = {
         name: typing.fullNpmName,
@@ -163,7 +163,7 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, s
         4);
 }
 
-function createReadme(typing: TypingsData): string {
+export function createReadme(typing: TypingsData): string {
     const lines: string[] = [];
     lines.push("# Installation");
     lines.push(`> \`npm install --save ${typing.fullNpmName}\``);
@@ -196,7 +196,7 @@ function createReadme(typing: TypingsData): string {
     return lines.join("\r\n");
 }
 
-function getLicenseFileText(typing: AnyPackage): string {
+export function getLicenseFileText(typing: AnyPackage): string {
     switch (typing.license) {
         case License.MIT:
             return mitLicense;
