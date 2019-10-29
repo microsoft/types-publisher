@@ -19,6 +19,11 @@ import { withNpmCache, CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/
 
 const mitLicense = readFileSync(joinPaths(__dirname, "..", "LICENSE"), "utf-8");
 
+export enum Registry {
+    NPM,
+    Github,
+}
+
 if (!module.parent) {
     const tgz = !!yargs.argv.tgz;
     logUncaughtErrors(async () => {
@@ -91,10 +96,10 @@ async function outputFilePath(pkg: AnyPackage, filename: string): Promise<string
 
 interface Dependencies { [name: string]: string; }
 
-export function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages): string {
+export function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages, registry = Registry.NPM): string {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out: {} = {
-        name: typing.fullNpmName,
+        name: registry === Registry.NPM ? typing.fullNpmName : typing.fullGithubName,
         version,
         description: `TypeScript definitions for ${typing.libraryName}`,
         // keywords,
