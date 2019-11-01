@@ -1,6 +1,6 @@
 import { createPackageJSON, createReadme, getLicenseFileText } from "./generate-packages";
 import { Registry } from "./lib/common";
-import { TypingsData, TypingsDataRaw, License, AllPackages } from "./lib/packages";
+import { TypingsData, TypingsDataRaw, License, AllPackages, readNotNeededPackages } from "./lib/packages";
 import { testo } from "./util/test";
 import { createMockDT } from "./mocks"
 function createRawPackage(license: License): TypingsDataRaw {
@@ -54,7 +54,13 @@ testo({
         expect(createReadme(typing, Registry.NPM)).toEqual(expect.stringContaining("Global values: none"));
     },
     async basicPackageJson() {
-        const packages = await AllPackages.read(createMockDT());
+        const rawDefinitions = {
+            "jquery": {
+                "1": createRawPackage(License.MIT)
+            },
+        };
+
+        const packages = AllPackages.from(rawDefinitions as any, await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         expect(createPackageJSON(typing, "1.0", packages, Registry.NPM)).toEqual(`{
     "name": "@types/jquery",
@@ -82,13 +88,25 @@ testo({
 }`);
     },
     async githubPackageJsonName() {
-        const packages = await AllPackages.read(createMockDT());
+        const rawDefinitions = {
+            "jquery": {
+                "1": createRawPackage(License.MIT)
+            },
+        };
+
+        const packages = AllPackages.from(rawDefinitions as any, await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         expect(createPackageJSON(typing, "1.0", packages, Registry.Github)).toEqual(
             expect.stringContaining('"name": "@testtypepublishing/jquery"'));
     },
     async githubPackageJsonRegistry() {
-        const packages = await AllPackages.read(createMockDT());
+        const rawDefinitions = {
+            "jquery": {
+                "1": createRawPackage(License.MIT)
+            },
+        };
+
+        const packages = AllPackages.from(rawDefinitions as any, await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
         expect(s).toEqual(expect.stringContaining('publishConfig'));
