@@ -90,6 +90,7 @@ jest-environment-jsdom
 jest-mock
 jest-snapshot
 jointjs
+jss
 levelup
 lit-element
 localforage
