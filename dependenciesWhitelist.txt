@@ -104,6 +104,7 @@ meteor-typings
 moment
 monaco-editor
 mqtt
+next-redux-wrapper
 nock
 normalize-url
 objection
