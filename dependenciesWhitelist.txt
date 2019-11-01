@@ -34,6 +34,7 @@ activex-helpers
 adal-node
 ajv
 anydb-sql
+aphrodite
 apollo-client
 apollo-link
 apollo-link-http-common
@@ -41,16 +42,19 @@ ast-types
 aws-sdk
 axe-core
 axios
+base-x
 bignumber.js
 bookshelf
 broadcast-channel
 cac
+cassandra-driver
 chalk
 chokidar
 commander
 cordova-plugin-camera
 cordova-plugin-file
 cordova-plugin-file-transfer
+cropperjs
 csstype
 cypress
 date-fns
@@ -79,10 +83,12 @@ graphql
 graphql-tools
 grpc
 handlebars
+highcharts
 hoist-non-react-statics
 i18next
 immutable
 indefinite-observable
+ink
 inversify
 jest-diff
 jest-environment-node
@@ -103,7 +109,10 @@ mali
 meteor-typings
 moment
 monaco-editor
+moment-range
 mqtt
+next
+next-redux-wrapper
 nock
 normalize-url
 objection
@@ -128,9 +137,12 @@ react-autosize-textarea
 react-dnd
 react-dnd-touch-backend
 react-intl
+react-native-fs
 react-native-maps
 react-native-modal
 react-native-svg
+react-navigation
+react-native-tab-view
 recast
 redux
 redux-observable
@@ -139,6 +151,7 @@ redux-saga
 redux-thunk
 rollup
 rrule
+rsmq
 rxjs
 safe-buffer
 should
@@ -156,6 +169,8 @@ tweetnacl
 typescript
 utility-types
 vega-typings
+vfile
+vfile-message
 vue
 vue-router
 vuex
@@ -165,3 +180,4 @@ winston-transport
 xmlbuilder
 xpath
 zipkin
+zipkin-transport-http
