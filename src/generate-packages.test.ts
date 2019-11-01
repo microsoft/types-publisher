@@ -34,19 +34,23 @@ testo({
     },
     basicReadme() {
         const typing = new TypingsData(createRawPackage(License.Apache20), /*isLatest*/ true);
-        expect(createReadme(typing)).toEqual(expect.stringContaining("This package contains type definitions for"));
+        expect(createReadme(typing, Registry.NPM)).toEqual(expect.stringContaining("This package contains type definitions for"));
+    },
+    githubReadme() {
+        const typing = new TypingsData(createRawPackage(License.Apache20), /*isLatest*/ true);
+        expect(createReadme(typing, Registry.Github)).toEqual(expect.stringContaining("npm install --save @testtypepublishing/"));
     },
     readmeContainsProjectName() {
         const typing = new TypingsData(createRawPackage(License.Apache20), /*isLatest*/ true);
-        expect(createReadme(typing)).toEqual(expect.stringContaining("jquery.org"));
+        expect(createReadme(typing, Registry.NPM)).toEqual(expect.stringContaining("jquery.org"));
     },
     readmeNoDependencies() {
         const typing = new TypingsData(createRawPackage(License.Apache20), /*isLatest*/ true);
-        expect(createReadme(typing)).toEqual(expect.stringContaining("Dependencies: none"));
+        expect(createReadme(typing, Registry.NPM)).toEqual(expect.stringContaining("Dependencies: none"));
     },
     readmeNoGlobals() {
         const typing = new TypingsData(createRawPackage(License.Apache20), /*isLatest*/ true);
-        expect(createReadme(typing)).toEqual(expect.stringContaining("Global values: none"));
+        expect(createReadme(typing, Registry.NPM)).toEqual(expect.stringContaining("Global values: none"));
     },
     async basicPackageJson() {
         const packages = await AllPackages.read(createMockDT());

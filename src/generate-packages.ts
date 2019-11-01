@@ -60,19 +60,23 @@ async function generateTypingPackage(typing: TypingsData, packages: AllPackages,
     const typesDirectory = dt.subDir("types").subDir(typing.name);
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
 
-    const packageJson = createPackageJSON(typing, version, packages);
-    await writeCommonOutputs(typing, packageJson, createReadme(typing));
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.NPM), createReadme(typing, Registry.NPM), Registry.NPM);
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.Github), createReadme(typing, Registry.Github), Registry.Github);
     await Promise.all(
-        typing.files.map(async file => writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
+        typing.files.map(async file => writeFile(await outputFilePath(typing, Registry.NPM, file), await packageFS.readFile(file))));
+    await Promise.all(
+        typing.files.map(async file => writeFile(await outputFilePath(typing, Registry.Github, file), await packageFS.readFile(file))));
 }
 
 async function generateNotNeededPackage(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): Promise<void> {
     const packageJson = createNotNeededPackageJSON(skipBadPublishes(pkg, client, log));
-    await writeCommonOutputs(pkg, packageJson, pkg.readme());
+    await writeCommonOutputs(pkg, packageJson, pkg.readme(), Registry.NPM);
+    // TODO: Test this
+    await writeCommonOutputs(pkg, packageJson, pkg.readme(), Registry.Github);
 }
 
-async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string): Promise<void> {
-    await mkdir(pkg.outputDirectory);
+async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string, registry: Registry): Promise<void> {
+    await mkdir(pkg.outputDirectory + (registry === Registry.Github ? "-github" : ""));
 
     await Promise.all([
         writeOutputFile("package.json", packageJson),
@@ -81,12 +85,12 @@ async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: 
     ]);
 
     async function writeOutputFile(filename: string, content: string): Promise<void> {
-        await writeFile(await outputFilePath(pkg, filename), content);
+        await writeFile(await outputFilePath(pkg, registry, filename), content);
     }
 }
 
-async function outputFilePath(pkg: AnyPackage, filename: string): Promise<string> {
-    const full = joinPaths(pkg.outputDirectory, filename);
+async function outputFilePath(pkg: AnyPackage, registry: Registry, filename: string): Promise<string> {
+    const full = joinPaths(pkg.outputDirectory + (registry === Registry.Github ? "-github" : ""), filename);
     const dir = path.dirname(full);
     if (dir !== pkg.outputDirectory) {
         await mkdirp(dir);
@@ -168,10 +172,10 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, s
         4);
 }
 
-export function createReadme(typing: TypingsData): string {
+export function createReadme(typing: TypingsData, reg: Registry): string {
     const lines: string[] = [];
     lines.push("# Installation");
-    lines.push(`> \`npm install --save ${typing.fullNpmName}\``);
+    lines.push(`> \`npm install --save ${reg === Registry.NPM ? typing.fullNpmName : typing.fullGithubName}\``);
     lines.push("");
 
     lines.push("# Summary");
