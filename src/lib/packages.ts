@@ -207,7 +207,6 @@ export abstract class PackageBase {
     }
 
     /** '@definitelytyped%2ffoo' for a package 'foo'. */
-    // TODO: Test this one
     get fullEscapedGithubName(): string {
         return `@${orgName}%2f${this.name}`;
     }
