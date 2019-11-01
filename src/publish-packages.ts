@@ -2,7 +2,7 @@ import * as yargs from "yargs";
 
 import appInsights = require("applicationinsights");
 import { getDefinitelyTyped } from "./get-definitely-typed";
-import { Options } from "./lib/common";
+import { Options, Registry } from "./lib/common";
 import { withNpmCache, NpmPublishClient, UncachedNpmInfoClient } from "./lib/npm-client";
 import { deprecateNotNeededPackage, publishNotNeededPackage, publishTypingsPackage } from "./lib/package-publisher";
 import { AllPackages } from "./lib/packages";
@@ -40,7 +40,7 @@ export default async function publishPackages(
         log("=== Publishing packages ===");
     }
 
-    const client = await NpmPublishClient.create();
+    const client = await NpmPublishClient.create(undefined, Registry.NPM);
 
     for (const cp of changedPackages.changedTypings) {
         log(`Publishing ${cp.pkg.desc}...`);

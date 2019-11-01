@@ -1,8 +1,8 @@
 import assert = require("assert");
 import { TypeScriptVersion } from "definitelytyped-header-parser";
 
-import { readFileAndWarn } from "../lib/common";
-import { ChangedTyping } from "../lib/versions";
+import { readFileAndWarn } from "./common";
+import { ChangedTyping } from "./versions";
 import { Logger } from "../util/logging";
 import { joinPaths } from "../util/util";
 

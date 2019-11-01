@@ -1,4 +1,5 @@
-import { createPackageJSON, createReadme, getLicenseFileText, Registry } from "./generate-packages";
+import { createPackageJSON, createReadme, getLicenseFileText } from "./generate-packages";
+import { Registry } from "./lib/common";
 import { TypingsData, TypingsDataRaw, License, AllPackages } from "./lib/packages";
 import { testo } from "./util/test";
 import { createMockDT } from "./mocks"
@@ -80,10 +81,17 @@ testo({
     "typeScriptVersion": "3.0"
 }`);
     },
-    async githubPackageJson() {
+    async githubPackageJsonName() {
         const packages = await AllPackages.read(createMockDT());
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         expect(createPackageJSON(typing, "1.0", packages, Registry.Github)).toEqual(
             expect.stringContaining('"name": "@testtypepublishing/jquery"'));
+    },
+    async githubPackageJsonRegistry() {
+        const packages = await AllPackages.read(createMockDT());
+        const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
+        const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
+        expect(s).toEqual(expect.stringContaining('publishConfig'));
+        expect(s).toEqual(expect.stringContaining('"registry": "https://npm.pkg.github.com/"'));
     },
 });

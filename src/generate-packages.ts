@@ -2,7 +2,7 @@ import { emptyDir } from "fs-extra";
 import * as yargs from "yargs";
 
 import { FS, getDefinitelyTyped } from "./get-definitely-typed";
-import { Options } from "./lib/common";
+import { Options, Registry } from "./lib/common";
 import {
     AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
 } from "./lib/packages";
@@ -18,11 +18,6 @@ import * as path from "path";
 import { withNpmCache, CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
 
 const mitLicense = readFileSync(joinPaths(__dirname, "..", "LICENSE"), "utf-8");
-
-export enum Registry {
-    NPM,
-    Github,
-}
 
 if (!module.parent) {
     const tgz = !!yargs.argv.tgz;
@@ -124,6 +119,9 @@ export function createPackageJSON(typing: TypingsData, version: string, packages
         typesPublisherContentHash: typing.contentHash,
         typeScriptVersion: typing.minTypeScriptVersion,
     };
+    if (registry === Registry.Github) {
+        (out as any).publishConfig = { registry: "https://npm.pkg.github.com/" };
+    }
 
     return JSON.stringify(out, undefined, 4);
 }
