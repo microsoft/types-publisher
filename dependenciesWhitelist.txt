@@ -79,6 +79,7 @@ graphql
 graphql-tools
 grpc
 handlebars
+highcharts
 hoist-non-react-statics
 i18next
 immutable
