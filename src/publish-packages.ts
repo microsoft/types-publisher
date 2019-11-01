@@ -41,10 +41,18 @@ export default async function publishPackages(
     }
 
     const client = await NpmPublishClient.create(undefined, Registry.NPM);
+    const ghClient = await NpmPublishClient.create(undefined, Registry.Github);
 
     for (const cp of changedPackages.changedTypings) {
         log(`Publishing ${cp.pkg.desc}...`);
-        await publishTypingsPackage(client, cp, dry, log);
+
+        try {
+            await publishTypingsPackage(ghClient, cp, dry, log, Registry.Github);
+        } catch(e) {
+            // log and continue
+            log("publishing to github failed: " + e.toString());
+        }
+        await publishTypingsPackage(client, cp, dry, log, Registry.NPM);
 
         const commits = await queryGithub(
             `repos/DefinitelyTyped/DefinitelyTyped/commits?path=types%2f${cp.pkg.subDirectoryPath}`,
@@ -119,7 +127,13 @@ export default async function publishPackages(
 
     withNpmCache(new UncachedNpmInfoClient(), async infoClient => {
         for (const n of changedPackages.changedNotNeededPackages) {
-            await publishNotNeededPackage(client, skipBadPublishes(n, infoClient, log), dry, log);
+            try {
+                await publishNotNeededPackage(ghClient, skipBadPublishes(n, infoClient, log), dry, log, Registry.Github);
+            } catch(e) {
+                // log and continue
+                log("publishing to github failed: " + e.toString());
+            }
+            await publishNotNeededPackage(client, skipBadPublishes(n, infoClient, log), dry, log, Registry.NPM);
         }
     });
 
