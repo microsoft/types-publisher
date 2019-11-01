@@ -131,6 +131,7 @@ react-intl
 react-native-maps
 react-native-modal
 react-native-svg
+react-navigation
 recast
 redux
 redux-observable
