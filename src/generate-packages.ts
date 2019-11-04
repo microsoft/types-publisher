@@ -64,9 +64,9 @@ async function generateTypingPackage(typing: TypingsData, packages: AllPackages,
 }
 
 async function generateNotNeededPackage(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): Promise<void> {
-    await writeCommonOutputs(pkg, createNotNeededPackageJSON(skipBadPublishes(pkg, client, log), Registry.NPM), pkg.readme(), Registry.NPM);
-    // TODO: Test this
-    await writeCommonOutputs(pkg, createNotNeededPackageJSON(skipBadPublishes(pkg, client, log), Registry.NPM), pkg.readme(), Registry.Github);
+    pkg = skipBadPublishes(pkg, client, log);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, Registry.NPM), pkg.readme(), Registry.NPM);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, Registry.Github), pkg.readme(), Registry.Github);
 }
 
 async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string, registry: Registry): Promise<void> {
