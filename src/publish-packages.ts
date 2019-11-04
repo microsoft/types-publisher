@@ -127,13 +127,14 @@ export default async function publishPackages(
 
     withNpmCache(new UncachedNpmInfoClient(), async infoClient => {
         for (const n of changedPackages.changedNotNeededPackages) {
+            const target = skipBadPublishes(n, infoClient, log)
             try {
-                await publishNotNeededPackage(ghClient, skipBadPublishes(n, infoClient, log), dry, log, Registry.Github);
+                await publishNotNeededPackage(ghClient, target, dry, log, Registry.Github);
             } catch(e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());
             }
-            await publishNotNeededPackage(client, skipBadPublishes(n, infoClient, log), dry, log, Registry.NPM);
+            await publishNotNeededPackage(client, target, dry, log, Registry.NPM);
         }
     });
 
