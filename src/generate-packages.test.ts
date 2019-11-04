@@ -1,6 +1,6 @@
-import { createPackageJSON, createReadme, getLicenseFileText } from "./generate-packages";
+import { createNotNeededPackageJSON, createPackageJSON, createReadme, getLicenseFileText } from "./generate-packages";
 import { Registry } from "./lib/common";
-import { TypingsData, TypingsDataRaw, License, AllPackages, readNotNeededPackages, TypesDataFile } from "./lib/packages";
+import { TypingsData, TypingsDataRaw, License, AllPackages, readNotNeededPackages, TypesDataFile, NotNeededPackage } from "./lib/packages";
 import { testo } from "./util/test";
 import { createMockDT } from "./mocks"
 function createRawPackage(license: License): TypingsDataRaw {
@@ -30,6 +30,14 @@ function createTypesData(): TypesDataFile {
             "1": createRawPackage(License.MIT)
         },
     }
+}
+function createUnneededPackage() {
+    return new NotNeededPackage({
+        libraryName: "absalom",
+        typingsPackageName: "absalom",
+        asOfVersion: "1.1.1",
+        sourceRepoURL: "https://github.com/aardwulf/absalom",
+    })
 }
 testo({
     mitLicenseText() {
@@ -100,5 +108,27 @@ testo({
         const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
         expect(s).toEqual(expect.stringContaining('publishConfig'));
         expect(s).toEqual(expect.stringContaining('"registry": "https://npm.pkg.github.com/"'));
+    },
+    async basicNotNeededPackageJson() {
+        const s = createNotNeededPackageJSON(createUnneededPackage(), Registry.NPM);
+        expect(s).toEqual(`{
+    "name": "@types/absalom",
+    "version": "1.1.1",
+    "typings": null,
+    "description": "Stub TypeScript definitions entry for absalom, which provides its own types definitions",
+    "main": "",
+    "scripts": {},
+    "author": "",
+    "repository": "https://github.com/aardwulf/absalom",
+    "license": "MIT",
+    "dependencies": {
+        "absalom": "*"
+    }
+}`);
+    },
+    async githubNotNeededPackageJson() {
+        const s = createNotNeededPackageJSON(createUnneededPackage(), Registry.Github);
+        expect(s).toEqual(expect.stringContaining('@testtypepublishing'));
+        expect(s).toEqual(expect.stringContaining('npm.pkg.github.com'));
     },
 });

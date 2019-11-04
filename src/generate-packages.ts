@@ -64,10 +64,9 @@ async function generateTypingPackage(typing: TypingsData, packages: AllPackages,
 }
 
 async function generateNotNeededPackage(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): Promise<void> {
-    const packageJson = createNotNeededPackageJSON(skipBadPublishes(pkg, client, log));
-    await writeCommonOutputs(pkg, packageJson, pkg.readme(), Registry.NPM);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(skipBadPublishes(pkg, client, log), Registry.NPM), pkg.readme(), Registry.NPM);
     // TODO: Test this
-    await writeCommonOutputs(pkg, packageJson, pkg.readme(), Registry.Github);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(skipBadPublishes(pkg, client, log), Registry.NPM), pkg.readme(), Registry.Github);
 }
 
 async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string, registry: Registry): Promise<void> {
@@ -95,7 +94,7 @@ async function outputFilePath(pkg: AnyPackage, registry: Registry, filename: str
 
 interface Dependencies { [name: string]: string; }
 
-export function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages, registry = Registry.NPM): string {
+export function createPackageJSON(typing: TypingsData, version: string, packages: AllPackages, registry: Registry): string {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out: {} = {
         name: registry === Registry.NPM ? typing.fullNpmName : typing.fullGithubName,
@@ -149,25 +148,26 @@ function dependencySemver(dependency: DependencyVersion): string {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
 
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }: NotNeededPackage): string {
-    return JSON.stringify(
-        {
-            name: fullNpmName,
-            version: version.versionString,
-            typings: null, // tslint:disable-line no-null-keyword
-            description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
-            main: "",
-            scripts: {},
-            author: "",
-            repository: sourceRepoURL,
-            license,
-            // No `typings`, that's provided by the dependency.
-            dependencies: {
-                [name]: "*",
-            },
+export function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, fullGithubName, sourceRepoURL, version }: NotNeededPackage, registry: Registry): string {
+    const out = {
+        name: registry === Registry.NPM ? fullNpmName : fullGithubName,
+        version: version.versionString,
+        typings: null, // tslint:disable-line no-null-keyword
+        description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
+        main: "",
+        scripts: {},
+        author: "",
+        repository: sourceRepoURL,
+        license,
+        // No `typings`, that's provided by the dependency.
+        dependencies: {
+            [name]: "*",
         },
-        undefined,
-        4);
+    };
+    if (registry === Registry.Github) {
+        (out as any).publishConfig = { registry: "https://npm.pkg.github.com/" };
+    }
+    return JSON.stringify(out, undefined, 4);
 }
 
 export function createReadme(typing: TypingsData, reg: Registry): string {
