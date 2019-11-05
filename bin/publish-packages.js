@@ -19,7 +19,15 @@ if (!module.parent) {
         if (deprecateName !== undefined) {
             // A '--deprecate' command is available in case types-publisher got stuck *while* trying to deprecate a package.
             // Normally this should not be needed.
-            await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), await packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, logging_1.logger()[0]);
+            const log = logging_1.logger()[0];
+            try {
+                await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), await packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log, common_1.Registry.Github);
+            }
+            catch (e) {
+                // log and continue
+                log("publishing to github failed: " + e.toString());
+            }
+            await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), await packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log, common_1.Registry.NPM);
         }
         else {
             await publishPackages(await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt)), dry, process.env.GH_API_TOKEN || "", new io_1.Fetcher());
