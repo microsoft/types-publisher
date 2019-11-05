@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
+const common_1 = require("./common");
 const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");
 const url_1 = require("url");
@@ -109,8 +110,8 @@ class NpmPublishClient {
         this.auth = auth;
         this.registry = registry;
     }
-    static async create(config, registryName = "npm") {
-        if (registryName === "github") {
+    static async create(config, registry = common_1.Registry.NPM) {
+        if (registry === common_1.Registry.Github) {
             return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
         }
         else {

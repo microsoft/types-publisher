@@ -9,6 +9,12 @@ if (process.env.LONGJOHN) {
     const longjohn = require("longjohn"); // tslint:disable-line no-var-requires
     longjohn.async_trace_limit = -1; // unlimited
 }
+/** Which registry to publish to */
+var Registry;
+(function (Registry) {
+    Registry[Registry["NPM"] = 0] = "NPM";
+    Registry[Registry["Github"] = 1] = "Github";
+})(Registry = exports.Registry || (exports.Registry = {}));
 var Options;
 (function (Options) {
     /** Options for running locally. */

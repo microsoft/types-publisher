@@ -49,37 +49,39 @@ exports.default = generatePackages;
 async function generateTypingPackage(typing, packages, version, dt) {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
-    const packageJson = createPackageJSON(typing, version, packages);
-    await writeCommonOutputs(typing, packageJson, createReadme(typing));
-    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, file), await packageFS.readFile(file))));
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.NPM), createReadme(typing, common_1.Registry.NPM), common_1.Registry.NPM);
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.Github), createReadme(typing, common_1.Registry.Github), common_1.Registry.Github);
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.NPM, file), await packageFS.readFile(file))));
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.Github, file), await packageFS.readFile(file))));
 }
 async function generateNotNeededPackage(pkg, client, log) {
-    const packageJson = createNotNeededPackageJSON(versions_1.skipBadPublishes(pkg, client, log));
-    await writeCommonOutputs(pkg, packageJson, pkg.readme());
+    pkg = versions_1.skipBadPublishes(pkg, client, log);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, common_1.Registry.NPM), pkg.readme(), common_1.Registry.NPM);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, common_1.Registry.Github), pkg.readme(), common_1.Registry.Github);
 }
-async function writeCommonOutputs(pkg, packageJson, readme) {
-    await fs_extra_2.mkdir(pkg.outputDirectory);
+async function writeCommonOutputs(pkg, packageJson, readme, registry) {
+    await fs_extra_2.mkdir(pkg.outputDirectory + (registry === common_1.Registry.Github ? "-github" : ""));
     await Promise.all([
         writeOutputFile("package.json", packageJson),
         writeOutputFile("README.md", readme),
         writeOutputFile("LICENSE", getLicenseFileText(pkg)),
     ]);
     async function writeOutputFile(filename, content) {
-        await io_1.writeFile(await outputFilePath(pkg, filename), content);
+        await io_1.writeFile(await outputFilePath(pkg, registry, filename), content);
     }
 }
-async function outputFilePath(pkg, filename) {
-    const full = util_1.joinPaths(pkg.outputDirectory, filename);
+async function outputFilePath(pkg, registry, filename) {
+    const full = util_1.joinPaths(pkg.outputDirectory + (registry === common_1.Registry.Github ? "-github" : ""), filename);
     const dir = path.dirname(full);
     if (dir !== pkg.outputDirectory) {
         await fs_extra_2.mkdirp(dir);
     }
     return full;
 }
-function createPackageJSON(typing, version, packages) {
+function createPackageJSON(typing, version, packages, registry) {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out = {
-        name: typing.fullNpmName,
+        name: registry === common_1.Registry.NPM ? typing.fullNpmName : typing.fullGithubName,
         version,
         description: `TypeScript definitions for ${typing.libraryName}`,
         // keywords,
@@ -100,8 +102,12 @@ function createPackageJSON(typing, version, packages) {
         typesPublisherContentHash: typing.contentHash,
         typeScriptVersion: typing.minTypeScriptVersion,
     };
+    if (registry === common_1.Registry.Github) {
+        out.publishConfig = { registry: "https://npm.pkg.github.com/" };
+    }
     return JSON.stringify(out, undefined, 4);
 }
+exports.createPackageJSON = createPackageJSON;
 const definitelyTypedURL = "https://github.com/DefinitelyTyped/DefinitelyTyped";
 /** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
 function getDependencies(packageJsonDependencies, typing, allPackages) {
@@ -121,9 +127,9 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }) {
-    return JSON.stringify({
-        name: fullNpmName,
+function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, fullGithubName, sourceRepoURL, version }, registry) {
+    const out = {
+        name: registry === common_1.Registry.NPM ? fullNpmName : fullGithubName,
         version: version.versionString,
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
@@ -136,12 +142,17 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, s
         dependencies: {
             [name]: "*",
         },
-    }, undefined, 4);
+    };
+    if (registry === common_1.Registry.Github) {
+        out.publishConfig = { registry: "https://npm.pkg.github.com/" };
+    }
+    return JSON.stringify(out, undefined, 4);
 }
-function createReadme(typing) {
+exports.createNotNeededPackageJSON = createNotNeededPackageJSON;
+function createReadme(typing, reg) {
     const lines = [];
     lines.push("# Installation");
-    lines.push(`> \`npm install --save ${typing.fullNpmName}\``);
+    lines.push(`> \`npm install --save ${reg === common_1.Registry.NPM ? typing.fullNpmName : typing.fullGithubName}\``);
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {
@@ -166,6 +177,7 @@ function createReadme(typing) {
     lines.push("");
     return lines.join("\r\n");
 }
+exports.createReadme = createReadme;
 function getLicenseFileText(typing) {
     switch (typing.license) {
         case "MIT" /* MIT */:
@@ -176,6 +188,7 @@ function getLicenseFileText(typing) {
             throw util_1.assertNever(typing);
     }
 }
+exports.getLicenseFileText = getLicenseFileText;
 function apacheLicense(typing) {
     const year = new Date().getFullYear();
     const names = typing.contributors.map(c => c.name);

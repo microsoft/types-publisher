@@ -2,11 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const common_1 = require("../lib/common");
+const common_1 = require("./common");
 const util_1 = require("../util/util");
-async function publishTypingsPackage(client, changedTyping, dry, log) {
+async function publishTypingsPackage(client, changedTyping, dry, log, registry) {
     const { pkg, version, latestVersion } = changedTyping;
-    await common(client, pkg, log, dry);
+    await common(client, pkg, log, dry, registry);
     if (pkg.isLatest) {
         await updateTypeScriptVersionTags(pkg, version, client, log, dry);
     }
@@ -19,16 +19,16 @@ async function publishTypingsPackage(client, changedTyping, dry, log) {
     }
 }
 exports.publishTypingsPackage = publishTypingsPackage;
-async function publishNotNeededPackage(client, pkg, dry, log) {
+async function publishNotNeededPackage(client, pkg, dry, log, registry) {
     log(`Deprecating ${pkg.name}`);
-    await common(client, pkg, log, dry);
+    await common(client, pkg, log, dry, registry);
     // Don't use a newline in the deprecation message because it will be displayed as "\n" and not as a newline.
     await deprecateNotNeededPackage(client, pkg, dry, log);
 }
 exports.publishNotNeededPackage = publishNotNeededPackage;
-async function common(client, pkg, log, dry) {
+async function common(client, pkg, log, dry, registry) {
     const packageDir = pkg.outputDirectory;
-    const packageJson = await common_1.readFileAndWarn("generate", util_1.joinPaths(packageDir, "package.json"));
+    const packageJson = await common_1.readFileAndWarn("generate", util_1.joinPaths(packageDir + (registry === common_1.Registry.Github ? "-github" : ""), "package.json"));
     await client.publish(packageDir, packageJson, dry, log);
 }
 async function deprecateNotNeededPackage(client, pkg, dry = false, log) {

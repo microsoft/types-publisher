@@ -6,6 +6,8 @@ export declare const githubRegistry: string;
 export declare const npmApi = "api.npmjs.org";
 /** Note: this is 'types' and not '@types' */
 export declare const scopeName = "types";
+/** TODO: Change this to definitelytyped when it's ready */
+export declare const orgName = "testtypepublishing";
 export declare const dataDirPath: string;
 export declare const outputDirPath: string;
 export declare const validateOutputPath: string;

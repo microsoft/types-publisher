@@ -1,3 +1,8 @@
+/** Which registry to publish to */
+export declare enum Registry {
+    NPM = 0,
+    Github = 1
+}
 /** Settings that may be determined dynamically. */
 export interface Options {
     /**

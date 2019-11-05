@@ -34,10 +34,18 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     else {
         log("=== Publishing packages ===");
     }
-    const client = await npm_client_1.NpmPublishClient.create();
+    const client = await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.NPM);
+    const ghClient = await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.Github);
     for (const cp of changedPackages.changedTypings) {
         log(`Publishing ${cp.pkg.desc}...`);
-        await package_publisher_1.publishTypingsPackage(client, cp, dry, log);
+        try {
+            await package_publisher_1.publishTypingsPackage(ghClient, cp, dry, log, common_1.Registry.Github);
+        }
+        catch (e) {
+            // log and continue
+            log("publishing to github failed: " + e.toString());
+        }
+        await package_publisher_1.publishTypingsPackage(client, cp, dry, log, common_1.Registry.NPM);
         const commits = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/commits?path=types%2f${cp.pkg.subDirectoryPath}`, githubAccessToken, fetcher);
         const firstCommit = commits[0];
         if (firstCommit && !firstCommit.commit.message.includes("#no-publishing-comment")) {
@@ -90,7 +98,15 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
     }
     npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
         for (const n of changedPackages.changedNotNeededPackages) {
-            await package_publisher_1.publishNotNeededPackage(client, versions_1.skipBadPublishes(n, infoClient, log), dry, log);
+            const target = versions_1.skipBadPublishes(n, infoClient, log);
+            try {
+                await package_publisher_1.publishNotNeededPackage(ghClient, target, dry, log, common_1.Registry.Github);
+            }
+            catch (e) {
+                // log and continue
+                log("publishing to github failed: " + e.toString());
+            }
+            await package_publisher_1.publishNotNeededPackage(client, target, dry, log, common_1.Registry.NPM);
         }
     });
     await logging_1.writeLog("publishing.md", logResult());

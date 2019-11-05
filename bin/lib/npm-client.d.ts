@@ -1,3 +1,4 @@
+import { Registry } from "./common";
 import RegClient = require("npm-registry-client");
 import { Logger } from "../util/logging";
 export declare type NpmInfoCache = ReadonlyMap<string, NpmInfo>;
@@ -37,7 +38,7 @@ export declare class NpmPublishClient {
     private client;
     private auth;
     private registry;
-    static create(config?: RegClient.Config, registryName?: "github" | "npm"): Promise<NpmPublishClient>;
+    static create(config?: RegClient.Config, registry?: Registry): Promise<NpmPublishClient>;
     private constructor();
     publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger): Promise<void>;
     tag(packageName: string, version: string, distTag: string, dry: boolean, log: Logger): Promise<void>;

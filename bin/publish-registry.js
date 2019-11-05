@@ -36,16 +36,16 @@ async function publishRegistry(dt, allPackages, dry, client) {
     const newVersion = `0.1.${npmVersion.patch + 1}`;
     const isTimeForNewVersion = isSevenDaysAfter(lastModified);
     try {
-        await publishToRegistry("github");
+        await publishToRegistry(common_1.Registry.Github);
     }
     catch (e) {
         // log and continue
         log("publishing to github failed: " + e.toString());
     }
-    await publishToRegistry("npm");
+    await publishToRegistry(common_1.Registry.NPM);
     await logging_1.writeLog("publish-registry.md", logResult());
     async function publishToRegistry(registryName) {
-        const packageName = registryName === "github" ? "@definitelytyped/" + typesRegistry : typesRegistry;
+        const packageName = registryName === common_1.Registry.Github ? "@definitelytyped/" + typesRegistry : typesRegistry;
         const packageJson = generatePackageJson(packageName, registryName, newVersion, newContentHash);
         await generate(registry, packageJson);
         const publishClient = () => npm_client_1.NpmPublishClient.create({ defaultTag: "next" }, registryName);
@@ -175,7 +175,7 @@ function generatePackageJson(name, registryName, version, typesPublisherContentH
         description: "A registry of TypeScript declaration file packages published within the @types scope.",
         repository: {
             type: "git",
-            url: registryName === "github"
+            url: registryName === common_1.Registry.Github
                 ? "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
                 : "https://github.com/Microsoft/types-publisher.git",
         },
@@ -190,7 +190,7 @@ function generatePackageJson(name, registryName, version, typesPublisherContentH
         license: "MIT",
         typesPublisherContentHash,
     };
-    if (registryName === "github") {
+    if (registryName === common_1.Registry.Github) {
         json.publishConfig = { registry: "https://npm.pkg.github.com/" };
     }
     return json;
