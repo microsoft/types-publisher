@@ -94,7 +94,9 @@ function createPackageJSON(typing, version, packages, registry) {
         typesVersions: definitelytyped_header_parser_1.makeTypesVersionsForPackageJson(typing.typesVersions),
         repository: {
             type: "git",
-            url: `${definitelyTypedURL}.git`,
+            url: registry === common_1.Registry.Github
+                ? "https://github.com/TestTypePublishing/TypePublishing.git"
+                : "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
             directory: `types/${typing.name}`,
         },
         scripts: {},
