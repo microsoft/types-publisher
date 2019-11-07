@@ -19,6 +19,7 @@
 @storybook/react
 @types/expect
 @types/firebase
+@types/highcharts
 @types/hoist-non-react-statics
 @types/js-data
 @types/three
@@ -85,7 +86,6 @@ graphql
 graphql-tools
 grpc
 handlebars
-highcharts
 hoist-non-react-statics
 i18next
 immutable
