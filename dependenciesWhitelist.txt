@@ -20,6 +20,7 @@
 @types/expect
 @types/firebase
 @types/hoist-non-react-statics
+@types/ink
 @types/js-data
 @types/three
 @types/vue
@@ -90,7 +91,6 @@ hoist-non-react-statics
 i18next
 immutable
 indefinite-observable
-ink
 inversify
 jest-diff
 jest-environment-node
