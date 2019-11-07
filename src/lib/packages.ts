@@ -112,7 +112,7 @@ export class AllPackages {
         return this.notNeeded;
     }
 
-    /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
+    /** Returns all of the dependencies *that have typings*, ignoring others, and including test dependencies. */
     *allDependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
         for (const { name, majorVersion } of pkg.dependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
@@ -322,7 +322,12 @@ export interface TypingsDataRaw extends BaseRaw {
 
     // Whether a "package.json" exists
     readonly license: License;
+
+    // List of dependencies which indicate they should come from npm, not def typed
     readonly packageJsonDependencies: ReadonlyArray<PackageJsonDependency>;
+
+    // These should be removed from the packageJsonDependencies above
+    readonly packageJsonDevDependencies: ReadonlyArray<PackageJsonDependency>;
 
     // A hash computed from all files from this definition
     readonly contentHash: string;
@@ -433,6 +438,10 @@ export class TypingsData extends PackageBase {
 
     get dependencies(): ReadonlyArray<PackageId> {
         return this.data.dependencies;
+    }
+
+    get getDevDependencies(): ReadonlyArray<PackageJsonDependency> {
+        return this.data.packageJsonDevDependencies;
     }
 
     /** Path to this package, *relative* to the DefinitelyTyped directory. */

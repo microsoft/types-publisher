@@ -23,6 +23,7 @@ export function createTypingsVersionRaw(
             typesVersions: [],
             license: License.MIT,
             packageJsonDependencies: [],
+            packageJsonDevDependencies: [],
             contentHash: "11111111111111",
             projectName: "zombo.com",
             globals: [],

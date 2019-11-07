@@ -10,7 +10,7 @@ import { Options } from "./lib/common";
 import { dataDirPath, definitelyTypedZipUrl } from "./lib/settings";
 import { readFile, readJson, stringOfStream } from "./util/io";
 import { LoggerWithErrors, loggerWithErrors } from "./util/logging";
-import { assertDefined, assertSorted, Awaitable, exec, joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
+import { assertDefined, assertSorted, Awaitable,  joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
 
 /**
  * Readonly filesystem.
@@ -50,11 +50,11 @@ export async function getDefinitelyTyped(options: Options, log: LoggerWithErrors
         await ensureDir(dataDirPath);
         return downloadAndExtractFile(definitelyTypedZipUrl);
     } else {
-        const { error, stderr, stdout } = await exec("git diff --name-only", options.definitelyTypedPath);
-        if (error) { throw error; }
-        if (stderr) { throw new Error(stderr); }
-        if (stdout) { throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`); }
-        log.info(`Using local Definitely Typed at ${options.definitelyTypedPath}.`);
+        // const { error, stderr, stdout } = await exec("git diff --name-only", options.definitelyTypedPath);
+        // if (error) { throw error; }
+        // if (stderr) { throw new Error(stderr); }
+        // if (stdout) { throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`); }
+        // log.info(`Using local Definitely Typed at ${options.definitelyTypedPath}.`);
         return new DiskFS(`${options.definitelyTypedPath}/`);
     }
 }

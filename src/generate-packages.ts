@@ -1,4 +1,4 @@
-import { emptyDir } from "fs-extra";
+import { emptyDir, mkdir, mkdirp, readFileSync } from "fs-extra";
 import * as yargs from "yargs";
 
 import { FS, getDefinitelyTyped } from "./get-definitely-typed";
@@ -6,14 +6,13 @@ import { Options, Registry } from "./lib/common";
 import {
     AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
 } from "./lib/packages";
-import { sourceBranch, outputDirPath } from "./lib/settings";
+import { outputDirPath, sourceBranch } from "./lib/settings";
 import { ChangedPackages, readChangedPackages, skipBadPublishes } from "./lib/versions";
 import { writeFile } from "./util/io";
 import { logger, loggerWithErrors, writeLog, Logger } from "./util/logging";
 import { writeTgz } from "./util/tgz";
 import { assertNever, joinPaths, logUncaughtErrors, sortObjectKeys } from "./util/util";
 import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
-import { mkdir, mkdirp, readFileSync } from "fs-extra";
 import * as path from "path";
 import { withNpmCache, CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
 
@@ -117,6 +116,7 @@ export function createPackageJSON(typing: TypingsData, version: string, packages
         },
         scripts: {},
         dependencies: getDependencies(typing.packageJsonDependencies, typing, packages),
+        devDependencies: getDevDependencies(typing.getDevDependencies),
         typesPublisherContentHash: typing.contentHash,
         typeScriptVersion: typing.minTypeScriptVersion,
     };
@@ -129,7 +129,7 @@ export function createPackageJSON(typing: TypingsData, version: string, packages
 
 const definitelyTypedURL = "https://github.com/DefinitelyTyped/DefinitelyTyped";
 
-/** Adds inferred dependencies to `dependencies`, if they are not already specified in either `dependencies` or `peerDependencies`. */
+/** Adds inferred dependencies to `dependencies`, if they are not already specified in `dependencies`. */
 function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDependency>, typing: TypingsData, allPackages: AllPackages): Dependencies {
     const dependencies: Dependencies = {};
     for (const { name, version } of packageJsonDependencies) {
@@ -143,6 +143,16 @@ function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDepen
             dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
         }
     }
+    return sortObjectKeys(dependencies);
+}
+
+/** Just splits and sorts the dependencies, does not add the inferred types */
+function getDevDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDependency>): Dependencies {
+    const dependencies: Dependencies = {};
+    for (const { name, version } of packageJsonDependencies) {
+        dependencies[name] = version;
+    }
+
     return sortObjectKeys(dependencies);
 }
 
@@ -194,6 +204,8 @@ export function createReadme(typing: TypingsData, reg: Registry): string {
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
     const dependencies = Array.from(typing.dependencies).map(d => getFullNpmName(d.name));
     lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
+    const devDependencies = Array.from(typing.getDevDependencies.map(d => getFullNpmName(d.name)));
+    lines.push(` * Dev Dependencies: ${devDependencies.length ? devDependencies.join(", ") : "none"}`);
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
     lines.push("");
 

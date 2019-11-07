@@ -62,10 +62,10 @@ function transitiveClosure<T>(initialItems: Iterable<T>, getRelatedItems: (item:
 
 /** Generate a map from a package to packages that depend on it. */
 function getReverseDependencies(allPackages: AllPackages, changedPackages: PackageId[]): Map<PackageId, Set<PackageId>> {
-   const map = new Map<string, [PackageId, Set<PackageId>]>();
-     for (const changed of changedPackages) {
+    const map = new Map<string, [PackageId, Set<PackageId>]>();
+    for (const changed of changedPackages) {
          map.set(packageIdToKey(changed), [changed, new Set()]);
-    }
+     }
     for (const typing of allPackages.allTypings()) {
         if (!map.has(packageIdToKey(typing.id))) {
             map.set(packageIdToKey(typing.id), [typing.id, new Set()]);
