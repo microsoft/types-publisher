@@ -17,9 +17,12 @@
 @sentry/browser
 @storybook/addons
 @storybook/react
+@types/base-x
 @types/expect
 @types/firebase
+@types/highcharts
 @types/hoist-non-react-statics
+@types/ink
 @types/js-data
 @types/three
 @types/vue
@@ -85,12 +88,10 @@ graphql
 graphql-tools
 grpc
 handlebars
-highcharts
 hoist-non-react-statics
 i18next
 immutable
 indefinite-observable
-ink
 inversify
 jest-diff
 jest-environment-node
