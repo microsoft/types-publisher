@@ -90,7 +90,7 @@ function createPackageJSON(typing, version, packages, registry) {
         license: typing.license,
         contributors: typing.contributors,
         main: "",
-        types: "index",
+        types: "index.d.ts",
         typesVersions: definitelytyped_header_parser_1.makeTypesVersionsForPackageJson(typing.typesVersions),
         repository: {
             type: "git",

@@ -263,7 +263,9 @@ class TypingsData extends PackageBase {
     get contributors() { return this.data.contributors; }
     get major() { return this.data.libraryMajorVersion; }
     get minor() { return this.data.libraryMinorVersion; }
-    get minTypeScriptVersion() { return this.data.minTsVersion; }
+    get minTypeScriptVersion() {
+        return definitelytyped_header_parser_1.TypeScriptVersion.isSupported(this.data.minTsVersion) ? this.data.minTsVersion : definitelytyped_header_parser_1.TypeScriptVersion.lowest;
+    }
     get typesVersions() { return this.data.typesVersions; }
     get files() { return this.data.files; }
     get license() { return this.data.license; }

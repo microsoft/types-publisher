@@ -1,4 +1,4 @@
-import { Author, TypeScriptVersion } from "definitelytyped-header-parser";
+import { Author, TypeScriptVersion, AllTypeScriptVersion } from "definitelytyped-header-parser";
 import { FS } from "../get-definitely-typed";
 import { Semver } from "./versions";
 export declare class AllPackages {
@@ -106,7 +106,7 @@ export interface TypingsDataRaw extends BaseRaw {
     readonly contributors: ReadonlyArray<Author>;
     readonly libraryMajorVersion: number;
     readonly libraryMinorVersion: number;
-    readonly minTsVersion: TypeScriptVersion;
+    readonly minTsVersion: AllTypeScriptVersion;
     /**
      * List of TS versions that have their own directories, and corresponding "typesVersions" in package.json.
      * Usually empty.
