@@ -25,6 +25,7 @@
 @types/ink
 @types/js-data
 @types/three
+@types/rsmq
 @types/vue
 @types/webdriverio
 @types/winston
@@ -154,7 +155,6 @@ redux-saga
 redux-thunk
 rollup
 rrule
-rsmq
 rxjs
 safe-buffer
 should
