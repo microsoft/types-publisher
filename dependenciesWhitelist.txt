@@ -24,6 +24,7 @@
 @types/hoist-non-react-statics
 @types/ink
 @types/js-data
+@types/react-navigation
 @types/three
 @types/vue
 @types/webdriverio
@@ -144,7 +145,6 @@ react-native-fs
 react-native-maps
 react-native-modal
 react-native-svg
-react-navigation
 react-native-tab-view
 recast
 redux
