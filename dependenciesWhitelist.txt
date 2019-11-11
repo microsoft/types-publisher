@@ -22,10 +22,13 @@
 @types/firebase
 @types/highcharts
 @types/hoist-non-react-statics
+@types/next-redux-wrapper
 @types/ink
 @types/js-data
+@types/react-native-tab-view
 @types/react-navigation
 @types/three
+@types/rsmq
 @types/vue
 @types/webdriverio
 @types/winston
@@ -116,7 +119,6 @@ monaco-editor
 moment-range
 mqtt
 next
-next-redux-wrapper
 nock
 normalize-url
 objection
@@ -146,6 +148,7 @@ react-native-maps
 react-native-modal
 react-native-svg
 react-native-tab-view
+react-navigation
 recast
 redux
 redux-observable
@@ -154,7 +157,6 @@ redux-saga
 redux-thunk
 rollup
 rrule
-rsmq
 rxjs
 safe-buffer
 should
