@@ -165,16 +165,16 @@ function createReadme(typing, reg) {
     }
     lines.push("");
     lines.push("# Details");
-    lines.push(`Files were exported from ${definitelyTypedURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}`);
+    lines.push(`Files were exported from ${definitelyTypedURL}/tree/${settings_1.sourceBranch}/types/${typing.subDirectoryPath}.`);
     lines.push("");
-    lines.push("Additional Details");
+    lines.push("### Additional Details");
     lines.push(` * Last updated: ${(new Date()).toUTCString()}`);
     const dependencies = Array.from(typing.dependencies).map(d => packages_1.getFullNpmName(d.name));
-    lines.push(` * Dependencies: ${dependencies.length ? dependencies.join(", ") : "none"}`);
-    lines.push(` * Global values: ${typing.globals.length ? typing.globals.join(", ") : "none"}`);
+    lines.push(` * Dependencies: ${dependencies.length ? dependencies.map(d => `[${d}](https://npmjs.com/package/${d})`).join(", ") : "none"}`);
+    lines.push(` * Global values: ${typing.globals.length ? typing.globals.map(g => `\`${g}\``).join(", ") : "none"}`);
     lines.push("");
     lines.push("# Credits");
-    const contributors = typing.contributors.map(({ name, url }) => `${name} <${url}>`).join(", ").replace(/, ([^,]+)$/, ", and $1");
+    const contributors = typing.contributors.map(({ name, url }) => `${name} (${url})`).join(", ").replace(/, ([^,]+)$/, ", and $1");
     lines.push(`These definitions were written by ${contributors}.`);
     lines.push("");
     return lines.join("\r\n");
