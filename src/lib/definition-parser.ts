@@ -201,7 +201,7 @@ to refer to @types/P if it relies on old versions of P's types.
 In this case, please make a pull request to types-publisher adding @types/P to \`dependenciesWhitelist.txt\`.`
                 : `Dependency ${dependencyName} not in whitelist.
 If you are depending on another \`@types\` package, do *not* add it to a \`package.json\`. Path mapping should make the import work.
-For namespaced dependencies you then have to add a \`paths\` mapping from \`@namespace/library\` to \`namespace__library\` in \`tsconfig.json\`. 
+For namespaced dependencies you then have to add a \`paths\` mapping from \`@namespace/library\` to \`namespace__library\` in \`tsconfig.json\`.
 If this is an external library that provides typings,  please make a pull request to types-publisher adding it to \`dependenciesWhitelist.txt\`.`;
             throw new Error(`In ${path}: ${msg}`);
         }
@@ -375,12 +375,12 @@ export async function readFileAndThrowOnBOM(fileName: string, fs: FS): Promise<s
     return text;
 }
 
-const unusedFilesName = "UNUSED_FILES.txt";
+const unusedFilesName = "OTHER_FILES.txt";
 
 async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, fs: FS): Promise<void> {
     const lsSet = new Set(ls);
     const unusedFiles = lsSet.delete(unusedFilesName)
-        ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g))
+        ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean))
         : new Set<string>();
     await checkAllUsedRecur(lsSet, usedFiles, unusedFiles, fs);
 }
