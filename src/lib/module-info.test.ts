@@ -1,6 +1,7 @@
 import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
 import { testo } from "../util/test";
 import { createMockDT } from "../mocks"
+import * as ts from 'typescript'
 const fs = createMockDT();
 async function getBoringReferences() {
     return allReferencedFiles(["index.d.ts", "boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring")
@@ -26,10 +27,11 @@ testo({
         expect(Array.from(types.keys())).toEqual(["merges.d.ts"])
         expect(Array.from(tests.keys())).toEqual(["globby-tests.ts", "test/other-tests.ts"])
     },
-    async getModuleInfoWorks() {
+    async getModuleInfoWorksWithOtherFiles() {
         const [types] = await getBoringReferences();
+        types.set("untested.d.ts", ts.createSourceFile("untested.d.ts", await fs.subDir("types").subDir("boring").readFile("untested.d.ts"), ts.ScriptTarget.Latest, false));
         const i = await getModuleInfo("boring", types);
-        expect(i.dependencies).toEqual(new Set(['react', 'react-default', 'things', 'vorticon']));
+        expect(i.dependencies).toEqual(new Set(['manual', 'react', 'react-default', 'things', 'vorticon']));
     },
     async getTestDependenciesWorks() {
         const [types, tests] = await getBoringReferences();

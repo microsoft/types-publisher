@@ -6,7 +6,7 @@ import {
     computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, sort, split, unique, unmangleScopedPackage, withoutStart,
 } from "../util/util";
 
-import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
+import { allReferencedFiles, createSourceFile, getModuleInfo, getTestDependencies } from "./module-info";
 import { getLicenseFromPackageJson, PackageId, PackageJsonDependency, PathMapping, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
 import { dependenciesWhitelist } from "./settings";
 
@@ -156,8 +156,13 @@ async function getTypingDataForSingleTypesVersion(
 ): Promise<TypingDataFromIndividualTypeScriptVersion> {
     const tsconfig = await fs.readJson("tsconfig.json") as TsConfig; // tslint:disable-line await-promise (tslint bug)
     await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    // NOTE: Need to read OTHER_FILES.txt for d.ts files too. I think.
     const [typeFiles, testFiles] = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
+    const allUsedFiles = new Set([...typeFiles.keys(), ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
+    const otherFiles = await checkAllFilesUsed(ls, allUsedFiles, fs);
+    for (const untestedTypeFile of filter(otherFiles, name => name.endsWith('.d.ts'))) {
+        typeFiles.set(untestedTypeFile, createSourceFile(untestedTypeFile, await fs.readFile(untestedTypeFile)));
+    }
+
     const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = await getModuleInfo(packageName, typeFiles);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
@@ -166,8 +171,6 @@ async function getTypingDataForSingleTypesVersion(
 
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
 
-    const allUsedFiles = new Set([...typeFiles.keys(), ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
-    await checkAllFilesUsed(ls, allUsedFiles, fs);
 
     // Double-check that no windows "\\" broke in.
     for (const fileName of allUsedFiles) {
@@ -371,12 +374,13 @@ export async function readFileAndThrowOnBOM(fileName: string, fs: FS): Promise<s
 
 const unusedFilesName = "OTHER_FILES.txt";
 
-async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, fs: FS): Promise<void> {
+async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, fs: FS): Promise<Set<string>> {
     const lsSet = new Set(ls);
     const unusedFiles = lsSet.delete(unusedFilesName)
         ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean))
         : new Set<string>();
     await checkAllUsedRecur(lsSet, usedFiles, unusedFiles, fs);
+    return unusedFiles;
 }
 
 async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedFiles: Set<string>, fs: FS): Promise<void> {

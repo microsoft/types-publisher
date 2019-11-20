@@ -357,6 +357,6 @@ export async function getTestDependencies(
     return testDependencies;
 }
 
-function createSourceFile(filename: string, content: string): ts.SourceFile {
+export function createSourceFile(filename: string, content: string): ts.SourceFile {
     return ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, /*setParentNodes*/false);
 }
