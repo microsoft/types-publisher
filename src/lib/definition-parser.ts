@@ -212,7 +212,6 @@ If this is an external library that provides typings,  please make a pull reques
     return deps;
 }
 
-// TODO: Test this somehow
 async function checkFilesFromTsConfig(packageName: string, tsconfig: TsConfig, directoryPath: string): Promise<void> {
     const tsconfigPath = `${directoryPath}/tsconfig.json`;
     if (tsconfig.include) {

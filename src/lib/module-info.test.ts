@@ -39,17 +39,4 @@ testo({
         const d = await getTestDependencies("boring", tests.keys(), i.dependencies, fs.subDir("types").subDir("boring"));
         expect(d).toEqual(new Set(["super-big-fun-hus"]));
     }
-    // TODO: After all tests pass, I need to dump the current dep/testdep/[unused files?] from a current DT and then compare.
-    // TODO: For boring,gettypedataForSingleTypesVersion should start with tsconfig="index.d.ts", "boring-tests.ts" and
-    // find all the used types files: "index.d.ts", "secondary", "tertiary", "commonjs"
-    // TODO: GetTestDependencies should be checkTestDep and needs to be refactored similar to getModuleInfo to take a list of used files
-
-    // allReferencedFiles -> { usedTypeFiles, usedTestFiles }
-    // getModuleInfo :: usedTypeFiles -> { declFiles: usedTypeFiles, dependencies, declaredModules, globals } (the last two don't change)
-    // getTestDep :: usedTestFiles -> testDependencies I guess?
-
-    // entryFilesFromTsConfig is not needed anymore (maybe)
-
-
-    // NOTE: getTypingInfo is the actual entry point, not getTypeDataForSingleTypesVersion x_x
 })
