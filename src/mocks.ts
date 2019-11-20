@@ -25,6 +25,7 @@ declare var jQuery: 1;
 export = jQuery;
 `);
     jquery.set("jquery-tests.ts", `
+/// <reference types="jquery" />
 console.log(jQuery);
 `);
     jquery.set("tsconfig.json", `{
@@ -55,5 +56,111 @@ console.log(jQuery);
 
 `);
 
+    const boring = types.subdir("boring");
+    boring.set("index.d.ts", `
+// Project: https://boring.com
+// Definitions by: Some Guy From Space <https://github.com/goodspaceguy420>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+import * as React from 'react';
+export const drills: number;
+`);
+    boring.set("secondary.d.ts", `
+import deffo from 'react-default';
+export const hovercars: unknown;
+declare module "boring/fake" {
+    import { stock } from 'boring/tertiary';
+}
+`);
+    boring.set("tertiary.d.ts", `
+import { stuff } from 'things';
+export var stock: number;
+`);
+    boring.set("commonjs.d.ts", `
+import vortex = require('vorticon');
+declare const australia: {};
+export = australia;
+`);
+    boring.set("boring-tests.ts", `
+import { superstor } from "super-big-fun-hus";
+import { drills } from "boring";
+import { hovercars } from "boring/secondary";
+import australia = require('boring/commonjs');
+`);
+    boring.set("tsconfig.json", `{
+    "compilerOptions": {
+        "module": "commonjs",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "target": "es6",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "baseUrl": "../",
+        "typeRoots": [
+            "../"
+        ],
+        "types": [],
+        "noEmit": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "files": [
+        "index.d.ts",
+        "boring-tests.ts"
+    ]
+}`);
+
+    const globby = types.subdir("globby");
+    globby.set("index.d.ts", `
+// Project: https://globby-gloopy.com
+// Definitions by: The Dragon Quest Slime <https://github.com/gloopyslime>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+/// <reference path="./sneaky.d.ts" />
+declare var x: number
+`);
+    globby.set("merges.d.ts", `
+declare var y: number
+`);
+    globby.set("sneaky.d.ts", `
+declare var ka: number
+`);
+    globby.set("globby-tests.ts", `
+/// <reference types="globby" />
+var z = x;
+`);
+    globby.set("other-tests.ts", `
+/// <reference types="globby/merges" />
+var z = y;
+`);
+    globby.set("tsconfig.json", `{
+    "compilerOptions": {
+        "module": "commonjs",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "target": "es6",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "baseUrl": "../",
+        "typeRoots": [
+            "../"
+        ],
+        "types": [],
+        "noEmit": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "files": [
+        "index.d.ts",
+        "globby-tests.ts",
+        "other-tests.ts"
+    ]
+}`);
     return new InMemoryDT(root, "DefinitelyTyped");
 }

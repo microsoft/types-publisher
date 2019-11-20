@@ -7,10 +7,10 @@ import { hasWindowsSlashes, joinPaths, normalizeSlashes, sort } from "../util/ut
 
 import { readFileAndThrowOnBOM } from "./definition-parser";
 
-export default async function getModuleInfo(
+export async function getModuleInfo(
     packageName: string, packageDirectory: string, allEntryFilenames: ReadonlyArray<string>,
     fs: FS): Promise<ModuleInfo> {
-    const all = await allReferencedFiles(allEntryFilenames, fs, packageDirectory);
+    const all = await allReferencedFiles(allEntryFilenames, fs, packageName, packageDirectory);
 
     const dependencies = new Set<string>();
     const declaredModules: string[] = [];
@@ -123,7 +123,7 @@ function properModuleName(folderName: string, fileName: string): string {
     return part === "." ? folderName : joinPaths(folderName, part);
 }
 
-/** Given "foo/bar/baz", return "foo". */
+/** "foo/bar/baz" -> "foo"; "@foo/bar/baz" -> "@foo/bar" */
 function rootName(importText: string): string {
     let slash = importText.indexOf("/");
     // Root of `@foo/bar/baz` is `@foo/bar`
@@ -140,9 +140,11 @@ function withoutExtension(str: string, ext: string): string {
 }
 
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS, baseDirectory: string): Promise<Map<string, ts.SourceFile>> {
+export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string, extension: "d.ts" | "ts" = "d.ts"): Promise<Map<string, ts.SourceFile>> {
     const seenReferences = new Set<string>();
     const all = new Map<string, ts.SourceFile>();
+    await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
+    return all;
 
     async function recur({ text, exact }: Reference): Promise<void> {
         if (seenReferences.has(text)) {
@@ -150,26 +152,37 @@ async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS,
         }
         seenReferences.add(text);
 
-        const resolvedFilename = exact ? text : await resolveModule(text, fs);
-        const src = createSourceFile(resolvedFilename, await readFileAndThrowOnBOM(resolvedFilename, fs));
-        all.set(resolvedFilename, src);
+        const resolvedFilename = exact ? text : await resolveModule(text, fs, extension);
+        if (await fs.exists(resolvedFilename)) {
+            const src = createSourceFile(resolvedFilename, await readFileAndThrowOnBOM(resolvedFilename, fs));
+            all.set(resolvedFilename, src);
 
-        const refs = findReferencedFiles(src, path.dirname(resolvedFilename), normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
-        await Promise.all(Array.from(refs).map(recur));
+            const refs = findReferencedFiles(src, packageName, path.dirname(resolvedFilename), normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
+            await Promise.all(Array.from(refs).map(recur));
+        }
     }
 
-    await Promise.all(entryFilenames.map(filename => recur({ text: filename, exact: true })));
-    return all;
 }
 
-async function resolveModule(importSpecifier: string, fs: FS): Promise<string> {
-    const dts = `${importSpecifier}.d.ts`;
-    if (![".", "..", "./", "../"].includes(importSpecifier) && await fs.exists(dts)) {
-        return dts;
-    } else {
-        const index = joinPaths(importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier, "index.d.ts");
-        return index === "./index.d.ts" ?  "index.d.ts" : index;
+async function resolveModule(importSpecifier: string, fs: FS, extension: "d.ts" | "ts"): Promise<string> {
+    importSpecifier = importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier;
+    const isRelative = importSpecifier === "." || importSpecifier === "..";
+    const filename = importSpecifier + "." + extension;
+    if (!isRelative && await fs.exists(filename)) {
+        return filename;
+    } else if (extension == "ts") {
+        if (!isRelative && await fs.exists(filename + "x")) {
+            return filename + "x";
+        } else if (!isRelative && await fs.exists(importSpecifier + ".d.ts")) {
+            return importSpecifier + ".d.ts";
+        } else {
+            const indexName = importSpecifier === "." ? "index.ts" : joinPaths(importSpecifier, "index.ts");
+            if (await fs.exists(indexName)) {
+                return indexName;
+            }
+        }
     }
+    return importSpecifier === "." ? "index.d.ts" : joinPaths(importSpecifier, "index.d.ts");
 }
 
 interface Reference {
@@ -180,17 +193,29 @@ interface Reference {
 
 /**
  * @param subDirectory The specific directory within the DefinitelyTyped directory we are in.
- * For example, `directory` may be `react-router` and `subDirectory` may be `react-router/lib`.
+ * For example, `baseDirectory` may be `react-router` and `subDirectory` may be `react-router/lib`.
+ * versionsBaseDirectory may be "" when not in typesVersions or ".." when inside `react-router/ts3.1`
  */
-function* findReferencedFiles(src: ts.SourceFile, subDirectory: string, baseDirectory: string): Iterable<Reference> {
+function* findReferencedFiles(src: ts.SourceFile, packageName: string, subDirectory: string, baseDirectory: string): Iterable<Reference> {
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
         yield addReference({ text: ref.fileName, exact: true });
+    }
+    for (const ref of src.typeReferenceDirectives) {
+        if (ref.fileName.startsWith(packageName) + "/") {
+            yield addReference({ text: convertToRelativeReference(ref.fileName), exact: false });
+        }
+        else if (ref.fileName !== packageName) {
+            yield addReference({ text: ref.fileName, exact: false });
+        }
     }
 
     for (const ref of imports(src)) {
         if (ref.startsWith(".")) {
             yield addReference({ text: ref, exact: false });
+        }
+        if (ref.startsWith(packageName + "/")) {
+            yield addReference({ text: convertToRelativeReference(ref), exact: false });
         }
     }
 
@@ -206,6 +231,11 @@ function* findReferencedFiles(src: ts.SourceFile, subDirectory: string, baseDire
         }
         ref.text = full;
         return ref;
+    }
+
+    function convertToRelativeReference(name: string) {
+        const relative = "." + "/..".repeat(subDirectory === "." ? 0 : subDirectory.split("/").length);
+        return relative + name.slice(packageName.length);
     }
 }
 
