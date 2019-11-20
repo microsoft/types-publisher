@@ -57,7 +57,7 @@ console.log(jQuery);
 `);
 
     const boring = types.subdir("boring");
-    boring.set("index.d.ts", `
+    boring.set("index.d.ts", `// Type definitions for boring 1.0
 // Project: https://boring.com
 // Definitions by: Some Guy From Space <https://github.com/goodspaceguy420>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -114,7 +114,7 @@ import australia = require('boring/commonjs');
 }`);
 
     const globby = types.subdir("globby");
-    globby.set("index.d.ts", `
+    globby.set("index.d.ts", `// Type definitions for globby 0.1
 // Project: https://globby-gloopy.com
 // Definitions by: The Dragon Quest Slime <https://github.com/gloopyslime>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
