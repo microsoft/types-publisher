@@ -3,7 +3,7 @@ import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
 import {
-    computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, split, unique, unmangleScopedPackage, withoutStart,
+    computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, sort, split, unique, unmangleScopedPackage, withoutStart,
 } from "../util/util";
 
 import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
@@ -154,28 +154,19 @@ async function getTypingDataForSingleTypesVersion(
     fs: FS,
     oldMajorVersion: number | undefined,
 ): Promise<TypingDataFromIndividualTypeScriptVersion> {
-    // 1. First calculate all references from types files (this should be unndeeded, except that some packages have no (0!) tests
-    // 2. calculate all referenced files from test files
-    // 3. combine those into one (minus test/non-d.ts files?), pass to getModuleInfo
-    // 4. pass all referenced test files into getTestDependencies, which is stripped down to just issue errors I think.
     const tsconfig = await fs.readJson("tsconfig.json") as TsConfig; // tslint:disable-line await-promise (tslint bug)
     await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
+    // NOTE: Need to read OTHER_FILES.txt for d.ts files too. I think.
     const [typeFiles, testFiles] = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
-    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await getModuleInfo(packageName, typeFiles);
+    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = await getModuleInfo(packageName, typeFiles);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
     const dependenciesSet = new Set(filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
-    // TODO: Rework getTextDependencies to call allReferencedFiles and perform its checks
-    // const testDependencies = Array.from(removeDeclaredModules(await getTestDependencies(packageName, testFiles, dependenciesSet, fs)));
-    // ALSO: testDependencies now has a lot of external dependencies stuff in it that was previously found by scraping through tsconfig's actually-unused files
-    // example:
-
     const testDependencies = Array.from(filter(await getTestDependencies(packageName, testFiles.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
 
-    // TODO: what does removedeclaredmodules and calculatedependencies do to getModuleInfo's dependencies?
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
 
-    const allUsedFiles = new Set([...declFiles, ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
+    const allUsedFiles = new Set([...typeFiles.keys(), ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
     await checkAllFilesUsed(ls, allUsedFiles, fs);
 
     // Double-check that no windows "\\" broke in.
@@ -186,7 +177,7 @@ async function getTypingDataForSingleTypesVersion(
     }
 
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
-    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles, tsconfigPathsForHash };
+    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: sort(typeFiles.keys()), tsconfigPathsForHash };
 }
 
 function checkPackageJsonDependencies(dependencies: unknown, path: string): ReadonlyArray<PackageJsonDependency> {
@@ -264,7 +255,7 @@ interface TsConfig {
     compilerOptions: ts.CompilerOptions;
 }
 
-/** In addition to dependencies found oun source code, also get dependencies from tsconfig. */
+/** In addition to dependencies found in source code, also get dependencies from tsconfig. */
 interface DependenciesAndPathMappings { readonly dependencies: ReadonlyArray<PackageId>; readonly pathMappings: ReadonlyArray<PathMapping>; }
 async function calculateDependencies(
     packageName: string,

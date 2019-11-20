@@ -78,7 +78,7 @@ export async function getModuleInfo(packageName: string, all: Map<string, ts.Sou
         }
     }
 
-    return { declFiles: sort(all.keys()), dependencies, declaredModules, globals: sort(globals) };
+    return { dependencies, declaredModules, globals: sort(globals) };
 }
 
 /**
@@ -100,8 +100,6 @@ function sourceFileExportsSomething({ statements }: ts.SourceFile): boolean {
 }
 
 interface ModuleInfo {
-    // Every declaration file used (starting from the entry point)
-    declFiles: string[];
     dependencies: Set<string>;
     // Anything from a `declare module "foo"`
     declaredModules: string[];
