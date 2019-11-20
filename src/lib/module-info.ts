@@ -135,21 +135,12 @@ function withoutExtension(str: string, ext: string): string {
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
 export async function allReferencedFiles(
     entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string
-): Promise<[Map<string, ts.SourceFile>, Map<string, ts.SourceFile>]> {
+): Promise<{ types: Map<string, ts.SourceFile>, tests: Map<string, ts.SourceFile> }> {
     const seenReferences = new Set<string>();
-    const all = new Map<string, ts.SourceFile>();
-    await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
     const types = new Map<string, ts.SourceFile>();
     const tests = new Map<string, ts.SourceFile>();
-    for (const filename of all.keys()) {
-        if (filename.endsWith(".d.ts")) {
-            types.set(filename, all.get(filename)!);
-        }
-        else {
-            tests.set(filename, all.get(filename)!);
-        }
-    }
-    return [types, tests];
+    await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
+    return { types, tests };
 
     async function recur({ text, exact }: Reference): Promise<void> {
         if (seenReferences.has(text)) {
@@ -160,7 +151,11 @@ export async function allReferencedFiles(
         const resolvedFilename = exact ? text : await resolveModule(text, fs);
         if (await fs.exists(resolvedFilename)) {
             const src = createSourceFile(resolvedFilename, await readFileAndThrowOnBOM(resolvedFilename, fs));
-            all.set(resolvedFilename, src);
+            if (resolvedFilename.endsWith(".d.ts")) {
+                types.set(resolvedFilename, src);
+            } else {
+                tests.set(resolvedFilename, src);
+            }
 
             const refs = findReferencedFiles(src, packageName, path.dirname(resolvedFilename), normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
             await Promise.all(Array.from(refs).map(recur));

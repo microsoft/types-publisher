@@ -156,31 +156,23 @@ async function getTypingDataForSingleTypesVersion(
 ): Promise<TypingDataFromIndividualTypeScriptVersion> {
     const tsconfig = await fs.readJson("tsconfig.json") as TsConfig; // tslint:disable-line await-promise (tslint bug)
     await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    const [typeFiles, testFiles] = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
-    const allUsedFiles = new Set([...typeFiles.keys(), ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
-    const otherFiles = await checkAllFilesUsed(ls, allUsedFiles, fs);
+    const { types, tests } = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
+    const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
+    const otherFiles = await checkAllFilesUsed(ls, usedFiles, packageName, fs);
     for (const untestedTypeFile of filter(otherFiles, name => name.endsWith('.d.ts'))) {
-        typeFiles.set(untestedTypeFile, createSourceFile(untestedTypeFile, await fs.readFile(untestedTypeFile)));
+        // add d.ts files from OTHER_FILES.txt in order get their dependencies
+        types.set(untestedTypeFile, createSourceFile(untestedTypeFile, await fs.readFile(untestedTypeFile)));
     }
 
-    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = await getModuleInfo(packageName, typeFiles);
+    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = await getModuleInfo(packageName, types);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
     const dependenciesSet = new Set(filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
-    const testDependencies = Array.from(filter(await getTestDependencies(packageName, testFiles.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
+    const testDependencies = Array.from(filter(await getTestDependencies(packageName, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
 
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
-
-
-    // Double-check that no windows "\\" broke in.
-    for (const fileName of allUsedFiles) {
-        if (hasWindowsSlashes(fileName)) {
-            throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
-        }
-    }
-
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
-    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: sort(typeFiles.keys()), tsconfigPathsForHash };
+    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: sort(types.keys()), tsconfigPathsForHash };
 }
 
 function checkPackageJsonDependencies(dependencies: unknown, path: string): ReadonlyArray<PackageJsonDependency> {
@@ -374,7 +366,13 @@ export async function readFileAndThrowOnBOM(fileName: string, fs: FS): Promise<s
 
 const unusedFilesName = "OTHER_FILES.txt";
 
-async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, fs: FS): Promise<Set<string>> {
+async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, packageName: string, fs: FS): Promise<Set<string>> {
+    // Double-check that no windows "\\" broke in.
+    for (const fileName of usedFiles) {
+        if (hasWindowsSlashes(fileName)) {
+            throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
+        }
+    }
     const lsSet = new Set(ls);
     const unusedFiles = lsSet.delete(unusedFilesName)
         ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean))
