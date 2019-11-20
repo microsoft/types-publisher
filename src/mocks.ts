@@ -10,52 +10,6 @@ export function createMockDT() {
   }]
 }`);
     const types = root.subdir("types");
-    const jquery = types.subdir("jquery");
-    jquery.set("JQuery.d.ts", `
-declare var jQuery: 1;
-`);
-    jquery.set("index.d.ts", `// Type definitions for jquery 3.3
-// Project: https://jquery.com
-// Definitions by: Leonard Thieu <https://github.com/leonard-thieu>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-// TypeScript Version: 2.3
-
-/// <reference path="JQuery.d.ts" />
-
-export = jQuery;
-`);
-    jquery.set("jquery-tests.ts", `
-/// <reference types="jquery" />
-console.log(jQuery);
-`);
-    jquery.set("tsconfig.json", `{
-    "compilerOptions": {
-        "module": "commonjs",
-        "lib": [
-            "es6",
-            "dom"
-        ],
-        "target": "es6",
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "baseUrl": "../",
-        "typeRoots": [
-            "../"
-        ],
-        "types": [],
-        "noEmit": true,
-        "forceConsistentCasingInFileNames": true
-    },
-    "files": [
-        "index.d.ts",
-        "jquery-tests.ts"
-    ]
-}
-
-`);
-
     const boring = types.subdir("boring");
     boring.set("index.d.ts", `// Type definitions for boring 1.0
 // Project: https://boring.com
@@ -67,14 +21,21 @@ export const drills: number;
 `);
     boring.set("secondary.d.ts", `
 import deffo from 'react-default';
+import { mammoths } from 'boring/quaternary';
 export const hovercars: unknown;
 declare module "boring/fake" {
     import { stock } from 'boring/tertiary';
+}
+declare module "other" {
+    export const augmented: true;
 }
 `);
     boring.set("tertiary.d.ts", `
 import { stuff } from 'things';
 export var stock: number;
+`);
+    boring.set("quaternary.d.ts", `
+export const mammoths: object;
 `);
     boring.set("commonjs.d.ts", `
 import vortex = require('vorticon');
@@ -129,10 +90,10 @@ declare var y: number
 declare var ka: number
 `);
     globby.set("globby-tests.ts", `
-/// <reference types="globby" />
 var z = x;
 `);
-    globby.set("other-tests.ts", `
+    const tests = globby.subdir("test");
+    tests.set("other-tests.ts", `
 /// <reference types="globby/merges" />
 var z = y;
 `);
@@ -159,8 +120,53 @@ var z = y;
     "files": [
         "index.d.ts",
         "globby-tests.ts",
-        "other-tests.ts"
+        "test/other-tests.ts"
     ]
 }`);
+    const jquery = types.subdir("jquery");
+    jquery.set("JQuery.d.ts", `
+declare var jQuery: 1;
+`);
+    jquery.set("index.d.ts", `// Type definitions for jquery 3.3
+// Project: https://jquery.com
+// Definitions by: Leonard Thieu <https://github.com/leonard-thieu>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+// TypeScript Version: 2.3
+
+/// <reference path="JQuery.d.ts" />
+
+export = jQuery;
+`);
+    jquery.set("jquery-tests.ts", `
+console.log(jQuery);
+`);
+    jquery.set("tsconfig.json", `{
+    "compilerOptions": {
+        "module": "commonjs",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "target": "es6",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "baseUrl": "../",
+        "typeRoots": [
+            "../"
+        ],
+        "types": [],
+        "noEmit": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "files": [
+        "index.d.ts",
+        "jquery-tests.ts"
+    ]
+}
+
+`);
+
     return new InMemoryDT(root, "DefinitelyTyped");
 }

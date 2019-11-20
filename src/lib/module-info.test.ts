@@ -1,28 +1,43 @@
-import { allReferencedFiles, getModuleInfo } from "./module-info";
+import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
 import { testo } from "../util/test";
 import { createMockDT } from "../mocks"
 const fs = createMockDT();
+async function getBoringReferences() {
+    return allReferencedFiles(["index.d.ts", "boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring")
+}
 testo({
     async allReferencedFilesFromTsconfigFiles() {
-        const m = await allReferencedFiles(["index.d.ts", "boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring", "ts")
-        expect(Array.from(m.keys())).toEqual(["index.d.ts", "boring-tests.ts", "secondary.d.ts", "commonjs.d.ts", "tertiary.d.ts"])
+        const [types, tests] = await getBoringReferences();
+        expect(Array.from(types.keys())).toEqual(["index.d.ts", "secondary.d.ts", "commonjs.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
+        expect(Array.from(tests.keys())).toEqual(["boring-tests.ts"])
     },
     async allReferencedFilesFromTestIncludesSecondaryInternalFiles() {
-        const m = await allReferencedFiles(["boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring", "ts")
-        expect(Array.from(m.keys())).toEqual(["boring-tests.ts", "secondary.d.ts", "commonjs.d.ts", "tertiary.d.ts"])
+        const [types, tests] = await allReferencedFiles(["boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring")
+        expect(Array.from(types.keys())).toEqual(["secondary.d.ts", "commonjs.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
+        expect(Array.from(tests.keys())).toEqual(["boring-tests.ts"])
     },
-    async allReferencedFilesFromTestIncludesTripleSlashTypes() {
-        const m = await allReferencedFiles(["jquery-tests.ts"], fs.subDir("types").subDir("jquery"), "jquery", "types/jquery", "ts")
-        expect(Array.from(m.keys())).toEqual(["jquery-tests.ts", "index.d.ts", "JQuery.d.ts"])
+    async allReferencedFilesFromTsconfigGlobal() {
+        const [types, tests] = await allReferencedFiles(["jquery-tests.ts", "index.d.ts"], fs.subDir("types").subDir("jquery"), "jquery", "types/jquery")
+        expect(Array.from(types.keys())).toEqual(["index.d.ts", "JQuery.d.ts"])
+        expect(Array.from(tests.keys())).toEqual(["jquery-tests.ts"])
     },
     async allReferencedFilesFromTestIncludesSecondaryTripleSlashTypes() {
-        const m = await allReferencedFiles(["globby-tests.ts", "other-tests.ts"], fs.subDir("types").subDir("globby"), "globby", "types/globby", "ts")
-        expect(Array.from(m.keys())).toEqual(["globby-tests.ts", "other-tests.ts", "index.d.ts", "merges.d.ts", "sneaky.d.ts"])
+        const [types,tests] = await allReferencedFiles(["globby-tests.ts", "test/other-tests.ts"], fs.subDir("types").subDir("globby"), "globby", "types/globby")
+        expect(Array.from(types.keys())).toEqual(["merges.d.ts"])
+        expect(Array.from(tests.keys())).toEqual(["globby-tests.ts", "test/other-tests.ts"])
     },
     async getModuleInfoWorks() {
-        const m = await getModuleInfo("boring", "types/boring", ["index.d.ts", "secondary.d.ts", "tertiary.d.ts", "commonjs.d.ts"], fs.subDir("types").subDir("boring"));
-        expect(m.dependencies).toEqual(new Set(['react', 'react-default', 'things', 'vorticon']));
+        const [types] = await getBoringReferences();
+        const i = await getModuleInfo("boring", types);
+        expect(i.dependencies).toEqual(new Set(['react', 'react-default', 'things', 'vorticon']));
     },
+    async getTestDependenciesWorks() {
+        const [types, tests] = await getBoringReferences();
+        const i = await getModuleInfo("boring", types);
+        const d = await getTestDependencies("boring", tests.keys(), i.dependencies, fs.subDir("types").subDir("boring"));
+        expect(d).toEqual(new Set(["super-big-fun-hus"]));
+    }
+    // TODO: After all tests pass, I need to dump the current dep/testdep/[unused files?] from a current DT and then compare.
     // TODO: For boring,gettypedataForSingleTypesVersion should start with tsconfig="index.d.ts", "boring-tests.ts" and
     // find all the used types files: "index.d.ts", "secondary", "tertiary", "commonjs"
     // TODO: GetTestDependencies should be checkTestDep and needs to be refactored similar to getModuleInfo to take a list of used files

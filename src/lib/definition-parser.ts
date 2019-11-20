@@ -6,7 +6,7 @@ import {
     computeHash, filter, flatMap, hasWindowsSlashes, join, mapAsyncOrdered, mapDefined, split, unique, unmangleScopedPackage, withoutStart,
 } from "../util/util";
 
-import { allReferencedFiles, getModuleInfo } from "./module-info";
+import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
 import { getLicenseFromPackageJson, PackageId, PackageJsonDependency, PathMapping, TypingsDataRaw, TypingsVersionsRaw } from "./packages";
 import { dependenciesWhitelist } from "./settings";
 
@@ -164,19 +164,15 @@ async function getTypingDataForSingleTypesVersion(
     const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await getModuleInfo(packageName, typeFiles);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
-    const removeDeclaredModules = (modules: Iterable<string>): Iterable<string> => filter(modules, m => !declaredModulesSet.has(m));
-    const dependenciesSet = new Set(removeDeclaredModules(dependenciesWithDeclaredModules));
+    const dependenciesSet = new Set(filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
     // TODO: Rework getTextDependencies to call allReferencedFiles and perform its checks
     // const testDependencies = Array.from(removeDeclaredModules(await getTestDependencies(packageName, testFiles, dependenciesSet, fs)));
     // ALSO: testDependencies now has a lot of external dependencies stuff in it that was previously found by scraping through tsconfig's actually-unused files
     // example:
 
-    // test-a.ts -> a-global.d.ts -> react-fungi
-    // react-fungi needs to be in `dependencies`, not `testDependencies`, but doesn't matter for unusedFiles.
-    // SO: aim for producing dependencies/testDependencies
-    // this means transferring some files from testDep to dependencies, and figuring out what testDep is used for.
-    const testDependencies = Array.from(removeDeclaredModules(testFiles.keys()));
+    const testDependencies = Array.from(filter(await getTestDependencies(packageName, testFiles.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
 
+    // TODO: what does removedeclaredmodules and calculatedependencies do to getModuleInfo's dependencies?
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
 
     const allUsedFiles = new Set([...declFiles, ...testFiles.keys(), "tsconfig.json", "tslint.json"]);

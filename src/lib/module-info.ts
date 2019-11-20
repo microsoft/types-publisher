@@ -13,7 +13,9 @@ export async function getModuleInfo(packageName: string, all: Map<string, ts.Sou
     const declaredModules: string[] = [];
     const globals = new Set<string>();
 
-    function addDependency(dependency: string): void {
+    function addDependency(ref: string): void {
+        if (ref.startsWith(".")) return;
+        const dependency = rootName(ref);
         if (dependency !== packageName) {
             dependencies.add(dependency);
         }
@@ -22,15 +24,11 @@ export async function getModuleInfo(packageName: string, all: Map<string, ts.Sou
 
     for (const sourceFile of all.values()) {
         for (const ref of imports(sourceFile)) {
-            if (!ref.startsWith(".")) {
-                addDependency(rootName(ref));
-            }
+            addDependency(ref);
         }
-
         for (const ref of sourceFile.typeReferenceDirectives) {
             addDependency(ref.fileName);
         }
-
         if (ts.isExternalModule(sourceFile)) {
             if (sourceFileExportsSomething(sourceFile)) {
                 declaredModules.push(properModuleName(packageName, sourceFile.fileName));
@@ -137,7 +135,9 @@ function withoutExtension(str: string, ext: string): string {
 }
 
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string) {
+export async function allReferencedFiles(
+    entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string
+): Promise<[Map<string, ts.SourceFile>, Map<string, ts.SourceFile>]> {
     const seenReferences = new Set<string>();
     const all = new Map<string, ts.SourceFile>();
     await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
@@ -323,42 +323,39 @@ function assertNoWindowsSlashes(packageName: string, fileName: string): string {
 }
 
 export async function getTestDependencies(
-    pkgName: string,
+    packageName: string,
     testFiles: Iterable<string>,
     dependencies: ReadonlySet<string>,
     fs: FS,
 ): Promise<Iterable<string>> {
     const testDependencies = new Set<string>();
-
     for (const filename of testFiles) {
         const content = await readFileAndThrowOnBOM(filename, fs);
         const sourceFile = createSourceFile(filename, content);
         const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
-        const filePath = () => path.join(pkgName, fileName);
-
+        const filePath = () => path.join(packageName, fileName);
         for (const { fileName: ref } of referencedFiles) {
             throw new Error(`Test files should not use '<reference path="" />'. '${filePath()}' references '${ref}'.`);
         }
-
         for (const { fileName: referencedPackage } of typeReferenceDirectives) {
             if (dependencies.has(referencedPackage)) {
                 throw new Error(
                     `'${filePath()}' unnecessarily references '${referencedPackage}', which is already referenced in the type definition.`);
             }
-            if (referencedPackage === pkgName) {
+            if (referencedPackage === packageName) {
                 throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
             }
-
             testDependencies.add(referencedPackage);
         }
-
         for (const imported of imports(sourceFile)) {
-            if (!imported.startsWith(".") && !dependencies.has(imported) && imported !== pkgName) {
-                testDependencies.add(imported);
+            if (!imported.startsWith(".")) {
+                const dep = rootName(imported);
+                if (!dependencies.has(dep) && dep !== packageName) {
+                    testDependencies.add(dep);
+                }
             }
         }
     }
-
     return testDependencies;
 }
 
