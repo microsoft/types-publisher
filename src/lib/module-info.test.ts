@@ -3,6 +3,10 @@ import { testo } from "../util/test";
 import { createMockDT } from "../mocks"
 const fs = createMockDT();
 testo({
+    async allReferencedFilesFromTsconfigFiles() {
+        const m = await allReferencedFiles(["index.d.ts", "boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring", "ts")
+        expect(Array.from(m.keys())).toEqual(["index.d.ts", "boring-tests.ts", "secondary.d.ts", "commonjs.d.ts", "tertiary.d.ts"])
+    },
     async allReferencedFilesFromTestIncludesSecondaryInternalFiles() {
         const m = await allReferencedFiles(["boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring", "ts")
         expect(Array.from(m.keys())).toEqual(["boring-tests.ts", "secondary.d.ts", "commonjs.d.ts", "tertiary.d.ts"])

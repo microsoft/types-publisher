@@ -7,10 +7,7 @@ import { hasWindowsSlashes, joinPaths, normalizeSlashes, sort } from "../util/ut
 
 import { readFileAndThrowOnBOM } from "./definition-parser";
 
-export async function getModuleInfo(
-    packageName: string, packageDirectory: string, allEntryFilenames: ReadonlyArray<string>,
-    fs: FS): Promise<ModuleInfo> {
-    const all = await allReferencedFiles(allEntryFilenames, fs, packageName, packageDirectory);
+export async function getModuleInfo(packageName: string, all: Map<string, ts.SourceFile>): Promise<ModuleInfo> {
 
     const dependencies = new Set<string>();
     const declaredModules: string[] = [];
@@ -140,11 +137,21 @@ function withoutExtension(str: string, ext: string): string {
 }
 
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string, extension: "d.ts" | "ts" = "d.ts"): Promise<Map<string, ts.SourceFile>> {
+export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string) {
     const seenReferences = new Set<string>();
     const all = new Map<string, ts.SourceFile>();
     await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
-    return all;
+    const types = new Map<string, ts.SourceFile>();
+    const tests = new Map<string, ts.SourceFile>();
+    for (const filename of all.keys()) {
+        if (filename.endsWith(".d.ts")) {
+            types.set(filename, all.get(filename)!);
+        }
+        else {
+            tests.set(filename, all.get(filename)!);
+        }
+    }
+    return [types, tests];
 
     async function recur({ text, exact }: Reference): Promise<void> {
         if (seenReferences.has(text)) {
@@ -152,7 +159,7 @@ export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, 
         }
         seenReferences.add(text);
 
-        const resolvedFilename = exact ? text : await resolveModule(text, fs, extension);
+        const resolvedFilename = exact ? text : await resolveModule(text, fs);
         if (await fs.exists(resolvedFilename)) {
             const src = createSourceFile(resolvedFilename, await readFileAndThrowOnBOM(resolvedFilename, fs));
             all.set(resolvedFilename, src);
@@ -164,25 +171,19 @@ export async function allReferencedFiles(entryFilenames: ReadonlyArray<string>, 
 
 }
 
-async function resolveModule(importSpecifier: string, fs: FS, extension: "d.ts" | "ts"): Promise<string> {
+async function resolveModule(importSpecifier: string, fs: FS): Promise<string> {
     importSpecifier = importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier;
-    const isRelative = importSpecifier === "." || importSpecifier === "..";
-    const filename = importSpecifier + "." + extension;
-    if (!isRelative && await fs.exists(filename)) {
-        return filename;
-    } else if (extension == "ts") {
-        if (!isRelative && await fs.exists(filename + "x")) {
-            return filename + "x";
-        } else if (!isRelative && await fs.exists(importSpecifier + ".d.ts")) {
+    if (importSpecifier !== "." && importSpecifier !== "..") {
+        if (await fs.exists(importSpecifier + ".d.ts")) {
             return importSpecifier + ".d.ts";
-        } else {
-            const indexName = importSpecifier === "." ? "index.ts" : joinPaths(importSpecifier, "index.ts");
-            if (await fs.exists(indexName)) {
-                return indexName;
-            }
+        } else if (await fs.exists(importSpecifier + ".ts")) {
+            return importSpecifier + ".ts";
+        } else if (await fs.exists(importSpecifier + ".tsx")) {
+            return importSpecifier + ".tsx";
         }
     }
     return importSpecifier === "." ? "index.d.ts" : joinPaths(importSpecifier, "index.d.ts");
+
 }
 
 interface Reference {

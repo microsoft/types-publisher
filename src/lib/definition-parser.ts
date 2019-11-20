@@ -159,9 +159,9 @@ async function getTypingDataForSingleTypesVersion(
     // 3. combine those into one (minus test/non-d.ts files?), pass to getModuleInfo
     // 4. pass all referenced test files into getTestDependencies, which is stripped down to just issue errors I think.
     const tsconfig = await fs.readJson("tsconfig.json") as TsConfig; // tslint:disable-line await-promise (tslint bug)
-    const { typeFiles, testFiles } = await entryFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } =
-        await getModuleInfo(packageName, packageDirectory, typeFiles, fs);
+    await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
+    const [typeFiles, testFiles] = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
+    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await getModuleInfo(packageName, typeFiles);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
     const removeDeclaredModules = (modules: Iterable<string>): Iterable<string> => filter(modules, m => !declaredModulesSet.has(m));
@@ -175,11 +175,11 @@ async function getTypingDataForSingleTypesVersion(
     // react-fungi needs to be in `dependencies`, not `testDependencies`, but doesn't matter for unusedFiles.
     // SO: aim for producing dependencies/testDependencies
     // this means transferring some files from testDep to dependencies, and figuring out what testDep is used for.
-    const testDependencies = Array.from(removeDeclaredModules(Object.keys(await allReferencedFiles(testFiles, fs, packageName, packageDirectory, "ts"))));;
+    const testDependencies = Array.from(removeDeclaredModules(testFiles.keys()));
 
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
 
-    const allUsedFiles = new Set([...declFiles, ...testFiles, ...testDependencies, "tsconfig.json", "tslint.json"]);
+    const allUsedFiles = new Set([...declFiles, ...testFiles.keys(), "tsconfig.json", "tslint.json"]);
     await checkAllFilesUsed(ls, allUsedFiles, fs);
 
     // Double-check that no windows "\\" broke in.
@@ -230,8 +230,8 @@ If this is an external library that provides typings,  please make a pull reques
     return deps;
 }
 
-interface EntryFile { readonly typeFiles: ReadonlyArray<string>; readonly testFiles: ReadonlyArray<string>; }
-async function entryFilesFromTsConfig(packageName: string, tsconfig: TsConfig, directoryPath: string): Promise<EntryFile> {
+// TODO: Test this somehow
+async function checkFilesFromTsConfig(packageName: string, tsconfig: TsConfig, directoryPath: string): Promise<void> {
     const tsconfigPath = `${directoryPath}/tsconfig.json`;
     if (tsconfig.include) {
         throw new Error(`In tsconfig, don't use "include", must use "files"`);
@@ -241,32 +241,25 @@ async function entryFilesFromTsConfig(packageName: string, tsconfig: TsConfig, d
     if (!files) {
         throw new Error(`${tsconfigPath} needs to specify  "files"`);
     }
-
-    const typeFiles: string[] = [];
-    const testFiles: string[] = [];
-
     for (const file of files) {
         if (file.startsWith("./")) {
             throw new Error(`In ${tsconfigPath}: Unnecessary "./" at the start of ${file}`);
         }
+        if (file.endsWith(".d.ts") && file !== "index.d.ts") {
+            throw new Error(`Only index.d.ts may be listed explicitly in tsconfig's "files" entry.
+Other d.ts files must either be referenced through index.d.ts, tests, or added to OTHER_FILES.txt.`)
+        }
 
-        if (file.endsWith(".d.ts")) {
-            typeFiles.push(file);
-        } else {
-            if (!file.startsWith("test/")) {
-                const expectedName = `${packageName}-tests.ts`;
-                if (file !== expectedName && file !== `${expectedName}x`) {
-                    const message = file.endsWith(".ts") || file.endsWith(".tsx")
-                        ? `Expected file '${file}' to be named '${expectedName}' or to be inside a '${directoryPath}/test/' directory`
-                        : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files")`;
-                    throw new Error(message);
-                }
+        if (!file.endsWith(".d.ts") && !file.startsWith("test/")) {
+            const expectedName = `${packageName}-tests.ts`;
+            if (file !== expectedName && file !== `${expectedName}x`) {
+                const message = file.endsWith(".ts") || file.endsWith(".tsx")
+                    ? `Expected file '${file}' to be named '${expectedName}' or to be inside a '${directoryPath}/test/' directory`
+                    : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files", but OTHER_FILES.txt)`;
+                throw new Error(message);
             }
-            testFiles.push(file);
         }
     }
-
-    return { typeFiles, testFiles };
 }
 
 interface TsConfig {
