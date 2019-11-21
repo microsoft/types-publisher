@@ -88,6 +88,7 @@ untested.d.ts
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 /// <reference path="./sneaky.d.ts" />
+/// <reference types="andere/snee" />
 declare var x: number
 `);
     globby.set("merges.d.ts", `

@@ -116,13 +116,24 @@ function properModuleName(folderName: string, fileName: string): string {
     return part === "." ? folderName : joinPaths(folderName, part);
 }
 
-/** "foo/bar/baz" -> "foo"; "@foo/bar/baz" -> "@foo/bar" */
+/**
+ * "foo/bar/baz" -> "foo"; "@foo/bar/baz" -> "@foo/bar"
+ * Note: Throws an error for references like
+ */
 function rootName(importText: string): string {
     let slash = importText.indexOf("/");
     // Root of `@foo/bar/baz` is `@foo/bar`
     if (importText.startsWith("@")) {
         // Use second "/"
         slash = importText.indexOf("/", slash + 1);
+    }
+    if (slash > -1 && importText.slice(slash + 1).match(/v\d+/)) {
+        const name = importText.slice(0, slash);
+        const version = importText.slice(slash + 2);
+        throw new Error(`${importText}: do not directly import specific versions of another types package.
+You should try to work with the latest version of ${name} instead.
+If working with the latest version is not possible, add a package.json that refers to ${name}@${version} instead.
+You will need to add @types/${name} to dependenciesWhitelist.txt on github.com/microsoft/types-publisher first.`);
     }
     return slash === -1 ? importText : importText.slice(0, slash);
 }
@@ -158,7 +169,7 @@ export async function allReferencedFiles(
             }
 
             const refs = findReferencedFiles(src, packageName, path.dirname(resolvedFilename), normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
-            await Promise.all(Array.from(refs).map(recur));
+            await Promise.all(refs.map(recur));
         }
     }
 
@@ -190,30 +201,31 @@ interface Reference {
  * For example, `baseDirectory` may be `react-router` and `subDirectory` may be `react-router/lib`.
  * versionsBaseDirectory may be "" when not in typesVersions or ".." when inside `react-router/ts3.1`
  */
-function* findReferencedFiles(src: ts.SourceFile, packageName: string, subDirectory: string, baseDirectory: string): Iterable<Reference> {
+function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirectory: string, baseDirectory: string) {
+    const refs: Reference[] = []
+
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
-        yield addReference({ text: ref.fileName, exact: true });
+        addReference({ text: ref.fileName, exact: true });
     }
     for (const ref of src.typeReferenceDirectives) {
-        if (ref.fileName.startsWith(packageName) + "/") {
-            yield addReference({ text: convertToRelativeReference(ref.fileName), exact: false });
-        }
-        else if (ref.fileName !== packageName) {
-            yield addReference({ text: ref.fileName, exact: false });
+        // only <reference types="packagename/x" /> references are local
+        if (ref.fileName.startsWith(packageName + "/")) {
+            addReference({ text: convertToRelativeReference(ref.fileName), exact: false });
         }
     }
 
     for (const ref of imports(src)) {
         if (ref.startsWith(".")) {
-            yield addReference({ text: ref, exact: false });
+            addReference({ text: ref, exact: false });
         }
         if (ref.startsWith(packageName + "/")) {
-            yield addReference({ text: convertToRelativeReference(ref), exact: false });
+            addReference({ text: convertToRelativeReference(ref), exact: false });
         }
     }
+    return refs;
 
-    function addReference(ref: Reference): Reference {
+    function addReference(ref: Reference): void {
         // `path.normalize` may add windows slashes
         const full = normalizeSlashes(path.normalize(joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, ref.text))));
         // allow files in typesVersions directories (i.e. 'ts3.1') to reference files in parent directory
@@ -224,7 +236,7 @@ function* findReferencedFiles(src: ts.SourceFile, packageName: string, subDirect
                 `(Based on reference '${ref.text}')`);
         }
         ref.text = full;
-        return ref;
+        refs.push(ref);
     }
 
     function convertToRelativeReference(name: string) {

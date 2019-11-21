@@ -1,3 +1,4 @@
+import { Dir, InMemoryDT } from "../get-definitely-typed";
 import { allReferencedFiles, getModuleInfo, getTestDependencies } from "./module-info";
 import { testo } from "../util/test";
 import { createMockDT } from "../mocks"
@@ -29,14 +30,35 @@ testo({
     },
     async getModuleInfoWorksWithOtherFiles() {
         const { types } = await getBoringReferences();
+        // written as if it were from OTHER_FILES.txt
         types.set("untested.d.ts", ts.createSourceFile("untested.d.ts", await fs.subDir("types").subDir("boring").readFile("untested.d.ts"), ts.ScriptTarget.Latest, false));
         const i = await getModuleInfo("boring", types);
         expect(i.dependencies).toEqual(new Set(['manual', 'react', 'react-default', 'things', 'vorticon']));
+    },
+    async getModuleInfoForNestedTypeReferences() {
+        const { types } = await allReferencedFiles(["index.d.ts", "globby-tests.ts", "test/other-tests.ts"], fs.subDir("types").subDir("globby"), "globby", "types/globby")
+        expect(Array.from(types.keys())).toEqual(["index.d.ts", "sneaky.d.ts", "merges.d.ts"])
+        const i = await getModuleInfo("globby", types);
+        expect(i.dependencies).toEqual(new Set(['andere']));
+    },
+    async versionTypeRefThrows() {
+        const fail = new Dir(undefined);
+        const fs = new InMemoryDT(fail, "typeref-fails");
+        fail.set("index.d.ts", `// Type definitions for fail 1.0
+// Project: https://youtube.com/typeref-fails
+// Definitions by: Type Ref Fails <https://github.com/typeref-fails>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+/// <reference types="elser/v3" />
+`);
+        const { types } = await allReferencedFiles(["index.d.ts"], fs, "typeref-fails", "types/typeref-fails")
+        expect(Array.from(types.keys())).toEqual(["index.d.ts"])
+        await expect(getModuleInfo("typeref-fails", types)).rejects.toThrow();
     },
     async getTestDependenciesWorks() {
         const { types, tests } = await getBoringReferences();
         const i = await getModuleInfo("boring", types);
         const d = await getTestDependencies("boring", tests.keys(), i.dependencies, fs.subDir("types").subDir("boring"));
         expect(d).toEqual(new Set(["super-big-fun-hus"]));
-    }
+    },
 })
