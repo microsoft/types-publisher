@@ -373,9 +373,7 @@ async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<strin
             throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
         }
     }
-    const otherFilesSet = new Set(otherFiles);
-    otherFilesSet.delete(unusedFilesName);
-    await checkAllUsedRecur(new Set(ls), usedFiles, otherFilesSet, fs);
+    await checkAllUsedRecur(new Set(ls), usedFiles,  new Set(otherFiles), fs);
 }
 
 async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedFiles: Set<string>, fs: FS): Promise<void> {
@@ -413,7 +411,7 @@ async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, u
             }
             await checkAllUsedRecur(lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles), subdir);
         } else {
-            if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
+            if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig" && lsEntry !== unusedFilesName) {
                 throw new Error(`Unused file ${fs.debugPath()}/${lsEntry} (used files: ${JSON.stringify(Array.from(usedFiles))})`);
             }
         }
