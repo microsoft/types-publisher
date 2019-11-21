@@ -53,7 +53,7 @@ testo({
 `);
         const { types } = await allReferencedFiles(["index.d.ts"], fs, "typeref-fails", "types/typeref-fails")
         expect(Array.from(types.keys())).toEqual(["index.d.ts"])
-        await expect(getModuleInfo("typeref-fails", types)).rejects.toThrow();
+        await expect(getModuleInfo("typeref-fails", types)).rejects.toThrow("do not directly import specific versions of another types package");
     },
     async getTestDependenciesWorks() {
         const { types, tests } = await getBoringReferences();

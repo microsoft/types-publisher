@@ -373,7 +373,9 @@ async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<strin
             throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
         }
     }
-    await checkAllUsedRecur(new Set(ls), usedFiles, new Set(otherFiles), fs);
+    const otherFilesSet = new Set(otherFiles);
+    otherFilesSet.delete(unusedFilesName);
+    await checkAllUsedRecur(new Set(ls), usedFiles, otherFilesSet, fs);
 }
 
 async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedFiles: Set<string>, fs: FS): Promise<void> {
