@@ -20,6 +20,7 @@
 @types/base-x
 @types/expect
 @types/firebase
+@types/gulp
 @types/highcharts
 @types/hoist-non-react-statics
 @types/next-redux-wrapper
