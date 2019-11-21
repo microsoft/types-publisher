@@ -127,7 +127,7 @@ function rootName(importText: string): string {
         // Use second "/"
         slash = importText.indexOf("/", slash + 1);
     }
-    if (slash > -1 && importText.slice(slash + 1).match(/v\d+/)) {
+    if (slash > -1 && importText.slice(slash + 1).match(/\/v\d+$/)) {
         const name = importText.slice(0, slash);
         const version = importText.slice(slash + 2);
         throw new Error(`${importText}: do not directly import specific versions of another types package.

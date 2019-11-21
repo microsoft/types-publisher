@@ -158,7 +158,8 @@ async function getTypingDataForSingleTypesVersion(
     await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
     const { types, tests } = await allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
     const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
-    const otherFiles = await checkAllFilesUsed(ls, usedFiles, packageName, fs);
+    const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
+    await checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
     for (const untestedTypeFile of filter(otherFiles, name => name.endsWith('.d.ts'))) {
         // add d.ts files from OTHER_FILES.txt in order get their dependencies
         types.set(untestedTypeFile, createSourceFile(untestedTypeFile, await fs.readFile(untestedTypeFile)));
@@ -365,19 +366,14 @@ export async function readFileAndThrowOnBOM(fileName: string, fs: FS): Promise<s
 
 const unusedFilesName = "OTHER_FILES.txt";
 
-async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, packageName: string, fs: FS): Promise<Set<string>> {
+async function checkAllFilesUsed(ls: ReadonlyArray<string>, usedFiles: Set<string>, otherFiles: string[], packageName: string, fs: FS): Promise<void> {
     // Double-check that no windows "\\" broke in.
     for (const fileName of usedFiles) {
         if (hasWindowsSlashes(fileName)) {
             throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
         }
     }
-    const lsSet = new Set(ls);
-    const unusedFiles = lsSet.delete(unusedFilesName)
-        ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean))
-        : new Set<string>();
-    await checkAllUsedRecur(lsSet, usedFiles, unusedFiles, fs);
-    return unusedFiles;
+    await checkAllUsedRecur(new Set(ls), usedFiles, new Set(otherFiles), fs);
 }
 
 async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedFiles: Set<string>, fs: FS): Promise<void> {
@@ -416,12 +412,17 @@ async function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, u
             await checkAllUsedRecur(lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles), subdir);
         } else {
             if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
-                throw new Error(`Unused file ${fs.debugPath()}/${lsEntry} (used files: ${JSON.stringify(Array.from(unusedFiles))})`);
+                throw new Error(`Unused file ${fs.debugPath()}/${lsEntry} (used files: ${JSON.stringify(Array.from(usedFiles))})`);
             }
         }
     }
 
     for (const unusedFile of unusedFiles) {
-        throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
+        if (usedFiles.has(unusedFile)) {
+            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} is already reachable from tsconfig.json.`);
+        }
+        else {
+            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
+        }
     }
 }
