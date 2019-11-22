@@ -15,7 +15,7 @@ export async function getModuleInfo(packageName: string, all: Map<string, ts.Sou
 
     function addDependency(ref: string): void {
         if (ref.startsWith(".")) return;
-        const dependency = rootName(ref);
+        const dependency = rootName(ref, all);
         if (dependency !== packageName) {
             dependencies.add(dependency);
         }
@@ -120,22 +120,20 @@ function properModuleName(folderName: string, fileName: string): string {
  * "foo/bar/baz" -> "foo"; "@foo/bar/baz" -> "@foo/bar"
  * Note: Throws an error for references like
  */
-function rootName(importText: string): string {
+function rootName(importText: string, typeFiles: Map<string, unknown>): string {
     let slash = importText.indexOf("/");
     // Root of `@foo/bar/baz` is `@foo/bar`
     if (importText.startsWith("@")) {
         // Use second "/"
         slash = importText.indexOf("/", slash + 1);
     }
-    if (slash > -1 && importText.slice(slash).match(/\/v\d+$/)) {
-        const name = importText.slice(0, slash);
-        const version = importText.slice(slash + 2);
+    const root = importText.slice(0, slash);
+    const postImport = importText.slice(slash + 1);
+    if (slash > -1 && postImport.match(/v\d+$/) && !typeFiles.has(postImport + ".d.ts")) {
         throw new Error(`${importText}: do not directly import specific versions of another types package.
-You should try to work with the latest version of ${name} instead.
-If working with the latest version is not possible, add a package.json that refers to ${name}@${version} instead.
-You will need to add @types/${name} to dependenciesWhitelist.txt on github.com/microsoft/types-publisher first.`);
+You should work with the latest version of ${root} instead.`);
     }
-    return slash === -1 ? importText : importText.slice(0, slash);
+    return slash === -1 ? importText : root;
 }
 
 function withoutExtension(str: string, ext: string): string {
@@ -329,6 +327,7 @@ function assertNoWindowsSlashes(packageName: string, fileName: string): string {
 
 export async function getTestDependencies(
     packageName: string,
+    typeFiles: Map<string, unknown>,
     testFiles: Iterable<string>,
     dependencies: ReadonlySet<string>,
     fs: FS,
@@ -354,7 +353,7 @@ export async function getTestDependencies(
         }
         for (const imported of imports(sourceFile)) {
             if (!imported.startsWith(".")) {
-                const dep = rootName(imported);
+                const dep = rootName(imported, typeFiles);
                 if (!dependencies.has(dep) && dep !== packageName) {
                     testDependencies.add(dep);
                 }

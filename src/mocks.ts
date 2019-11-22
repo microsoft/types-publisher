@@ -42,6 +42,9 @@ import vortex = require('vorticon');
 declare const australia: {};
 export = australia;
 `);
+    boring.set("v1.d.ts", `
+export const inane: true | false;
+`);
     boring.set("untested.d.ts", `
 import { help } from 'manual';
 export const fungible: false;
@@ -51,6 +54,7 @@ import { superstor } from "super-big-fun-hus";
 import { drills } from "boring";
 import { hovercars } from "boring/secondary";
 import australia = require('boring/commonjs');
+import { inane } from "boring/v1";
 `);
     boring.set("OTHER_FILES.txt", `
 untested.d.ts

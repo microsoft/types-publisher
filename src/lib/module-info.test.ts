@@ -10,12 +10,12 @@ async function getBoringReferences() {
 testo({
     async allReferencedFilesFromTsconfigFiles() {
         const { types, tests } = await getBoringReferences();
-        expect(Array.from(types.keys())).toEqual(["index.d.ts", "secondary.d.ts", "commonjs.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
+        expect(Array.from(types.keys())).toEqual(["index.d.ts", "secondary.d.ts", "commonjs.d.ts", "v1.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
         expect(Array.from(tests.keys())).toEqual(["boring-tests.ts"])
     },
     async allReferencedFilesFromTestIncludesSecondaryInternalFiles() {
         const { types, tests } = await allReferencedFiles(["boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring")
-        expect(Array.from(types.keys())).toEqual(["secondary.d.ts", "commonjs.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
+        expect(Array.from(types.keys())).toEqual(["secondary.d.ts", "commonjs.d.ts", "v1.d.ts", "quaternary.d.ts", "tertiary.d.ts"])
         expect(Array.from(tests.keys())).toEqual(["boring-tests.ts"])
     },
     async allReferencedFilesFromTsconfigGlobal() {
@@ -58,7 +58,7 @@ testo({
     async getTestDependenciesWorks() {
         const { types, tests } = await getBoringReferences();
         const i = await getModuleInfo("boring", types);
-        const d = await getTestDependencies("boring", tests.keys(), i.dependencies, fs.subDir("types").subDir("boring"));
+        const d = await getTestDependencies("boring", types, tests.keys(), i.dependencies, fs.subDir("types").subDir("boring"));
         expect(d).toEqual(new Set(["super-big-fun-hus"]));
     },
 })

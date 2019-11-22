@@ -169,7 +169,7 @@ async function getTypingDataForSingleTypesVersion(
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
     const dependenciesSet = new Set(filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
-    const testDependencies = Array.from(filter(await getTestDependencies(packageName, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
+    const testDependencies = Array.from(filter(await getTestDependencies(packageName, types, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
 
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
