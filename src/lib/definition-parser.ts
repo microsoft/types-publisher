@@ -228,7 +228,7 @@ async function checkFilesFromTsConfig(packageName: string, tsconfig: TsConfig, d
             throw new Error(`In ${tsconfigPath}: Unnecessary "./" at the start of ${file}`);
         }
         if (file.endsWith(".d.ts") && file !== "index.d.ts") {
-            throw new Error(`Only index.d.ts may be listed explicitly in tsconfig's "files" entry.
+            throw new Error(`${packageName}: Only index.d.ts may be listed explicitly in tsconfig's "files" entry.
 Other d.ts files must either be referenced through index.d.ts, tests, or added to OTHER_FILES.txt.`)
         }
 
