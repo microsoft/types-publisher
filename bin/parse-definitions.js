@@ -31,6 +31,7 @@ async function parseDefinitions(dt, parallel, log) {
     const packageNames = await util_1.filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
     log.info(`Found ${packageNames.length} packages.`);
     const typings = {};
+    const start = Date.now();
     if (parallel) {
         log.info("Parsing in parallel...");
         await util_1.runWithChildProcesses({
@@ -49,6 +50,7 @@ async function parseDefinitions(dt, parallel, log) {
             typings[packageName] = await definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName));
         }
     }
+    log.info("Parsing took " + ((Date.now() - start) / 1000) + " s");
     await common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings));
     return packages_1.AllPackages.from(typings, await packages_1.readNotNeededPackages(dt));
 }

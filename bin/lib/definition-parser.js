@@ -104,24 +104,23 @@ function getAllUniqueValues(records, key) {
  */
 async function getTypingDataForSingleTypesVersion(typescriptVersion, packageName, packageDirectory, ls, fs, oldMajorVersion) {
     const tsconfig = await fs.readJson("tsconfig.json"); // tslint:disable-line await-promise (tslint bug)
-    const { typeFiles, testFiles } = await entryFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules, declFiles } = await module_info_1.default(packageName, packageDirectory, typeFiles, fs);
+    await checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
+    const { types, tests } = await module_info_1.allReferencedFiles(tsconfig.files, fs, packageName, packageDirectory);
+    const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
+    const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
+    await checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
+    for (const untestedTypeFile of util_1.filter(otherFiles, name => name.endsWith('.d.ts'))) {
+        // add d.ts files from OTHER_FILES.txt in order get their dependencies
+        types.set(untestedTypeFile, module_info_1.createSourceFile(untestedTypeFile, await fs.readFile(untestedTypeFile)));
+    }
+    const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = await module_info_1.getModuleInfo(packageName, types);
     const declaredModulesSet = new Set(declaredModules);
     // Don't count an import of "x" as a dependency if we saw `declare module "x"` somewhere.
-    const removeDeclaredModules = (modules) => util_1.filter(modules, m => !declaredModulesSet.has(m));
-    const dependenciesSet = new Set(removeDeclaredModules(dependenciesWithDeclaredModules));
-    const testDependencies = Array.from(removeDeclaredModules(await module_info_1.getTestDependencies(packageName, testFiles, dependenciesSet, fs)));
+    const dependenciesSet = new Set(util_1.filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
+    const testDependencies = Array.from(util_1.filter(await module_info_1.getTestDependencies(packageName, types, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
     const { dependencies, pathMappings } = await calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
-    const allUsedFiles = new Set(declFiles.concat(testFiles, ["tsconfig.json", "tslint.json"]));
-    await checkAllFilesUsed(ls, allUsedFiles, fs);
-    // Double-check that no windows "\\" broke in.
-    for (const fileName of allUsedFiles) {
-        if (util_1.hasWindowsSlashes(fileName)) {
-            throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
-        }
-    }
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
-    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles, tsconfigPathsForHash };
+    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: util_1.sort(types.keys()), tsconfigPathsForHash };
 }
 function checkPackageJsonDependencies(dependencies, path) {
     if (dependencies === undefined) { // tslint:disable-line strict-type-predicates (false positive)
@@ -155,7 +154,7 @@ If this is an external library that provides typings,  please make a pull reques
     }
     return deps;
 }
-async function entryFilesFromTsConfig(packageName, tsconfig, directoryPath) {
+async function checkFilesFromTsConfig(packageName, tsconfig, directoryPath) {
     const tsconfigPath = `${directoryPath}/tsconfig.json`;
     if (tsconfig.include) {
         throw new Error(`In tsconfig, don't use "include", must use "files"`);
@@ -164,29 +163,24 @@ async function entryFilesFromTsConfig(packageName, tsconfig, directoryPath) {
     if (!files) {
         throw new Error(`${tsconfigPath} needs to specify  "files"`);
     }
-    const typeFiles = [];
-    const testFiles = [];
     for (const file of files) {
         if (file.startsWith("./")) {
             throw new Error(`In ${tsconfigPath}: Unnecessary "./" at the start of ${file}`);
         }
-        if (file.endsWith(".d.ts")) {
-            typeFiles.push(file);
+        if (file.endsWith(".d.ts") && file !== "index.d.ts") {
+            throw new Error(`${packageName}: Only index.d.ts may be listed explicitly in tsconfig's "files" entry.
+Other d.ts files must either be referenced through index.d.ts, tests, or added to OTHER_FILES.txt.`);
         }
-        else {
-            if (!file.startsWith("test/")) {
-                const expectedName = `${packageName}-tests.ts`;
-                if (file !== expectedName && file !== `${expectedName}x`) {
-                    const message = file.endsWith(".ts") || file.endsWith(".tsx")
-                        ? `Expected file '${file}' to be named '${expectedName}' or to be inside a '${directoryPath}/test/' directory`
-                        : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files")`;
-                    throw new Error(message);
-                }
+        if (!file.endsWith(".d.ts") && !file.startsWith("test/")) {
+            const expectedName = `${packageName}-tests.ts`;
+            if (file !== expectedName && file !== `${expectedName}x`) {
+                const message = file.endsWith(".ts") || file.endsWith(".tsx")
+                    ? `Expected file '${file}' to be named '${expectedName}' or to be inside a '${directoryPath}/test/' directory`
+                    : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files", but OTHER_FILES.txt)`;
+                throw new Error(message);
             }
-            testFiles.push(file);
         }
     }
-    return { typeFiles, testFiles };
 }
 async function calculateDependencies(packageName, tsconfig, dependencyNames, oldMajorVersion) {
     const paths = tsconfig.compilerOptions && tsconfig.compilerOptions.paths || {};
@@ -285,12 +279,14 @@ async function readFileAndThrowOnBOM(fileName, fs) {
 }
 exports.readFileAndThrowOnBOM = readFileAndThrowOnBOM;
 const unusedFilesName = "OTHER_FILES.txt";
-async function checkAllFilesUsed(ls, usedFiles, fs) {
-    const lsSet = new Set(ls);
-    const unusedFiles = lsSet.delete(unusedFilesName)
-        ? new Set((await fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean))
-        : new Set();
-    await checkAllUsedRecur(lsSet, usedFiles, unusedFiles, fs);
+async function checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs) {
+    // Double-check that no windows "\\" broke in.
+    for (const fileName of usedFiles) {
+        if (util_1.hasWindowsSlashes(fileName)) {
+            throw new Error(`In ${packageName}: windows slash detected in ${fileName}`);
+        }
+    }
+    await checkAllUsedRecur(new Set(ls), usedFiles, new Set(otherFiles), fs);
 }
 async function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
     for (const lsEntry of ls) {
@@ -325,13 +321,18 @@ async function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
             await checkAllUsedRecur(lssubdir, takeSubdirectoryOutOfSet(usedFiles), takeSubdirectoryOutOfSet(unusedFiles), subdir);
         }
         else {
-            if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig") {
-                throw new Error(`Unused file ${fs.debugPath()}/${lsEntry}`);
+            if (lsEntry.toLowerCase() !== "readme.md" && lsEntry !== "NOTICE" && lsEntry !== ".editorconfig" && lsEntry !== unusedFilesName) {
+                throw new Error(`Unused file ${fs.debugPath()}/${lsEntry} (used files: ${JSON.stringify(Array.from(usedFiles))})`);
             }
         }
     }
     for (const unusedFile of unusedFiles) {
-        throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
+        if (usedFiles.has(unusedFile)) {
+            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} is already reachable from tsconfig.json.`);
+        }
+        else {
+            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
+        }
     }
 }
 //# sourceMappingURL=definition-parser.js.map

@@ -215,10 +215,14 @@ class DiskFS {
 }
 /** FS only handles simple paths like `foo/bar` or `../foo`. No `./foo` or `/foo`. */
 function validatePath(path) {
-    if (path.startsWith(".") && path !== ".editorconfig" && !path.startsWith("../")
-        || path.startsWith("/")
-        || path.endsWith("/")) {
-        throw new Error(`Unexpected path ${path}`);
+    if (path.startsWith(".") && path !== ".editorconfig" && !path.startsWith("../")) {
+        throw new Error(`${path}: filesystem doesn't support paths of the form './x'.`);
+    }
+    else if (path.startsWith("/")) {
+        throw new Error(`${path}: filesystem doesn't support paths of the form '/xxx'.`);
+    }
+    else if (path.endsWith("/")) {
+        throw new Error(`${path}: filesystem doesn't support paths of the form 'xxx/'.`);
     }
 }
 //# sourceMappingURL=get-definitely-typed.js.map
