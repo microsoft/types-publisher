@@ -129,6 +129,9 @@ class InMemoryDT {
         let dir = this.curDir;
         for (const component of components) {
             const entry = component === ".." ? dir.parent : dir.get(component);
+            if (entry === undefined) {
+                return undefined;
+            }
             if (!(entry instanceof Dir)) {
                 throw new Error(`No file system entry at ${this.pathToRoot}/${path}. Siblings are: ${Array.from(dir.keys())}`);
             }
