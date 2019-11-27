@@ -52,7 +52,7 @@ export default async function parseDefinitions(dt: FS, parallel: ParallelOptions
     } else {
         log.info("Parsing non-parallel...");
         for (const packageName of packageNames) {
-            typings[packageName] = await getTypingInfo(packageName, typesFS.subDir(packageName));
+            typings[packageName] = getTypingInfo(packageName, typesFS.subDir(packageName));
         }
     }
     log.info("Parsing took " + ((Date.now() - start) / 1000) + " s");
@@ -69,7 +69,7 @@ function sorted<T>(obj: { [name: string]: T }): { [name: string]: T } {
 }
 
 async function single(singleName: string, dt: FS): Promise<void> {
-    const data = await getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
+    const data = getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
     const typings = { [singleName]: data };
     await writeDataFile(typesDataFilename, typings);
     console.log(JSON.stringify(data, undefined, 4));

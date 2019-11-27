@@ -1,6 +1,6 @@
 import appInsights = require("applicationinsights");
 import assert = require("assert");
-import { ensureDir, pathExists, readdir, stat } from "fs-extra";
+import { ensureDir, pathExists, readdir, readdirSync, stat, statSync, pathExistsSync } from "fs-extra";
 import https = require("https");
 import tarStream = require("tar-stream");
 import * as yargs from "yargs";
@@ -8,7 +8,7 @@ import * as zlib from "zlib";
 
 import { Options } from "./lib/common";
 import { dataDirPath, definitelyTypedZipUrl } from "./lib/settings";
-import { readFile, readJson, stringOfStream } from "./util/io";
+import { readFile, readFileSync, readJson, readJsonSync, stringOfStream } from "./util/io";
 import { LoggerWithErrors, loggerWithErrors } from "./util/logging";
 import { assertDefined, assertSorted, Awaitable, exec, joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
 
@@ -22,10 +22,15 @@ export interface FS {
      * If dirPath is missing, reads the root.
      */
     readdir(dirPath?: string): Awaitable<ReadonlyArray<string>>;
+    readdirSync(dirPath?: string): ReadonlyArray<string>;
     readJson(path: string): Awaitable<unknown>;
+    readJsonSync(path: string): unknown;
     readFile(path: string): Awaitable<string>;
+    readFileSync(path: string): string;
     isDirectory(dirPath: string): Awaitable<boolean>;
+    isDirectorySync(dirPath: string): boolean;
     exists(path: string): Awaitable<boolean>;
+    existsSync(path: string): boolean;
     /** FileSystem rooted at a child directory. */
     subDir(path: string): FS;
     /** Representation of current location, for debugging. */
@@ -175,6 +180,14 @@ export class InMemoryDT implements FS {
         return res;
     }
 
+    readFileSync(filePath: string): string {
+        const res = this.getEntry(filePath);
+        if (typeof res !== "string") {
+            throw new Error(`${this.pathToRoot}/${filePath} is a directory, not a file.`);
+        }
+        return res;
+    }
+
     readFile(filePath: string): string {
         const res = this.getEntry(filePath);
         if (typeof res !== "string") {
@@ -187,7 +200,15 @@ export class InMemoryDT implements FS {
         return Array.from((dirPath === undefined ? this.curDir : this.getDir(dirPath)).keys());
     }
 
+    readdirSync(dirPath?: string): ReadonlyArray<string> {
+        return Array.from((dirPath === undefined ? this.curDir : this.getDir(dirPath)).keys());
+    }
+
     readJson(path: string): unknown {
+        return JSON.parse(this.readFile(path)) as unknown;
+    }
+
+    readJsonSync(path: string): unknown {
         return JSON.parse(this.readFile(path)) as unknown;
     }
 
@@ -195,7 +216,15 @@ export class InMemoryDT implements FS {
         return typeof this.getEntry(path) !== "string";
     }
 
+    isDirectorySync(path: string): boolean {
+        return typeof this.getEntry(path) !== "string";
+    }
+
     exists(path: string): boolean {
+        return this.tryGetEntry(path) !== undefined;
+    }
+
+    existsSync(path: string): boolean {
         return this.tryGetEntry(path) !== undefined;
     }
 
@@ -226,20 +255,40 @@ class DiskFS implements FS {
         return assertSorted((await readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE"));
     }
 
+    readdirSync(dirPath?: string): ReadonlyArray<string> {
+        return assertSorted(readdirSync(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
+    }
+
     async isDirectory(dirPath: string): Promise<boolean> {
         return (await stat(this.getPath(dirPath))).isDirectory();
+    }
+
+    isDirectorySync(dirPath: string): boolean {
+        return statSync(this.getPath(dirPath)).isDirectory();
     }
 
     readJson(path: string): Promise<unknown> {
         return readJson(this.getPath(path));
     }
 
+    readJsonSync(path: string): unknown {
+        return readJsonSync(this.getPath(path));
+    }
+
     readFile(path: string): Promise<string> {
         return readFile(this.getPath(path));
     }
 
+    readFileSync(path: string): string {
+        return readFileSync(this.getPath(path));
+    }
+
     exists(path: string): Promise<boolean> {
         return pathExists(this.getPath(path));
+    }
+
+    existsSync(path: string): boolean {
+        return pathExistsSync(this.getPath(path));
     }
 
     subDir(path: string): FS {
