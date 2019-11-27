@@ -346,6 +346,9 @@ export function getTestDependencies(
         const sourceFile = createSourceFile(filename, content);
         const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
         const filePath = () => path.join(packageName, fileName);
+        let hasImports = false;
+        let referencesSelf = false;
+
         for (const { fileName: ref } of referencedFiles) {
             throw new Error(`Test files should not use '<reference path="" />'. '${filePath()}' references '${ref}'.`);
         }
@@ -355,11 +358,12 @@ export function getTestDependencies(
                     `'${filePath()}' unnecessarily references '${referencedPackage}', which is already referenced in the type definition.`);
             }
             if (referencedPackage === packageName) {
-                throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
+                referencesSelf = true;
             }
             testDependencies.add(referencedPackage);
         }
         for (const imported of imports(sourceFile)) {
+            hasImports = true;
             if (!imported.startsWith(".")) {
                 const dep = rootName(imported, typeFiles);
                 if (!dependencies.has(dep) && dep !== packageName) {
@@ -367,6 +371,17 @@ export function getTestDependencies(
                 }
             }
         }
+
+        if (hasImports && referencesSelf) {
+            throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
+        }
+
+        // TODO: test for exports as well and uncomment this in a future release
+        /*
+        if (!hasImports && !hasExports && !referencesSelf) {
+            throw new Error(`UMD test '${filePath()}' must specify '/// <reference types="${packageName}"/>'`);
+        }
+        */
     }
     return testDependencies;
 }
