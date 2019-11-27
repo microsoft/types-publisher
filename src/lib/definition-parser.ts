@@ -16,7 +16,7 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
         throw new Error(`Package name \`${packageName}\` should be strictly lowercase`);
     }
     interface OlderVersionDir { readonly directoryName: string; readonly majorVersion: number; }
-    const [rootDirectoryLs, olderVersionDirectories] = split<string, OlderVersionDir>(fs.readdirSync(), fileOrDirectoryName => {
+    const [rootDirectoryLs, olderVersionDirectories] = split<string, OlderVersionDir>(fs.readdir(), fileOrDirectoryName => {
         const majorVersion = parseMajorVersionFromDirectoryName(fileOrDirectoryName);
         return majorVersion === undefined ? undefined : { directoryName: fileOrDirectoryName, majorVersion };
     });
@@ -29,7 +29,7 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
             throw new Error(`The latest major version is ${latestVersion}, but a directory v${latestVersion} exists.`);
         }
 
-        const ls = fs.readdirSync(directoryName);
+        const ls = fs.readdir(directoryName);
         const data = combineDataForAllTypesVersions(packageName, ls, fs.subDir(directoryName), majorVersion);
 
         if (data.libraryMajorVersion !== majorVersion) {
@@ -89,11 +89,11 @@ function combineDataForAllTypesVersions(
     const dataForRoot = getTypingDataForSingleTypesVersion(undefined, typingsPackageName, fs.debugPath(), remainingLs, fs, oldMajorVersion);
     const dataForOtherTypesVersions = typesVersions.map(tsVersion => {
         const subFs = fs.subDir(`ts${tsVersion}`);
-        return getTypingDataForSingleTypesVersion(tsVersion, typingsPackageName, fs.debugPath(), subFs.readdirSync(), subFs, oldMajorVersion);
+        return getTypingDataForSingleTypesVersion(tsVersion, typingsPackageName, fs.debugPath(), subFs.readdir(), subFs, oldMajorVersion);
     });
     const allTypesVersions = [dataForRoot, ...dataForOtherTypesVersions];
 
-    const packageJson = hasPackageJson ? fs.readJsonSync(packageJsonName) as { readonly license?: unknown, readonly dependencies?: unknown } : {};
+    const packageJson = hasPackageJson ? fs.readJson(packageJsonName) as { readonly license?: unknown, readonly dependencies?: unknown } : {};
     const license = getLicenseFromPackageJson(packageJson.license);
     const packageJsonDependencies = checkPackageJsonDependencies(packageJson.dependencies, packageJsonName);
 
@@ -153,15 +153,15 @@ function getTypingDataForSingleTypesVersion(
     fs: FS,
     oldMajorVersion: number | undefined,
 ): TypingDataFromIndividualTypeScriptVersion {
-    const tsconfig = fs.readJsonSync("tsconfig.json") as TsConfig;
+    const tsconfig = fs.readJson("tsconfig.json") as TsConfig;
     checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
     const { types, tests } = allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
     const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
-    const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (fs.readFileSync(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
+    const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
     checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
     for (const untestedTypeFile of filter(otherFiles, name => name.endsWith('.d.ts'))) {
         // add d.ts files from OTHER_FILES.txt in order get their dependencies
-        types.set(untestedTypeFile, createSourceFile(untestedTypeFile, fs.readFileSync(untestedTypeFile)));
+        types.set(untestedTypeFile, createSourceFile(untestedTypeFile, fs.readFile(untestedTypeFile)));
     }
 
     const { dependencies: dependenciesWithDeclaredModules, globals, declaredModules } = getModuleInfo(packageName, types);
@@ -351,7 +351,7 @@ function hash(files: ReadonlyArray<string>, tsconfigPathsForHash: ReadonlyArray<
 }
 
 export function readFileAndThrowOnBOM(fileName: string, fs: FS): string {
-    const text = fs.readFileSync(fileName);
+    const text = fs.readFile(fileName);
     if (text.charCodeAt(0) === 0xFEFF) {
         const commands = [
             "npm install -g strip-bom-cli",
@@ -385,14 +385,14 @@ function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedF
             continue;
         }
 
-        if (fs.isDirectorySync(lsEntry)) {
+        if (fs.isDirectory(lsEntry)) {
             const subdir = fs.subDir(lsEntry);
             // We allow a "scripts" directory to be used for scripts.
             if (lsEntry === "node_modules" || lsEntry === "scripts") {
                 continue;
             }
 
-            const lssubdir = subdir.readdirSync();
+            const lssubdir = subdir.readdir();
             if (lssubdir.length === 0) {
                 throw new Error(`Empty directory ${subdir} (${join(usedFiles)})`);
             }

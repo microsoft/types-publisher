@@ -158,7 +158,7 @@ export function allReferencedFiles(
         seenReferences.add(text);
 
         const resolvedFilename = exact ? text : resolveModule(text, fs);
-        if (fs.existsSync(resolvedFilename)) {
+        if (fs.exists(resolvedFilename)) {
             const src = createSourceFile(resolvedFilename, readFileAndThrowOnBOM(resolvedFilename, fs));
             if (resolvedFilename.endsWith(".d.ts")) {
                 types.set(resolvedFilename, src);
@@ -176,11 +176,11 @@ export function allReferencedFiles(
 function resolveModule(importSpecifier: string, fs: FS): string {
     importSpecifier = importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier;
     if (importSpecifier !== "." && importSpecifier !== "..") {
-        if (fs.existsSync(importSpecifier + ".d.ts")) {
+        if (fs.exists(importSpecifier + ".d.ts")) {
             return importSpecifier + ".d.ts";
-        } else if (fs.existsSync(importSpecifier + ".ts")) {
+        } else if (fs.exists(importSpecifier + ".ts")) {
             return importSpecifier + ".ts";
-        } else if (fs.existsSync(importSpecifier + ".tsx")) {
+        } else if (fs.exists(importSpecifier + ".tsx")) {
             return importSpecifier + ".tsx";
         }
     }

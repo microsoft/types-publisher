@@ -31,7 +31,7 @@ testo({
     getModuleInfoWorksWithOtherFiles() {
         const { types } = getBoringReferences();
         // written as if it were from OTHER_FILES.txt
-        types.set("untested.d.ts", ts.createSourceFile("untested.d.ts", fs.subDir("types").subDir("boring").readFileSync("untested.d.ts"), ts.ScriptTarget.Latest, false));
+        types.set("untested.d.ts", ts.createSourceFile("untested.d.ts", fs.subDir("types").subDir("boring").readFile("untested.d.ts"), ts.ScriptTarget.Latest, false));
         const i = getModuleInfo("boring", types);
         expect(i.dependencies).toEqual(new Set(['manual', 'react', 'react-default', 'things', 'vorticon']));
     },

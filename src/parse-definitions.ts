@@ -32,7 +32,7 @@ export interface ParallelOptions { readonly nProcesses: number; readonly definit
 export default async function parseDefinitions(dt: FS, parallel: ParallelOptions | undefined, log: LoggerWithErrors): Promise<AllPackages> {
     log.info("Parsing definitions...");
     const typesFS = dt.subDir("types");
-    const packageNames = await filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
+    const packageNames = await filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, typesFS.readdir(), name => typesFS.isDirectory(name));
     log.info(`Found ${packageNames.length} packages.`);
 
     const typings: { [name: string]: TypingsVersionsRaw } = {};
@@ -57,7 +57,7 @@ export default async function parseDefinitions(dt: FS, parallel: ParallelOptions
     }
     log.info("Parsing took " + ((Date.now() - start) / 1000) + " s");
     await writeDataFile(typesDataFilename, sorted(typings));
-    return AllPackages.from(typings, await readNotNeededPackages(dt));
+    return AllPackages.from(typings, readNotNeededPackages(dt));
 }
 
 function sorted<T>(obj: { [name: string]: T }): { [name: string]: T } {
