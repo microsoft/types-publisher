@@ -51,8 +51,8 @@ async function generateTypingPackage(typing, packages, version, dt) {
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.NPM), createReadme(typing, common_1.Registry.NPM), common_1.Registry.NPM);
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.Github), createReadme(typing, common_1.Registry.Github), common_1.Registry.Github);
-    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.NPM, file), await packageFS.readFile(file))));
-    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.Github, file), await packageFS.readFile(file))));
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.NPM, file), packageFS.readFile(file))));
+    await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.Github, file), packageFS.readFile(file))));
 }
 async function generateNotNeededPackage(pkg, client, log) {
     pkg = versions_1.skipBadPublishes(pkg, client, log);

@@ -13,7 +13,7 @@ if (!module.parent) {
         const typesPath = process.argv[2];
         util_1.logUncaughtErrors(async () => {
             for (const packageName of message) {
-                const data = await definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
+                const data = definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));
                 process.send({ data, packageName });
             }
         });

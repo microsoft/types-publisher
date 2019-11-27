@@ -72,14 +72,6 @@ async function filterNAtATimeOrdered(n, inputs, shouldKeep, progress) {
     return inputs.filter((_, idx) => shouldKeeps[idx]);
 }
 exports.filterNAtATimeOrdered = filterNAtATimeOrdered;
-async function mapAsyncOrdered(arr, mapper) {
-    const out = new Array(arr.length);
-    await Promise.all(arr.map(async (em, idx) => {
-        out[idx] = await mapper(em);
-    }));
-    return out;
-}
-exports.mapAsyncOrdered = mapAsyncOrdered;
 function unique(arr) {
     return [...new Set(arr)];
 }

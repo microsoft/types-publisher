@@ -1,5 +1,7 @@
 /// <reference types="node" />
 export declare function readFile(path: string): Promise<string>;
+export declare function readFileSync(path: string): string;
+export declare function readJsonSync(path: string): object;
 export declare function readJson(path: string): Promise<object>;
 export declare function writeFile(path: string, content: string): Promise<void>;
 export declare function writeJson(path: string, content: unknown, formatted?: boolean): Promise<void>;

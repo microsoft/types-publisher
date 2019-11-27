@@ -10,7 +10,7 @@ export declare class AllPackages {
     static readLatestTypings(): Promise<ReadonlyArray<TypingsData>>;
     /** Use for `--single` tasks only. Do *not* call this in a loop! */
     static readSingle(name: string): Promise<TypingsData>;
-    static readSingleNotNeeded(name: string, dt: FS): Promise<NotNeededPackage>;
+    static readSingleNotNeeded(name: string, dt: FS): NotNeededPackage;
     private constructor();
     getNotNeededPackage(name: string): NotNeededPackage | undefined;
     hasTypingFor(dep: PackageId): boolean;
@@ -164,5 +164,5 @@ export interface PackageId {
 export interface TypesDataFile {
     readonly [packageName: string]: TypingsVersionsRaw;
 }
-export declare function readNotNeededPackages(dt: FS): Promise<ReadonlyArray<NotNeededPackage>>;
+export declare function readNotNeededPackages(dt: FS): ReadonlyArray<NotNeededPackage>;
 export {};

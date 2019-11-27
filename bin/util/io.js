@@ -14,6 +14,18 @@ async function readFile(path) {
     return res;
 }
 exports.readFile = readFile;
+function readFileSync(path) {
+    const res = fs_extra_1.readFileSync(path, { encoding: "utf8" });
+    if (res.includes("�")) {
+        throw new Error(`Bad character in ${path}`);
+    }
+    return res;
+}
+exports.readFileSync = readFileSync;
+function readJsonSync(path) {
+    return util_1.parseJson(readFileSync(path));
+}
+exports.readJsonSync = readJsonSync;
 async function readJson(path) {
     return util_1.parseJson(await readFile(path));
 }

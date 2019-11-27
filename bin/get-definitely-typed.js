@@ -19,8 +19,8 @@ if (!module.parent) {
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
     util_1.logUncaughtErrors(async () => {
         const dt = await getDefinitelyTyped(dry ? common_1.Options.azure : common_1.Options.defaults, logging_1.loggerWithErrors()[0]);
-        assert(await dt.exists("types"));
-        assert(!(await dt.exists("buncho")));
+        assert(dt.exists("types"));
+        assert(!(dt.exists("buncho")));
     });
 }
 async function getDefinitelyTyped(options, log) {
@@ -194,20 +194,20 @@ class DiskFS {
             return this.rootPrefix + path;
         }
     }
-    async readdir(dirPath) {
-        return util_1.assertSorted((await fs_extra_1.readdir(this.getPath(dirPath))).filter(name => name !== ".DS_STORE"));
+    readdir(dirPath) {
+        return util_1.assertSorted(fs_extra_1.readdirSync(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
     }
-    async isDirectory(dirPath) {
-        return (await fs_extra_1.stat(this.getPath(dirPath))).isDirectory();
+    isDirectory(dirPath) {
+        return fs_extra_1.statSync(this.getPath(dirPath)).isDirectory();
     }
     readJson(path) {
-        return io_1.readJson(this.getPath(path));
+        return io_1.readJsonSync(this.getPath(path));
     }
     readFile(path) {
-        return io_1.readFile(this.getPath(path));
+        return io_1.readFileSync(this.getPath(path));
     }
     exists(path) {
-        return fs_extra_1.pathExists(this.getPath(path));
+        return fs_extra_1.pathExistsSync(this.getPath(path));
     }
     subDir(path) {
         return new DiskFS(`${this.rootPrefix}${path}/`);

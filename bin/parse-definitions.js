@@ -28,7 +28,7 @@ if (!module.parent) {
 async function parseDefinitions(dt, parallel, log) {
     log.info("Parsing definitions...");
     const typesFS = dt.subDir("types");
-    const packageNames = await util_1.filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, await typesFS.readdir(), name => typesFS.isDirectory(name));
+    const packageNames = await util_1.filterNAtATimeOrdered(parallel ? parallel.nProcesses : 1, typesFS.readdir(), name => typesFS.isDirectory(name));
     log.info(`Found ${packageNames.length} packages.`);
     const typings = {};
     const start = Date.now();
@@ -47,12 +47,12 @@ async function parseDefinitions(dt, parallel, log) {
     else {
         log.info("Parsing non-parallel...");
         for (const packageName of packageNames) {
-            typings[packageName] = await definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName));
+            typings[packageName] = definition_parser_1.getTypingInfo(packageName, typesFS.subDir(packageName));
         }
     }
     log.info("Parsing took " + ((Date.now() - start) / 1000) + " s");
     await common_1.writeDataFile(packages_1.typesDataFilename, sorted(typings));
-    return packages_1.AllPackages.from(typings, await packages_1.readNotNeededPackages(dt));
+    return packages_1.AllPackages.from(typings, packages_1.readNotNeededPackages(dt));
 }
 exports.default = parseDefinitions;
 function sorted(obj) {
@@ -63,7 +63,7 @@ function sorted(obj) {
     return out;
 }
 async function single(singleName, dt) {
-    const data = await definition_parser_1.getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
+    const data = definition_parser_1.getTypingInfo(singleName, dt.subDir("types").subDir(singleName));
     const typings = { [singleName]: data };
     await common_1.writeDataFile(packages_1.typesDataFilename, typings);
     console.log(JSON.stringify(data, undefined, 4));

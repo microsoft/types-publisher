@@ -7,8 +7,8 @@ const test_1 = require("./util/test");
 test_1.testo({
     async downloadDefinitelyTyped() {
         const dt = await get_definitely_typed_1.getDefinitelyTyped(common_1.Options.azure, logging_1.loggerWithErrors()[0]);
-        expect(await dt.exists("types")).toBe(true);
-        expect(await dt.exists("buncho")).toBe(false);
+        expect(dt.exists("types")).toBe(true);
+        expect(dt.exists("buncho")).toBe(false);
     },
     createDirs() {
         const root = new get_definitely_typed_1.Dir(undefined);

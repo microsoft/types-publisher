@@ -1,6 +1,5 @@
 import { Options } from "./lib/common";
 import { LoggerWithErrors } from "./util/logging";
-import { Awaitable } from "./util/util";
 /**
  * Readonly filesystem.
  * Paths provided to these methods should be relative to the FS object's root but not start with '/' or './'.
@@ -10,11 +9,11 @@ export interface FS {
      * Alphabetically sorted list of files and subdirectories.
      * If dirPath is missing, reads the root.
      */
-    readdir(dirPath?: string): Awaitable<ReadonlyArray<string>>;
-    readJson(path: string): Awaitable<unknown>;
-    readFile(path: string): Awaitable<string>;
-    isDirectory(dirPath: string): Awaitable<boolean>;
-    exists(path: string): Awaitable<boolean>;
+    readdir(dirPath?: string): ReadonlyArray<string>;
+    readJson(path: string): unknown;
+    readFile(path: string): string;
+    isDirectory(dirPath: string): boolean;
+    exists(path: string): boolean;
     /** FileSystem rooted at a child directory. */
     subDir(path: string): FS;
     /** Representation of current location, for debugging. */

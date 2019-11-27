@@ -12,7 +12,7 @@ class AllPackages {
         this.notNeeded = notNeeded;
     }
     static async read(dt) {
-        return AllPackages.from(await readTypesDataFile(), await readNotNeededPackages(dt));
+        return AllPackages.from(await readTypesDataFile(), readNotNeededPackages(dt));
     }
     static from(data, notNeeded) {
         return new AllPackages(util_1.mapValues(new Map(Object.entries(data)), raw => new TypingsVersions(raw)), notNeeded);
@@ -36,8 +36,8 @@ class AllPackages {
         }
         return new TypingsData(raw[versions[0]], /*isLatest*/ true);
     }
-    static async readSingleNotNeeded(name, dt) {
-        const notNeeded = await readNotNeededPackages(dt);
+    static readSingleNotNeeded(name, dt) {
+        const notNeeded = readNotNeededPackages(dt);
         const pkg = notNeeded.find(p => p.name === name);
         if (pkg === undefined) {
             throw new Error(`Cannot find not-needed package ${name}`);
@@ -287,8 +287,8 @@ exports.TypingsData = TypingsData;
 function readTypesDataFile() {
     return common_1.readDataFile("parse-definitions", exports.typesDataFilename);
 }
-async function readNotNeededPackages(dt) {
-    const rawJson = await dt.readJson("notNeededPackages.json"); // tslint:disable-line await-promise (tslint bug)
+function readNotNeededPackages(dt) {
+    const rawJson = dt.readJson("notNeededPackages.json"); // tslint:disable-line await-promise (tslint bug)
     return rawJson.packages.map(raw => new NotNeededPackage(raw));
 }
 exports.readNotNeededPackages = readNotNeededPackages;

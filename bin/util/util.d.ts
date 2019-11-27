@@ -13,7 +13,6 @@ export declare function nAtATime<T, U>(n: number, inputs: ReadonlyArray<T>, use:
 export declare function filter<T>(iterable: Iterable<T>, predicate: (value: T) => boolean): IterableIterator<T>;
 export declare type Awaitable<T> = T | Promise<T>;
 export declare function filterNAtATimeOrdered<T>(n: number, inputs: ReadonlyArray<T>, shouldKeep: (input: T) => Awaitable<boolean>, progress?: ProgressOptions<T, boolean>): Promise<T[]>;
-export declare function mapAsyncOrdered<T, U>(arr: ReadonlyArray<T>, mapper: (t: T) => Promise<U>): Promise<U[]>;
 export declare function unique<T>(arr: Iterable<T>): T[];
 export declare function logUncaughtErrors(promise: Promise<unknown> | (() => Promise<unknown>)): void;
 /** Always use "/" for consistency. (This affects package content hash.) */

@@ -5,7 +5,7 @@ const path = require("path");
 const ts = require("typescript");
 const util_1 = require("../util/util");
 const definition_parser_1 = require("./definition-parser");
-async function getModuleInfo(packageName, all) {
+function getModuleInfo(packageName, all) {
     const dependencies = new Set();
     const declaredModules = [];
     const globals = new Set();
@@ -127,20 +127,20 @@ function withoutExtension(str, ext) {
     return str.slice(0, str.length - ext.length);
 }
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
-async function allReferencedFiles(entryFilenames, fs, packageName, baseDirectory) {
+function allReferencedFiles(entryFilenames, fs, packageName, baseDirectory) {
     const seenReferences = new Set();
     const types = new Map();
     const tests = new Map();
-    await Promise.all(entryFilenames.map(text => recur({ text, exact: true })));
+    entryFilenames.forEach(text => recur({ text, exact: true }));
     return { types, tests };
-    async function recur({ text, exact }) {
+    function recur({ text, exact }) {
         if (seenReferences.has(text)) {
             return;
         }
         seenReferences.add(text);
-        const resolvedFilename = exact ? text : await resolveModule(text, fs);
-        if (await fs.exists(resolvedFilename)) {
-            const src = createSourceFile(resolvedFilename, await definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
+        const resolvedFilename = exact ? text : resolveModule(text, fs);
+        if (fs.exists(resolvedFilename)) {
+            const src = createSourceFile(resolvedFilename, definition_parser_1.readFileAndThrowOnBOM(resolvedFilename, fs));
             if (resolvedFilename.endsWith(".d.ts")) {
                 types.set(resolvedFilename, src);
             }
@@ -148,21 +148,21 @@ async function allReferencedFiles(entryFilenames, fs, packageName, baseDirectory
                 tests.set(resolvedFilename, src);
             }
             const refs = findReferencedFiles(src, packageName, path.dirname(resolvedFilename), util_1.normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
-            await Promise.all(refs.map(recur));
+            refs.forEach(recur);
         }
     }
 }
 exports.allReferencedFiles = allReferencedFiles;
-async function resolveModule(importSpecifier, fs) {
+function resolveModule(importSpecifier, fs) {
     importSpecifier = importSpecifier.endsWith("/") ? importSpecifier.slice(0, importSpecifier.length - 1) : importSpecifier;
     if (importSpecifier !== "." && importSpecifier !== "..") {
-        if (await fs.exists(importSpecifier + ".d.ts")) {
+        if (fs.exists(importSpecifier + ".d.ts")) {
             return importSpecifier + ".d.ts";
         }
-        else if (await fs.exists(importSpecifier + ".ts")) {
+        else if (fs.exists(importSpecifier + ".ts")) {
             return importSpecifier + ".ts";
         }
-        else if (await fs.exists(importSpecifier + ".tsx")) {
+        else if (fs.exists(importSpecifier + ".tsx")) {
             return importSpecifier + ".tsx";
         }
     }
@@ -292,10 +292,10 @@ function assertNoWindowsSlashes(packageName, fileName) {
     }
     return fileName;
 }
-async function getTestDependencies(packageName, typeFiles, testFiles, dependencies, fs) {
+function getTestDependencies(packageName, typeFiles, testFiles, dependencies, fs) {
     const testDependencies = new Set();
     for (const filename of testFiles) {
-        const content = await definition_parser_1.readFileAndThrowOnBOM(filename, fs);
+        const content = definition_parser_1.readFileAndThrowOnBOM(filename, fs);
         const sourceFile = createSourceFile(filename, content);
         const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
         const filePath = () => path.join(packageName, fileName);
