@@ -347,6 +347,7 @@ export function getTestDependencies(
         const { fileName, referencedFiles, typeReferenceDirectives } = sourceFile;
         const filePath = () => path.join(packageName, fileName);
         let hasImports = false;
+        let isModule = false;
         let referencesSelf = false;
 
         for (const { fileName: ref } of referencedFiles) {
@@ -372,16 +373,23 @@ export function getTestDependencies(
             }
         }
 
-        if (hasImports && referencesSelf) {
+        isModule = hasImports || (() => {
+            // FIXME: This results in files without imports to be walked twice,
+            // once in the `imports(...)` function, and once more here:
+            for (const node of sourceFile.statements) {
+                if (
+                    node.kind === ts.SyntaxKind.ExportAssignment ||
+                    node.kind === ts.SyntaxKind.ExportDeclaration
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        })();
+
+        if (isModule && referencesSelf) {
             throw new Error(`'${filePath()}' unnecessarily references the package. This can be removed.`);
         }
-
-        // TODO: test for exports as well and uncomment this in a future release
-        /*
-        if (!hasImports && !hasExports && !referencesSelf) {
-            throw new Error(`UMD test '${filePath()}' must specify '/// <reference types="${packageName}"/>'`);
-        }
-        */
     }
     return testDependencies;
 }
