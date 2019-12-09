@@ -144,7 +144,7 @@ async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsDa
     for (const pkg of allDependencies(allPackages, packages)) {
         const cwd = directoryPath(typesPath, pkg);
         if (!await pathExists(joinPaths(cwd, "package.json"))) {
-            return;
+            continue;
         }
 
         // Scripts may try to compile native code.
