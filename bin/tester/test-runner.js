@@ -54,7 +54,7 @@ async function runTests(dt, definitelyTypedPath, nProcesses, selection) {
     const { changedPackages, dependentPackages, allPackages } = await getAffectedPackagesFromDiff(dt, definitelyTypedPath, selection);
     console.log(`Running with ${nProcesses} processes.`);
     const typesPath = `${definitelyTypedPath}/types`;
-    await doInstalls(allPackages, [...changedPackages, ...dependentPackages], typesPath, nProcesses);
+    await doInstalls(allPackages, [...changedPackages, ...dependentPackages], typesPath);
     console.log("Testing...");
     await doRunTests([...changedPackages, ...dependentPackages], new Set(changedPackages), typesPath, nProcesses);
 }
@@ -114,13 +114,13 @@ it is supposed to replace, ${latestTypings.versionString} of ${unneeded.fullNpmN
     assert(source.versions.has(unneeded.version.versionString), `The specified version ${unneeded.version.versionString} of ${unneeded.libraryName} is not on npm.`);
 }
 exports.checkNotNeededPackage = checkNotNeededPackage;
-async function doInstalls(allPackages, packages, typesPath, nProcesses) {
+async function doInstalls(allPackages, packages, typesPath) {
     console.log("Installing NPM dependencies...");
     // We need to run `npm install` for all dependencies, too, so that we have dependencies' dependencies installed.
-    await util_1.nAtATime(nProcesses, get_affected_packages_1.allDependencies(allPackages, packages), async (pkg) => {
+    for (const pkg of get_affected_packages_1.allDependencies(allPackages, packages)) {
         const cwd = directoryPath(typesPath, pkg);
         if (!await fs_extra_1.pathExists(util_1.joinPaths(cwd, "package.json"))) {
-            return;
+            continue;
         }
         // Scripts may try to compile native code.
         // This doesn't work reliably on travis, and we're just installing for the types, so ignore.
@@ -131,7 +131,7 @@ async function doInstalls(allPackages, packages, typesPath, nProcesses) {
             // Must specify what this is for since these run in parallel.
             console.log(` from ${cwd}: ${stdout}`);
         }
-    });
+    }
     await runCommand(console, undefined, require.resolve("dtslint"), ["--installAll"]);
 }
 function directoryPath(typesPath, pkg) {
