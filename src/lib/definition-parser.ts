@@ -32,9 +32,19 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
         const ls = fs.readdir(directoryName);
         const data = combineDataForAllTypesVersions(packageName, ls, fs.subDir(directoryName), majorVersion);
 
-        if (data.libraryMajorVersion !== majorVersion) {
-            throw new Error(
-                `Directory ${directoryName} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
+        // Allow a 0.61 to be v61, but also allow 0 to be 0
+        const isZeroPointRelease = data.libraryMajorVersion === 0;
+        const isZero = isZeroPointRelease && majorVersion === 0;
+
+        if (!isZero && isZeroPointRelease && data.libraryMinorVersion && data.libraryMinorVersion !== majorVersion) {
+            // tslint:disable-next-line: max-line-length
+            throw new Error(`----Directory ${directoryName} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
+        }
+
+        // Normal releases should match major to major
+        if (!isZeroPointRelease && data.libraryMajorVersion !== majorVersion) {
+            // tslint:disable-next-line: max-line-length
+            throw new Error(`Directory ${directoryName} indicates major version ${majorVersion}, but header indicates major version ${data.libraryMajorVersion}`);
         }
         return data;
     });
@@ -42,7 +52,7 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
     const res: TypingsVersionsRaw = {};
     res[latestVersion] = latestData;
     for (const o of older) {
-        res[o.libraryMajorVersion] = o;
+        res[o.libraryMajorVersion + "." + o.libraryMinorVersion] = o;
     }
     return res;
 }
@@ -70,9 +80,12 @@ function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypes
 }
 
 export function parseMajorVersionFromDirectoryName(directoryName: string): number | undefined {
-    const match = /^v(\d+)$/.exec(directoryName);
-    // tslint:disable-next-line no-null-keyword
-    return match === null ? undefined : Number(match[1]);
+    if (!directoryName.startsWith("v")) { return undefined; }
+
+    const majorOnlyRegex = /^v(\d+)$/.exec(directoryName);
+    if (majorOnlyRegex) { return Number(majorOnlyRegex[1]); }
+
+    return undefined;
 }
 function combineDataForAllTypesVersions(
     typingsPackageName: string,
