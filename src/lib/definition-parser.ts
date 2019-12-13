@@ -1,4 +1,5 @@
 import { isTypeScriptVersion, parseHeaderOrFail, TypeScriptVersion } from "definitelytyped-header-parser";
+import semver = require("semver");
 import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
@@ -17,7 +18,7 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
     }
     interface OlderVersionDir { readonly directoryName: string; readonly majorVersion: number; }
     const [rootDirectoryLs, olderVersionDirectories] = split<string, OlderVersionDir>(fs.readdir(), fileOrDirectoryName => {
-        const majorVersion = parseMajorVersionFromDirectoryName(fileOrDirectoryName);
+        const majorVersion = parseSemverMajorMinorVersionFromDirectoryName(fileOrDirectoryName);
         return majorVersion === undefined ? undefined : { directoryName: fileOrDirectoryName, majorVersion };
     });
 
@@ -69,11 +70,13 @@ function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypes
     return { remainingLs, typesVersions, hasPackageJson: withoutPackageJson.length !== ls.length };
 }
 
-export function parseMajorVersionFromDirectoryName(directoryName: string): number | undefined {
-    const match = /^v(\d+)$/.exec(directoryName);
-    // tslint:disable-next-line no-null-keyword
-    return match === null ? undefined : Number(match[1]);
+export function parseSemverMajorMinorVersionFromDirectoryName(directoryName: string): string | undefined {
+    const version = semver.parse(directoryName);
+    if (!version) { return undefined; }
+    if (directoryName.includes(".")) { return `${version.major}.${version.minor}`; }
+    return "" + version.major;
 }
+
 function combineDataForAllTypesVersions(
     typingsPackageName: string,
     ls: ReadonlyArray<string>,
@@ -151,7 +154,7 @@ function getTypingDataForSingleTypesVersion(
     packageDirectory: string,
     ls: ReadonlyArray<string>,
     fs: FS,
-    oldMajorVersion: number | undefined,
+    oldMajorMinorVersion: string | undefined,
 ): TypingDataFromIndividualTypeScriptVersion {
     const tsconfig = fs.readJson("tsconfig.json") as TsConfig;
     checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
@@ -170,7 +173,7 @@ function getTypingDataForSingleTypesVersion(
     const dependenciesSet = new Set(filter(dependenciesWithDeclaredModules, m => !declaredModulesSet.has(m)));
     const testDependencies = Array.from(filter(getTestDependencies(packageName, types, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
 
-    const { dependencies, pathMappings } = calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
+    const { dependencies, pathMappings } = calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorMinorVersion);
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
     return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: sort(types.keys()), tsconfigPathsForHash };
 }
@@ -255,7 +258,7 @@ function calculateDependencies(
     packageName: string,
     tsconfig: TsConfig,
     dependencyNames: ReadonlySet<string>,
-    oldMajorVersion: number | undefined,
+    oldMajorMinorVersion: string | undefined,
 ): DependenciesAndPathMappings {
     const paths = tsconfig.compilerOptions && tsconfig.compilerOptions.paths || {};
 
@@ -287,30 +290,30 @@ function calculateDependencies(
             continue;
         }
 
-        const majorVersion = parseDependencyVersionFromPath(dependencyName, dependencyName, pathMapping);
+        const majorMinorVersion = parseDependencyVersionFromPath(dependencyName, dependencyName, pathMapping);
         if (dependencyName === packageName) {
-            if (oldMajorVersion === undefined) {
+            if (oldMajorMinorVersion === undefined) {
                 throw new Error(`In ${packageName}: Latest version of a package should not have a path mapping for itself.`);
-            } else if (majorVersion !== oldMajorVersion) {
-                const correctPathMapping = [`${dependencyName}/v${oldMajorVersion}`];
+            } else if (majorMinorVersion !== oldMajorMinorVersion) {
+                const correctPathMapping = [`${dependencyName}/v${oldMajorMinorVersion}`];
                 throw new Error(`In ${packageName}: Must have a "paths" entry of "${dependencyName}": ${JSON.stringify(correctPathMapping)}`);
             }
         } else {
             if (dependencyNames.has(dependencyName)) {
-                dependencies.push({ name: dependencyName, majorVersion });
+                dependencies.push({ name: dependencyName, majorMinorVersion });
             }
         }
         // Else, the path mapping may be necessary if it is for a dependency-of-a-dependency. We will check this in check-parse-results.
-        pathMappings.push({ packageName: dependencyName, majorVersion });
+        pathMappings.push({ packageName: dependencyName, majorMinorVersion });
     }
 
-    if (oldMajorVersion !== undefined && !(paths && packageName in paths)) {
-        throw new Error(`${packageName}: Older version ${oldMajorVersion} must have a path mapping for itself.`);
+    if (oldMajorMinorVersion !== undefined && !(paths && packageName in paths)) {
+        throw new Error(`${packageName}: Older version ${oldMajorMinorVersion} must have a path mapping for itself.`);
     }
 
     for (const dependency of dependencyNames) {
         if (!dependencies.some(d => d.name === dependency) && !nodeBuiltins.has(dependency)) {
-            dependencies.push({ name: dependency, majorVersion: "*" });
+            dependencies.push({ name: dependency, majorMinorVersion: "*" });
         }
     }
 
@@ -325,9 +328,9 @@ const nodeBuiltins: ReadonlySet<string> = new Set([
 ]);
 
 // e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
-function parseDependencyVersionFromPath(packageName: string, dependencyName: string, dependencyPath: string): number {
+function parseDependencyVersionFromPath(packageName: string, dependencyName: string, dependencyPath: string): string {
     const versionString = withoutStart(dependencyPath, `${dependencyName}/`);
-    const version = versionString === undefined ? undefined : parseMajorVersionFromDirectoryName(versionString);
+    const version = versionString === undefined ? undefined : parseSemverMajorMinorVersionFromDirectoryName(versionString);
     if (version === undefined) {
         throw new Error(`In ${packageName}, unexpected path mapping for ${dependencyName}: '${dependencyPath}'`);
     }

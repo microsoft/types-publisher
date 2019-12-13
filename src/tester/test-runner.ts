@@ -6,7 +6,7 @@ import * as fold from "travis-fold";
 import * as yargs from "yargs";
 
 import { Semver } from "../lib/versions";
-import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
+import { parseSemverMajorMinorVersionFromDirectoryName } from "../lib/definition-parser";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { FS, getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
@@ -342,7 +342,7 @@ function getDependencyFromFile(file: string): PackageId | undefined {
 
     if (subDirName) {
         // Looks like "types/a/v3/c"
-        const majorVersion = parseMajorVersionFromDirectoryName(subDirName);
+        const majorVersion = parseSemverMajorMinorVersionFromDirectoryName(subDirName);
         if (majorVersion !== undefined) {
             return { name,  majorVersion };
         }

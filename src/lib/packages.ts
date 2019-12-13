@@ -287,7 +287,7 @@ export interface TypingsVersionsRaw {
 }
 
 /** If no version is specified, uses "*". */
-export type DependencyVersion = number | "*";
+export type DependencyVersion = string | "*";
 
 export interface PackageJsonDependency {
     readonly name: string;
@@ -344,7 +344,7 @@ export interface TypingsDataRaw extends BaseRaw {
  */
 export interface PathMapping {
     readonly packageName: string;
-    readonly majorVersion: number;
+    readonly majorMinorVersion: string;
 }
 
 // TODO: support BSD -- but must choose a *particular* BSD license from the list at https://spdx.org/licenses/
@@ -444,7 +444,7 @@ export class TypingsData extends PackageBase {
 /** Uniquely identifies a package. */
 export interface PackageId {
     readonly name: string;
-    readonly majorVersion: DependencyVersion;
+    readonly majorMinorVersion: DependencyVersion;
 }
 
 export interface TypesDataFile {
