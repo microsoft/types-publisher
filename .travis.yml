@@ -1,11 +1,11 @@
 language: node_js
 
- cache:
-    directories:
-     - cache/
-
 node_js:
   - 'node'
+
+cache:
+  directories:
+    - cache/
 
 sudo: false
 
@@ -18,16 +18,11 @@ install:
   - git clone https://github.com/DefinitelyTyped/DefinitelyTyped ../DefinitelyTyped
 
 script:
-  - npm test
-  
+  - npm tes
   - npm run build
   - npm run clean
   - npm run parse
   - npm run check
-  - npm run calculate-versions
-  - npm run generate
-  - npm run index
-
 
 git:
   depth: 1
