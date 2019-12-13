@@ -52,7 +52,10 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
     const res: TypingsVersionsRaw = {};
     res[latestVersion] = latestData;
     for (const o of older) {
-        res[o.libraryMajorVersion + "." + o.libraryMinorVersion] = o;
+        const isZeroPointRelease = o.libraryMajorVersion === 0;
+        const isZero = isZeroPointRelease && o.libraryMinorVersion === 0;
+        const tag = !isZeroPointRelease ? o.libraryMajorVersion : isZero ? "0" : o.libraryMinorVersion;
+        res[tag] = o;
     }
     return res;
 }
