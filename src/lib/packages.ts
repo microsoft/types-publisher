@@ -397,7 +397,7 @@ class TypingsVersions {
     private getExact(majorVersion: number): TypingsData {
         const data = this.tryGetExact(majorVersion);
         if (!data) {
-            throw new Error(`Could not find version ${majorVersion}`);
+            throw new Error(`Could not find version ${majorVersion}, found: ${Array.from(this.map).join(", ")}`);
         }
         return data;
     }
