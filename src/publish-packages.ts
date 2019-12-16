@@ -23,7 +23,7 @@ if (!module.parent) {
             const log = logger()[0];
             try {
                 await deprecateNotNeededPackage(
-                    await NpmPublishClient.create(undefined, Registry.Github), AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
+                    await NpmPublishClient.create(undefined, Registry.GithubPackages), AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
             } catch(e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());
@@ -50,13 +50,13 @@ export default async function publishPackages(
     }
 
     const client = await NpmPublishClient.create(undefined, Registry.NPM);
-    const ghClient = await NpmPublishClient.create(undefined, Registry.Github);
+    const ghClient = await NpmPublishClient.create(undefined, Registry.GithubPackages);
 
     for (const cp of changedPackages.changedTypings) {
         log(`Publishing ${cp.pkg.desc}...`);
 
         try {
-            await publishTypingsPackage(ghClient, cp, dry, log, Registry.Github);
+            await publishTypingsPackage(ghClient, cp, dry, log, Registry.GithubPackages);
         } catch(e) {
             // log and continue
             log("publishing to github failed: " + e.toString());
@@ -138,7 +138,7 @@ export default async function publishPackages(
         for (const n of changedPackages.changedNotNeededPackages) {
             const target = skipBadPublishes(n, infoClient, log)
             try {
-                await publishNotNeededPackage(ghClient, target, dry, log, Registry.Github);
+                await publishNotNeededPackage(ghClient, target, dry, log, Registry.GithubPackages);
             } catch(e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());

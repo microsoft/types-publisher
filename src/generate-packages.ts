@@ -56,21 +56,21 @@ async function generateTypingPackage(typing: TypingsData, packages: AllPackages,
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
 
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.NPM), createReadme(typing), Registry.NPM);
-    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.Github), createReadme(typing), Registry.Github);
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.GithubPackages), createReadme(typing), Registry.GithubPackages);
     await Promise.all(
         typing.files.map(async file => writeFile(await outputFilePath(typing, Registry.NPM, file), packageFS.readFile(file))));
     await Promise.all(
-        typing.files.map(async file => writeFile(await outputFilePath(typing, Registry.Github, file), packageFS.readFile(file))));
+        typing.files.map(async file => writeFile(await outputFilePath(typing, Registry.GithubPackages, file), packageFS.readFile(file))));
 }
 
 async function generateNotNeededPackage(pkg: NotNeededPackage, client: CachedNpmInfoClient, log: Logger): Promise<void> {
     pkg = skipBadPublishes(pkg, client, log);
     await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, Registry.NPM), pkg.readme(), Registry.NPM);
-    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, Registry.Github), pkg.readme(), Registry.Github);
+    await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, Registry.GithubPackages), pkg.readme(), Registry.GithubPackages);
 }
 
 async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: string, registry: Registry): Promise<void> {
-    await mkdir(pkg.outputDirectory + (registry === Registry.Github ? "-github" : ""));
+    await mkdir(pkg.outputDirectory + (registry === Registry.GithubPackages ? "-github" : ""));
 
     await Promise.all([
         writeOutputFile("package.json", packageJson),
@@ -84,7 +84,7 @@ async function writeCommonOutputs(pkg: AnyPackage, packageJson: string, readme: 
 }
 
 async function outputFilePath(pkg: AnyPackage, registry: Registry, filename: string): Promise<string> {
-    const full = joinPaths(pkg.outputDirectory + (registry === Registry.Github ? "-github" : ""), filename);
+    const full = joinPaths(pkg.outputDirectory + (registry === Registry.GithubPackages ? "-github" : ""), filename);
     const dir = path.dirname(full);
     if (dir !== pkg.outputDirectory) {
         await mkdirp(dir);
@@ -110,7 +110,7 @@ export function createPackageJSON(typing: TypingsData, version: string, packages
         typesVersions:  makeTypesVersionsForPackageJson(typing.typesVersions),
         repository: {
             type: "git",
-            url: registry === Registry.Github
+            url: registry === Registry.GithubPackages
                 ? "https://github.com/types/_definitelytypedmirror.git"
                 : "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
             directory: `types/${typing.name}`,
@@ -120,7 +120,7 @@ export function createPackageJSON(typing: TypingsData, version: string, packages
         typesPublisherContentHash: typing.contentHash,
         typeScriptVersion: typing.minTypeScriptVersion,
     };
-    if (registry === Registry.Github) {
+    if (registry === Registry.GithubPackages) {
         (out as any).publishConfig = { registry: "https://npm.pkg.github.com/" };
     }
 
@@ -166,7 +166,7 @@ export function createNotNeededPackageJSON({ libraryName, license, name, fullNpm
             [name]: "*",
         },
     };
-    if (registry === Registry.Github) {
+    if (registry === Registry.GithubPackages) {
         (out as any).publishConfig = { registry: "https://npm.pkg.github.com/" };
     }
     return JSON.stringify(out, undefined, 4);

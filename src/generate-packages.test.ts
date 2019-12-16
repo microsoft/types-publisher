@@ -95,13 +95,13 @@ testo({
     async githubPackageJsonName() {
         const packages = AllPackages.from(createTypesData(), await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
-        expect(createPackageJSON(typing, "1.0", packages, Registry.Github)).toEqual(
+        expect(createPackageJSON(typing, "1.0", packages, Registry.GithubPackages)).toEqual(
             expect.stringContaining('"name": "@types/jquery"'));
     },
     async githubPackageJsonRegistry() {
         const packages = AllPackages.from(createTypesData(), await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
-        const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
+        const s = createPackageJSON(typing, "1.0", packages, Registry.GithubPackages);
         expect(s).toEqual(expect.stringContaining('publishConfig'));
         expect(s).toEqual(expect.stringContaining('"registry": "https://npm.pkg.github.com/"'));
     },
@@ -123,7 +123,7 @@ testo({
 }`);
     },
     async githubNotNeededPackageJson() {
-        const s = createNotNeededPackageJSON(createUnneededPackage(), Registry.Github);
+        const s = createNotNeededPackageJSON(createUnneededPackage(), Registry.GithubPackages);
         expect(s).toEqual(expect.stringContaining('@types'));
         expect(s).toEqual(expect.stringContaining('npm.pkg.github.com'));
     },

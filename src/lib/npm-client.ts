@@ -139,10 +139,13 @@ function splitToFixedSizeGroups(names: ReadonlyArray<string>, chunkSize: number)
 
 export class NpmPublishClient {
     static async create(config?: RegClient.Config, registry: Registry = Registry.NPM): Promise<NpmPublishClient> {
-        if (registry === Registry.Github) {
-            return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
-        } else {
-            return new this(new RegClient(config), { token: await getSecret(Secret.NPM_TOKEN) }, npmRegistry);
+        switch (registry) {
+            case Registry.NPM:
+                return new this(new RegClient(config), { token: await getSecret(Secret.NPM_TOKEN) }, npmRegistry);
+            case Registry.Github:
+                return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_REGISTRY_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
+            case Registry.GithubPackages:
+                return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_PACKAGE_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
         }
     }
 
