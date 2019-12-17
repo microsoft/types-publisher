@@ -14,10 +14,8 @@ if (process.env.LONGJOHN) {
 export enum Registry {
     /** types-registry and @types/* on NPM */
     NPM,
-    /** @definitelytyped/types-registry on Github */
+    /** @definitelytyped/types-registry and @types/* on Github */
     Github,
-    /** @types/* on Github */
-    GithubPackages,
 }
 
 /** Settings that may be determined dynamically. */

@@ -7,7 +7,7 @@ import { resolve as resolveUrl } from "url";
 import { Fetcher, readFile, readJson, sleep, writeJson } from "../util/io";
 import { Logger, loggerWithErrors } from "../util/logging";
 import { createTgz } from "../util/tgz";
-import { identity, joinPaths, mapToRecord, recordToMap } from "../util/util";
+import { identity, joinPaths, mapToRecord, recordToMap, assertNever } from "../util/util";
 
 import { getSecret, Secret } from "./secrets";
 import { githubRegistry, npmApi, npmRegistry, npmRegistryHostName } from "./settings";
@@ -143,9 +143,9 @@ export class NpmPublishClient {
             case Registry.NPM:
                 return new this(new RegClient(config), { token: await getSecret(Secret.NPM_TOKEN) }, npmRegistry);
             case Registry.Github:
-                return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_REGISTRY_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
-            case Registry.GithubPackages:
-                return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_PACKAGE_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
+                return new this(new RegClient(config), { token: await getSecret(Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, githubRegistry);
+            default:
+                assertNever(registry);
         }
     }
 

@@ -33,7 +33,7 @@ export async function publishNotNeededPackage(client: NpmPublishClient, pkg: Not
 
 async function common(client: NpmPublishClient, pkg: AnyPackage, log: Logger, dry: boolean, registry: Registry): Promise<void> {
     const packageDir = pkg.outputDirectory;
-    const packageJson = await readFileAndWarn("generate", joinPaths(packageDir + (registry === Registry.GithubPackages ? "-github" : ""), "package.json"));
+    const packageJson = await readFileAndWarn("generate", joinPaths(packageDir + (registry === Registry.Github ? "-github" : ""), "package.json"));
     await client.publish(packageDir, packageJson, dry, log);
 }
 

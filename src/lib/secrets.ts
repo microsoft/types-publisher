@@ -33,15 +33,10 @@ export enum Secret {
      */
     NPM_TOKEN,
     /**
-     * Token used to publish types-registry to Github.
+     * Token used to publish @definitelytyped/types-registry and @types/* to Github.
      * This *could* be the same as GITHUB_ACCESS_TOKEN, but I think it's better if they remain separate.
      */
-    GITHUB_REGISTRY_PUBLISH_ACCESS_TOKEN,
-    /**
-     * Token used to publish @types packages to Github.
-     * This *could* be the same as GITHUB_ACCESS_TOKEN, but I think it's better if they remain separate.
-     */
-    GITHUB_PACKAGE_PUBLISH_ACCESS_TOKEN,
+    GITHUB_PUBLISH_ACCESS_TOKEN,
 }
 
 export const allSecrets: Secret[] = mapDefined(Object.keys(Secret), key => {
