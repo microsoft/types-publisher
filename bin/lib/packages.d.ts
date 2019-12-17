@@ -54,17 +54,12 @@ export declare abstract class PackageBase {
     abstract readonly minTypeScriptVersion: TypeScriptVersion;
     /** '@types/foo' for a package 'foo'. */
     get fullNpmName(): string;
-    /** '@definitelytyped/foo' for a package 'foo'. */
-    get fullGithubName(): string;
     /** '@types%2ffoo' for a package 'foo'. */
     get fullEscapedNpmName(): string;
-    /** '@definitelytyped%2ffoo' for a package 'foo'. */
-    get fullEscapedGithubName(): string;
     abstract readonly major: number;
     get id(): PackageId;
     get outputDirectory(): string;
 }
-export declare function getFullGithubName(packageName: string): string;
 export declare function getFullNpmName(packageName: string): string;
 interface NotNeededPackageRaw extends BaseRaw {
     /**

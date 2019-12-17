@@ -148,17 +148,9 @@ class PackageBase {
     get fullNpmName() {
         return getFullNpmName(this.name);
     }
-    /** '@definitelytyped/foo' for a package 'foo'. */
-    get fullGithubName() {
-        return getFullGithubName(this.name);
-    }
     /** '@types%2ffoo' for a package 'foo'. */
     get fullEscapedNpmName() {
         return `@${settings_1.scopeName}%2f${this.name}`;
-    }
-    /** '@definitelytyped%2ffoo' for a package 'foo'. */
-    get fullEscapedGithubName() {
-        return `@${settings_1.orgName}%2f${this.name}`;
     }
     get id() {
         return { name: this.name, majorVersion: this.major };
@@ -168,10 +160,6 @@ class PackageBase {
     }
 }
 exports.PackageBase = PackageBase;
-function getFullGithubName(packageName) {
-    return `@${settings_1.orgName}/${getMangledNameForScopedPackage(packageName)}`;
-}
-exports.getFullGithubName = getFullGithubName;
 function getFullNpmName(packageName) {
     return `@${settings_1.scopeName}/${getMangledNameForScopedPackage(packageName)}`;
 }

@@ -21,13 +21,13 @@ if (!module.parent) {
             // Normally this should not be needed.
             const log = logging_1.logger()[0];
             try {
-                await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log, common_1.Registry.Github);
+                await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.Github), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
             }
             catch (e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());
             }
-            await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log, common_1.Registry.NPM);
+            await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.NPM), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
         }
         else {
             await publishPackages(await versions_1.readChangedPackages(await packages_1.AllPackages.read(dt)), dry, process.env.GH_API_TOKEN || "", new io_1.Fetcher());

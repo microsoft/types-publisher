@@ -1,6 +1,8 @@
 /** Which registry to publish to */
 export declare enum Registry {
+    /** types-registry and @types/* on NPM */
     NPM = 0,
+    /** @definitelytyped/types-registry and @types/* on Github */
     Github = 1
 }
 /** Settings that may be determined dynamically. */

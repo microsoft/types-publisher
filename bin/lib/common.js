@@ -12,7 +12,9 @@ if (process.env.LONGJOHN) {
 /** Which registry to publish to */
 var Registry;
 (function (Registry) {
+    /** types-registry and @types/* on NPM */
     Registry[Registry["NPM"] = 0] = "NPM";
+    /** @definitelytyped/types-registry and @types/* on Github */
     Registry[Registry["Github"] = 1] = "Github";
 })(Registry = exports.Registry || (exports.Registry = {}));
 var Options;

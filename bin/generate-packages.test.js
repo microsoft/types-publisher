@@ -52,23 +52,19 @@ test_1.testo({
     },
     basicReadme() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing, common_1.Registry.NPM)).toEqual(expect.stringContaining("This package contains type definitions for"));
-    },
-    githubReadme() {
-        const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing, common_1.Registry.Github)).toEqual(expect.stringContaining("npm install --save @testtypepublishing/"));
+        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("This package contains type definitions for"));
     },
     readmeContainsProjectName() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing, common_1.Registry.NPM)).toEqual(expect.stringContaining("jquery.org"));
+        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("jquery.org"));
     },
     readmeNoDependencies() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing, common_1.Registry.NPM)).toEqual(expect.stringContaining("Dependencies: none"));
+        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("Dependencies: none"));
     },
     readmeNoGlobals() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing, common_1.Registry.NPM)).toEqual(expect.stringContaining("Global values: none"));
+        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("Global values: none"));
     },
     async basicPackageJson() {
         const packages = packages_1.AllPackages.from(createTypesData(), await packages_1.readNotNeededPackages(mocks_1.createMockDT()));
@@ -101,7 +97,7 @@ test_1.testo({
     async githubPackageJsonName() {
         const packages = packages_1.AllPackages.from(createTypesData(), await packages_1.readNotNeededPackages(mocks_1.createMockDT()));
         const typing = new packages_1.TypingsData(createRawPackage("MIT" /* MIT */), /*isLatest*/ true);
-        expect(generate_packages_1.createPackageJSON(typing, "1.0", packages, common_1.Registry.Github)).toEqual(expect.stringContaining('"name": "@testtypepublishing/jquery"'));
+        expect(generate_packages_1.createPackageJSON(typing, "1.0", packages, common_1.Registry.Github)).toEqual(expect.stringContaining('"name": "@types/jquery"'));
     },
     async githubPackageJsonRegistry() {
         const packages = packages_1.AllPackages.from(createTypesData(), await packages_1.readNotNeededPackages(mocks_1.createMockDT()));
@@ -129,7 +125,7 @@ test_1.testo({
     },
     async githubNotNeededPackageJson() {
         const s = generate_packages_1.createNotNeededPackageJSON(createUnneededPackage(), common_1.Registry.Github);
-        expect(s).toEqual(expect.stringContaining('@testtypepublishing'));
+        expect(s).toEqual(expect.stringContaining('@types'));
         expect(s).toEqual(expect.stringContaining('npm.pkg.github.com'));
     },
 });

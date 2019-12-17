@@ -10,8 +10,6 @@ exports.githubRegistry = `https://${exports.githubRegistryHostName}/`;
 exports.npmApi = "api.npmjs.org";
 /** Note: this is 'types' and not '@types' */
 exports.scopeName = "types";
-/** TODO: Change this to definitelytyped when it's ready */
-exports.orgName = "testtypepublishing";
 const root = path_1.join(__dirname, "..", "..");
 exports.dataDirPath = path_1.join(root, "data");
 exports.outputDirPath = path_1.join(root, "output");

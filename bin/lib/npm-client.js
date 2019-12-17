@@ -111,11 +111,13 @@ class NpmPublishClient {
         this.registry = registry;
     }
     static async create(config, registry = common_1.Registry.NPM) {
-        if (registry === common_1.Registry.Github) {
-            return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
-        }
-        else {
-            return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN) }, settings_1.npmRegistry);
+        switch (registry) {
+            case common_1.Registry.NPM:
+                return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN) }, settings_1.npmRegistry);
+            case common_1.Registry.Github:
+                return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
+            default:
+                util_1.assertNever(registry);
         }
     }
     async publish(publishedDirectory, packageJson, dry, log) {

@@ -49,8 +49,8 @@ exports.default = generatePackages;
 async function generateTypingPackage(typing, packages, version, dt) {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
     const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
-    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.NPM), createReadme(typing, common_1.Registry.NPM), common_1.Registry.NPM);
-    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.Github), createReadme(typing, common_1.Registry.Github), common_1.Registry.Github);
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.NPM), createReadme(typing), common_1.Registry.NPM);
+    await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.Github), createReadme(typing), common_1.Registry.Github);
     await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.NPM, file), packageFS.readFile(file))));
     await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.Github, file), packageFS.readFile(file))));
 }
@@ -81,7 +81,7 @@ async function outputFilePath(pkg, registry, filename) {
 function createPackageJSON(typing, version, packages, registry) {
     // Use the ordering of fields from https://docs.npmjs.com/files/package.json
     const out = {
-        name: registry === common_1.Registry.NPM ? typing.fullNpmName : typing.fullGithubName,
+        name: typing.fullNpmName,
         version,
         description: `TypeScript definitions for ${typing.libraryName}`,
         // keywords,
@@ -95,7 +95,7 @@ function createPackageJSON(typing, version, packages, registry) {
         repository: {
             type: "git",
             url: registry === common_1.Registry.Github
-                ? "https://github.com/TestTypePublishing/TypePublishing.git"
+                ? "https://github.com/types/_definitelytypedmirror.git"
                 : "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
             directory: `types/${typing.name}`,
         },
@@ -129,16 +129,16 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, fullGithubName, sourceRepoURL, version }, registry) {
+function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }, registry) {
     const out = {
-        name: registry === common_1.Registry.NPM ? fullNpmName : fullGithubName,
+        name: fullNpmName,
         version: version.versionString,
         typings: null,
         description: `Stub TypeScript definitions entry for ${libraryName}, which provides its own types definitions`,
         main: "",
         scripts: {},
         author: "",
-        repository: registry === common_1.Registry.NPM ? sourceRepoURL : "https://github.com/TestTypePublishing/TypePublishing.git",
+        repository: registry === common_1.Registry.NPM ? sourceRepoURL : "https://github.com/types/_definitelytypedmirror.git",
         license,
         // No `typings`, that's provided by the dependency.
         dependencies: {
@@ -151,10 +151,10 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, f
     return JSON.stringify(out, undefined, 4);
 }
 exports.createNotNeededPackageJSON = createNotNeededPackageJSON;
-function createReadme(typing, reg) {
+function createReadme(typing) {
     const lines = [];
     lines.push("# Installation");
-    lines.push(`> \`npm install --save ${reg === common_1.Registry.NPM ? typing.fullNpmName : typing.fullGithubName}\``);
+    lines.push(`> \`npm install --save ${typing.fullNpmName}\``);
     lines.push("");
     lines.push("# Summary");
     if (typing.projectName) {

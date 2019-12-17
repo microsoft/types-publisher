@@ -54,7 +54,7 @@ async function publishRegistry(dt, allPackages, dry, client) {
             // This may have just been due to a timeout, so test if types-registry@next is a subset of the one we're about to publish.
             // If so, we should just update it to "latest" now.
             log("Old version of types-registry was never tagged latest, so updating");
-            await validateIsSubset(await packages_1.readNotNeededPackages(dt), log);
+            await validateIsSubset(packages_1.readNotNeededPackages(dt), log);
             await (await publishClient()).tag(packageName, highestSemverVersion.versionString, "latest", dry, log);
         }
         else if (npmContentHash !== newContentHash && isTimeForNewVersion) {
