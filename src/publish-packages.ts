@@ -137,7 +137,7 @@ export default async function publishPackages(
         }
     }
 
-    withNpmCache(new UncachedNpmInfoClient(), async infoClient => {
+    await withNpmCache(new UncachedNpmInfoClient(), async infoClient => {
         for (const n of changedPackages.changedNotNeededPackages) {
             const target = skipBadPublishes(n, infoClient, log);
             try {

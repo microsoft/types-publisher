@@ -42,7 +42,7 @@ export default async function generatePackages(dt: FS, allPackages: AllPackages,
         log(` * ${pkg.libraryName}`);
     }
     log("## Generating deprecated packages");
-    withNpmCache(new UncachedNpmInfoClient(), async client => {
+    await withNpmCache(new UncachedNpmInfoClient(), async client => {
         for (const pkg of changedPackages.changedNotNeededPackages) {
             log(` * ${pkg.libraryName}`);
             await generateNotNeededPackage(pkg, client, log);
