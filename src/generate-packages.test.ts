@@ -1,8 +1,8 @@
 import { createNotNeededPackageJSON, createPackageJSON, createReadme, getLicenseFileText } from "./generate-packages";
 import { Registry } from "./lib/common";
-import { TypingsData, TypingsDataRaw, License, AllPackages, readNotNeededPackages, TypesDataFile, NotNeededPackage } from "./lib/packages";
+import { AllPackages, License, NotNeededPackage, readNotNeededPackages, TypesDataFile, TypingsData, TypingsDataRaw } from "./lib/packages";
+import { createMockDT } from "./mocks";
 import { testo } from "./util/test";
-import { createMockDT } from "./mocks"
 function createRawPackage(license: License): TypingsDataRaw {
     return {
         libraryName: "jquery",
@@ -22,14 +22,14 @@ function createRawPackage(license: License): TypingsDataRaw {
         projectName: "jquery.org",
         globals: [],
         declaredModules: ["juqery"],
-    }
+    };
 }
 function createTypesData(): TypesDataFile {
     return {
-        "jquery": {
-            "1": createRawPackage(License.MIT)
+        jquery: {
+            1: createRawPackage(License.MIT),
         },
-    }
+    };
 }
 function createUnneededPackage() {
     return new NotNeededPackage({
@@ -37,7 +37,7 @@ function createUnneededPackage() {
         typingsPackageName: "absalom",
         asOfVersion: "1.1.1",
         sourceRepoURL: "https://github.com/aardwulf/absalom",
-    })
+    });
 }
 testo({
     mitLicenseText() {
@@ -102,7 +102,7 @@ testo({
         const packages = AllPackages.from(createTypesData(), await readNotNeededPackages(createMockDT()));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
-        expect(s).toEqual(expect.stringContaining('publishConfig'));
+        expect(s).toEqual(expect.stringContaining("publishConfig"));
         expect(s).toEqual(expect.stringContaining('"registry": "https://npm.pkg.github.com/"'));
     },
     async basicNotNeededPackageJson() {
@@ -124,7 +124,7 @@ testo({
     },
     async githubNotNeededPackageJson() {
         const s = createNotNeededPackageJSON(createUnneededPackage(), Registry.Github);
-        expect(s).toEqual(expect.stringContaining('@types'));
-        expect(s).toEqual(expect.stringContaining('npm.pkg.github.com'));
+        expect(s).toEqual(expect.stringContaining("@types"));
+        expect(s).toEqual(expect.stringContaining("npm.pkg.github.com"));
     },
 });

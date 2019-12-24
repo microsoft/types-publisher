@@ -159,7 +159,7 @@ function getTypingDataForSingleTypesVersion(
     const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
     const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
     checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
-    for (const untestedTypeFile of filter(otherFiles, name => name.endsWith('.d.ts'))) {
+    for (const untestedTypeFile of filter(otherFiles, name => name.endsWith(".d.ts"))) {
         // add d.ts files from OTHER_FILES.txt in order get their dependencies
         types.set(untestedTypeFile, createSourceFile(untestedTypeFile, fs.readFile(untestedTypeFile)));
     }
@@ -228,7 +228,7 @@ function checkFilesFromTsConfig(packageName: string, tsconfig: TsConfig, directo
         }
         if (file.endsWith(".d.ts") && file !== "index.d.ts") {
             throw new Error(`${packageName}: Only index.d.ts may be listed explicitly in tsconfig's "files" entry.
-Other d.ts files must either be referenced through index.d.ts, tests, or added to OTHER_FILES.txt.`)
+Other d.ts files must either be referenced through index.d.ts, tests, or added to OTHER_FILES.txt.`);
         }
 
         if (!file.endsWith(".d.ts") && !file.startsWith("test/")) {
@@ -419,8 +419,7 @@ function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedF
     for (const unusedFile of unusedFiles) {
         if (usedFiles.has(unusedFile)) {
             throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} is already reachable from tsconfig.json.`);
-        }
-        else {
+        } else {
             throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
         }
     }

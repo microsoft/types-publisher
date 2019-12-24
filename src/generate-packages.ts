@@ -1,21 +1,21 @@
+import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
 import { emptyDir } from "fs-extra";
+import { mkdir, mkdirp, readFileSync } from "fs-extra";
+import * as path from "path";
 import * as yargs from "yargs";
 
 import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options, Registry } from "./lib/common";
+import { CachedNpmInfoClient, UncachedNpmInfoClient, withNpmCache } from "./lib/npm-client";
 import {
     AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
 } from "./lib/packages";
-import { sourceBranch, outputDirPath } from "./lib/settings";
+import { outputDirPath, sourceBranch } from "./lib/settings";
 import { ChangedPackages, readChangedPackages, skipBadPublishes } from "./lib/versions";
 import { writeFile } from "./util/io";
-import { logger, loggerWithErrors, writeLog, Logger } from "./util/logging";
+import { logger, Logger, loggerWithErrors, writeLog } from "./util/logging";
 import { writeTgz } from "./util/tgz";
 import { assertNever, joinPaths, logUncaughtErrors, sortObjectKeys } from "./util/util";
-import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
-import { mkdir, mkdirp, readFileSync } from "fs-extra";
-import * as path from "path";
-import { withNpmCache, CachedNpmInfoClient, UncachedNpmInfoClient } from "./lib/npm-client";
 
 const mitLicense = readFileSync(joinPaths(__dirname, "..", "LICENSE"), "utf-8");
 

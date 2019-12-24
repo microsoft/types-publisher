@@ -1,9 +1,9 @@
+import appInsights = require("applicationinsights");
 import * as yargs from "yargs";
 
-import appInsights = require("applicationinsights");
 import { getDefinitelyTyped } from "./get-definitely-typed";
 import { Options, Registry } from "./lib/common";
-import { withNpmCache, NpmPublishClient, UncachedNpmInfoClient } from "./lib/npm-client";
+import { NpmPublishClient, UncachedNpmInfoClient, withNpmCache } from "./lib/npm-client";
 import { deprecateNotNeededPackage, publishNotNeededPackage, publishTypingsPackage } from "./lib/package-publisher";
 import { AllPackages } from "./lib/packages";
 import { ChangedPackages, readChangedPackages, skipBadPublishes } from "./lib/versions";
@@ -24,7 +24,7 @@ if (!module.parent) {
             try {
                 await deprecateNotNeededPackage(
                     await NpmPublishClient.create(undefined, Registry.Github), AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
-            } catch(e) {
+            } catch (e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());
             }
@@ -44,8 +44,7 @@ export default async function publishPackages(
     const [log, logResult] = logger();
     if (dry) {
         log("=== DRY RUN ===");
-    }
-    else {
+    } else {
         log("=== Publishing packages ===");
     }
 
@@ -57,7 +56,7 @@ export default async function publishPackages(
 
         try {
             await publishTypingsPackage(ghClient, cp, dry, log, Registry.Github);
-        } catch(e) {
+        } catch (e) {
             // log and continue
             log("publishing to github failed: " + e.toString());
         }
@@ -136,17 +135,16 @@ export default async function publishPackages(
 
     withNpmCache(new UncachedNpmInfoClient(), async infoClient => {
         for (const n of changedPackages.changedNotNeededPackages) {
-            const target = skipBadPublishes(n, infoClient, log)
+            const target = skipBadPublishes(n, infoClient, log);
             try {
                 await publishNotNeededPackage(ghClient, target, dry, log, Registry.Github);
-            } catch(e) {
+            } catch (e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());
             }
             await publishNotNeededPackage(client, target, dry, log, Registry.NPM);
         }
     });
-
 
     await writeLog("publishing.md", logResult());
     console.log("Done!");
