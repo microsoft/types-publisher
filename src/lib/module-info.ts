@@ -166,7 +166,12 @@ export function allReferencedFiles(
                 tests.set(resolvedFilename, src);
             }
 
-            const refs = findReferencedFiles(src, packageName, path.dirname(resolvedFilename), normalizeSlashes(path.relative(baseDirectory, fs.debugPath())));
+            const refs = findReferencedFiles(
+                src,
+                packageName,
+                path.dirname(resolvedFilename),
+                normalizeSlashes(path.relative(baseDirectory, fs.debugPath())),
+            );
             refs.forEach(recur);
         }
     }
@@ -230,7 +235,7 @@ function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirecto
         const full = normalizeSlashes(path.normalize(joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, ref.text))));
         // allow files in typesVersions directories (i.e. 'ts3.1') to reference files in parent directory
         if (full.startsWith("../" + packageName + "/")) {
-            ref.text = full.slice(4 + packageName.length);
+            ref.text = full.slice(packageName.length + 4);
             refs.push(ref);
             return;
         } else if (full.startsWith("..")

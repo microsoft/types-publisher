@@ -26,26 +26,39 @@ testo({
         expect(Array.from(tests.keys())).toEqual(["jquery-tests.ts"]);
     },
     allReferencedFilesFromTestIncludesSecondaryTripleSlashTypes() {
-        const { types, tests } = allReferencedFiles(["globby-tests.ts", "test/other-tests.ts"], fs.subDir("types").subDir("globby"), "globby", "types/globby");
+        const { types, tests } = allReferencedFiles(
+            ["globby-tests.ts", "test/other-tests.ts"],
+            fs.subDir("types").subDir("globby"),
+            "globby",
+            "types/globby",
+        );
         expect(Array.from(types.keys())).toEqual(["merges.d.ts"]);
         expect(Array.from(tests.keys())).toEqual(["globby-tests.ts", "test/other-tests.ts"]);
     },
     getModuleInfoWorksWithOtherFiles() {
         const { types } = getBoringReferences();
         // written as if it were from OTHER_FILES.txt
-        types.set("untested.d.ts", ts.createSourceFile("untested.d.ts", fs.subDir("types").subDir("boring").readFile("untested.d.ts"), ts.ScriptTarget.Latest, false));
+        types.set(
+            "untested.d.ts",
+            ts.createSourceFile("untested.d.ts", fs.subDir("types").subDir("boring").readFile("untested.d.ts"), ts.ScriptTarget.Latest, false),
+        );
         const i = getModuleInfo("boring", types);
         expect(i.dependencies).toEqual(new Set(["manual", "react", "react-default", "things", "vorticon"]));
     },
     getModuleInfoForNestedTypeReferences() {
-        const { types } = allReferencedFiles(["index.d.ts", "globby-tests.ts", "test/other-tests.ts"], fs.subDir("types").subDir("globby"), "globby", "types/globby");
+        const { types } = allReferencedFiles(
+            ["index.d.ts", "globby-tests.ts", "test/other-tests.ts"],
+            fs.subDir("types").subDir("globby"),
+            "globby",
+            "types/globby",
+        );
         expect(Array.from(types.keys())).toEqual(["index.d.ts", "sneaky.d.ts", "merges.d.ts"]);
         const i = getModuleInfo("globby", types);
         expect(i.dependencies).toEqual(new Set(["andere"]));
     },
     versionTypeRefThrows() {
         const fail = new Dir(undefined);
-        const fs = new InMemoryDT(fail, "typeref-fails");
+        const memFS = new InMemoryDT(fail, "typeref-fails");
         fail.set("index.d.ts", `// Type definitions for fail 1.0
 // Project: https://youtube.com/typeref-fails
 // Definitions by: Type Ref Fails <https://github.com/typeref-fails>
@@ -53,7 +66,7 @@ testo({
 
 /// <reference types="elser/v3" />
 `);
-        const { types } = allReferencedFiles(["index.d.ts"], fs, "typeref-fails", "types/typeref-fails");
+        const { types } = allReferencedFiles(["index.d.ts"], memFS, "typeref-fails", "types/typeref-fails");
         expect(Array.from(types.keys())).toEqual(["index.d.ts"]);
         expect(() => getModuleInfo("typeref-fails", types)).toThrow("do not directly import specific versions of another types package");
     },

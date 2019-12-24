@@ -1,6 +1,5 @@
 import { makeTypesVersionsForPackageJson } from "definitelytyped-header-parser";
-import { emptyDir } from "fs-extra";
-import { mkdir, mkdirp, readFileSync } from "fs-extra";
+import { emptyDir, mkdir, mkdirp, readFileSync } from "fs-extra";
 import * as path from "path";
 import * as yargs from "yargs";
 
@@ -150,7 +149,17 @@ function dependencySemver(dependency: DependencyVersion): string {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
 
-export function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }: NotNeededPackage, registry: Registry): string {
+export function createNotNeededPackageJSON(
+    {
+        libraryName,
+        license,
+        name,
+        fullNpmName,
+        sourceRepoURL,
+        version,
+    }: NotNeededPackage,
+    registry: Registry,
+): string {
     const out = {
         name: fullNpmName,
         version: version.versionString,

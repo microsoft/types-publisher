@@ -14,7 +14,18 @@ import { sourceBranch, typesDirectoryName } from "../lib/settings";
 import { Semver } from "../lib/versions";
 import { npmInstallFlags } from "../util/io";
 import { consoleLogger, Logger, LoggerWithErrors, loggerWithErrors } from "../util/logging";
-import { assertDefined, CrashRecoveryState, exec, execAndThrowErrors, flatMap, joinPaths, logUncaughtErrors, mapIter, numberOfOsProcesses, runWithListeningChildProcesses } from "../util/util";
+import {
+    assertDefined,
+    CrashRecoveryState,
+    exec,
+    execAndThrowErrors,
+    flatMap,
+    joinPaths,
+    logUncaughtErrors,
+    mapIter,
+    numberOfOsProcesses,
+    runWithListeningChildProcesses,
+} from "../util/util";
 
 import { allDependencies, getAffectedPackages } from "./get-affected-packages";
 
@@ -130,10 +141,18 @@ export function checkNotNeededPackage(unneeded: NotNeededPackage, source: NpmInf
 "libraryName": "${unneeded.libraryName}", but there is no npm package with this name.
 Unneeded packages have to be replaced with a package on npm.`);
     typings = assertDefined(typings, `Unexpected error: @types package not found for ${unneeded.fullNpmName}`);
-    const latestTypings = Semver.parse(assertDefined(typings.distTags.get("latest"), `Unexpected error: ${unneeded.fullNpmName} is missing the "latest" tag.`));
-    assert(unneeded.version.greaterThan(latestTypings), `The specified version ${unneeded.version.versionString} of ${unneeded.libraryName} must be newer than the version
-it is supposed to replace, ${latestTypings.versionString} of ${unneeded.fullNpmName}.`);
-    assert(source.versions.has(unneeded.version.versionString), `The specified version ${unneeded.version.versionString} of ${unneeded.libraryName} is not on npm.`);
+    const latestTypings = Semver.parse(
+        assertDefined(typings.distTags.get("latest"), `Unexpected error: ${unneeded.fullNpmName} is missing the "latest" tag.`),
+    );
+    assert(
+        unneeded.version.greaterThan(latestTypings),
+        `The specified version ${unneeded.version.versionString} of ${unneeded.libraryName} must be newer than the version
+it is supposed to replace, ${latestTypings.versionString} of ${unneeded.fullNpmName}.`,
+    );
+    assert(
+        source.versions.has(unneeded.version.versionString),
+        `The specified version ${unneeded.version.versionString} of ${unneeded.libraryName} is not on npm.`,
+    );
 }
 
 async function doInstalls(allPackages: AllPackages, packages: Iterable<TypingsData>, typesPath: string): Promise<void> {
@@ -308,7 +327,7 @@ export async function gitDiff(log: Logger, definitelyTypedPath: string): Promise
         diff = (await run(`git diff ${sourceBranch}~1 --name-status`)).trim();
     }
     return diff.split("\n").map(line => {
-        let [status, file] = line.split(/\s+/, 2);
+        const [status, file] = line.split(/\s+/, 2);
         return { status: status.trim(), file: file.trim() } as GitDiff;
     });
 

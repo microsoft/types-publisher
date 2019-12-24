@@ -23,7 +23,11 @@ if (!module.parent) {
             const log = logger()[0];
             try {
                 await deprecateNotNeededPackage(
-                    await NpmPublishClient.create(undefined, Registry.Github), AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
+                    await NpmPublishClient.create(undefined, Registry.Github),
+                    AllPackages.readSingleNotNeeded(deprecateName, dt),
+                    false, /*dry*/
+                    log,
+                );
             } catch (e) {
                 // log and continue
                 log("publishing to github failed: " + e.toString());

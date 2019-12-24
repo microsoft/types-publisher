@@ -55,7 +55,13 @@ testo({
         Array.from(getNotNeededPackages(
             AllPackages.from(
                 typesData,
-                [new NotNeededPackage({ typingsPackageName: "ember__object", libraryName: "@ember/object", asOfVersion: "1.0.0", sourceRepoURL: "ember.js" })]),
+                [new NotNeededPackage({
+                    typingsPackageName: "ember__object",
+                    libraryName: "@ember/object",
+                    asOfVersion: "1.0.0",
+                    sourceRepoURL: "ember.js",
+                })],
+            ),
             [{ status: "D", file: "types/ember__object/index.d.ts" }]));
     },
     // TODO: Test npm info (and with scoped names)
@@ -81,18 +87,33 @@ testo({
             .toThrow("@types/jest is missing the \"latest\" tag");
     },
     deprecatedSameVersion() {
-        expect(() => checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "100.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
-            .toThrow(`The specified version 100.0.0 of jest must be newer than the version
+        expect(() => {
+            checkNotNeededPackage(
+                jestNotNeeded[0],
+                empty,
+                { distTags: new Map([["latest", "100.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) },
+            );
+        }).toThrow(`The specified version 100.0.0 of jest must be newer than the version
 it is supposed to replace, 100.0.0 of @types/jest.`);
     },
     deprecatedOlderVersion() {
-        expect(() => checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "999.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
-            .toThrow(`The specified version 100.0.0 of jest must be newer than the version
+        expect(() => {
+            checkNotNeededPackage(
+                jestNotNeeded[0],
+                empty,
+                { distTags: new Map([["latest", "999.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) },
+            );
+        }).toThrow(`The specified version 100.0.0 of jest must be newer than the version
 it is supposed to replace, 999.0.0 of @types/jest.`);
     },
     missingNpmVersion() {
-        expect(() => checkNotNeededPackage(jestNotNeeded[0], empty, { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) }))
-            .toThrow("The specified version 100.0.0 of jest is not on npm.");
+        expect(() => {
+            checkNotNeededPackage(
+                jestNotNeeded[0],
+                empty,
+                { distTags: new Map([["latest", "4.0.0"]]), versions: new Map(), time: new Map([["modified", ""]]) },
+            );
+        }).toThrow("The specified version 100.0.0 of jest is not on npm.");
     },
     olderNpmVersion() {
         expect(() => checkNotNeededPackage(
