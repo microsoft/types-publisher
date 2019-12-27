@@ -1,3 +1,7 @@
+import assert = require("assert");
+import { parseHeaderOrFail } from "definitelytyped-header-parser";
+import * as semver from "semver";
+
 import { Dir, FS, InMemoryDT } from "./get-definitely-typed";
 
 class DTMock {
@@ -23,6 +27,57 @@ class DTMock {
 
     public pkgFS(packageName: string): FS {
         return this.fs.subDir("types").subDir(packageName);
+    }
+
+    /**
+     * Creates a shallow copy of a package, meaning all entries in the old version directory that will be created refer to the copied entry from the
+     * latest version. The only exceptions are the `index.d.ts` and `tsconfig.json` files.
+     *
+     * The directory name will exactly follow the given `olderVersion`. I.e. `2` will become `v2`, whereas `2.2` will become `v2.2`.
+     *
+     * @param packageName The package of which an old version is to be added.
+     * @param olderVersion The older version that's to be added.
+     */
+    public addOldVersionOfPackage(packageName: string, olderVersion: string) {
+        const latestDir = this.pkgDir(packageName);
+        const index = latestDir.get("index.d.ts") as string;
+        const latestHeader = parseHeaderOrFail(index);
+        const latestVersion = `${latestHeader.libraryMajorVersion}.${latestHeader.libraryMinorVersion}`;
+
+        const olderVersionParsed = semver.coerce(olderVersion)!;
+        const latestVersionParsed = semver.coerce(latestVersion)!;
+
+        assert(
+            semver.gt(latestVersionParsed, olderVersionParsed),
+            `Version to be added (${olderVersion}) must be older than latest (${latestVersion}).`,
+        );
+
+        const oldDir = latestDir.subdir(`v${olderVersion}`);
+        const tsconfig = JSON.parse(latestDir.get("tsconfig.json") as string);
+
+        oldDir.set("index.d.ts", index.replace(latestVersion, `${olderVersionParsed.major}.${olderVersionParsed.minor}`));
+        oldDir.set("tsconfig.json", JSON.stringify({
+            ...tsconfig,
+            compilerOptions: {
+                ...tsconfig.compilerOptions,
+                paths: {
+                    [packageName]: [`${packageName}/v${olderVersion}`],
+                },
+            },
+        }));
+
+        latestDir.forEach((content, entry) => {
+            if (
+                content !== oldDir
+                && entry !== "index.d.ts"
+                && entry !== "tsconfig.json"
+                && !(content instanceof Dir && /^v\d+(\.\d+)?$/.test(entry))
+            ) {
+                oldDir.set(entry, content);
+            }
+        });
+
+        return oldDir;
     }
 }
 
@@ -105,7 +160,7 @@ untested.d.ts
 }`);
 
     const globby = dt.pkgDir("globby");
-    globby.set("index.d.ts", `// Type definitions for globby 0.1
+    globby.set("index.d.ts", `// Type definitions for globby 0.2
 // Project: https://globby-gloopy.com
 // Definitions by: The Dragon Quest Slime <https://github.com/gloopyslime>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped

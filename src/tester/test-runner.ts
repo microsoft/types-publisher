@@ -7,7 +7,7 @@ import * as yargs from "yargs";
 
 import { FS, getDefinitelyTyped } from "../get-definitely-typed";
 import { Options, TesterOptions } from "../lib/common";
-import { parseMajorVersionFromDirectoryName } from "../lib/definition-parser";
+import { parseVersionFromDirectoryName } from "../lib/definition-parser";
 import { NpmInfo, UncachedNpmInfoClient } from "../lib/npm-client";
 import { AllPackages, DependencyVersion, NotNeededPackage, PackageId, TypingsData } from "../lib/packages";
 import { sourceBranch, typesDirectoryName } from "../lib/settings";
@@ -358,10 +358,12 @@ function getDependencyFromFile(file: string): PackageId | undefined {
     }
 
     if (subDirName) {
+        // TODO:
         // Looks like "types/a/v3/c"
-        const majorVersion = parseMajorVersionFromDirectoryName(subDirName);
+        const majorVersion = parseVersionFromDirectoryName(subDirName);
         if (majorVersion !== undefined) {
-            return { name,  majorVersion };
+            // return { name,  majorVersion };
+            return { name,  majorVersion: majorVersion.majorVersion };
         }
     }
 

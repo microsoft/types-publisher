@@ -20,7 +20,7 @@ testo({
     updatedPackage() {
         const affected = getAffectedPackages(allPackages, [{ name: "jquery", majorVersion: 1 }]);
         expect(affected.changedPackages.length).toEqual(1);
-        expect((affected.changedPackages[0] as any).data).toEqual(typesData.jquery[1]);
+        expect((affected.changedPackages[0] as any).data).toEqual(typesData.jquery["1.0.0"]);
         expect(affected.dependentPackages.length).toEqual(3);
     },
     deletedPackage() {

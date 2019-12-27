@@ -1,5 +1,6 @@
 import assert = require("assert");
 import { AllTypeScriptVersion, Author, TypeScriptVersion } from "definitelytyped-header-parser";
+import * as semver from "semver";
 
 import { FS } from "../get-definitely-typed";
 import { assertSorted, joinPaths, mapValues, unmangleScopedPackage } from "../util/util";
@@ -290,6 +291,10 @@ export interface TypingsDataRaw extends BaseRaw {
     // Parsed from "Definitions by:"
     readonly contributors: ReadonlyArray<Author>;
 
+    // TODO: Comment
+    readonly considerLibraryMinorVersion: boolean;
+    readonly libraryVersionDirectoryName?: string;
+
     // The major version of the library (e.g. "1" for 1.0, "2" for 2.0)
     readonly libraryMajorVersion: number;
     // The minor version of the library
@@ -349,47 +354,75 @@ export function getLicenseFromPackageJson(packageJsonLicense: unknown): License 
     throw new Error(`'package.json' license is ${JSON.stringify(packageJsonLicense)}.\nExpected one of: ${JSON.stringify(allLicenses)}}`);
 }
 
-class TypingsVersions {
-    private readonly map: ReadonlyMap<number, TypingsData>;
-    private readonly latest: number;
+export class TypingsVersions {
+    private readonly map: ReadonlyMap<semver.SemVer, TypingsData>;
+
+    /**
+     * Sorted from latest to oldest.
+     */
+    private readonly versions: semver.SemVer[];
 
     constructor(data: TypingsVersionsRaw) {
-        const versions = Object.keys(data).map(Number);
-        this.latest = Math.max(...versions);
-        this.map = new Map(versions.map((version): [number, TypingsData] =>
-            [version, new TypingsData(data[version], version === this.latest)]));
+        const versionMappings = new Map(Object.keys(data).map(key => {
+            const version = semver.coerce(key);
+            if (version) {
+                return [version, key];
+            } else {
+                throw new Error(`Unable to parse version ${key}`);
+            }
+        }));
+        this.versions = Array.from(versionMappings.keys()).sort(semver.compare).reverse();
+        this.map = new Map(this.versions.map(version => {
+            const dataKey = versionMappings.get(version)!;
+            return [version, new TypingsData(data[dataKey], version === this.versions[0])];
+        }));
     }
 
     /**
-     * Values are reversed so that we publish the current version first.
+     * Sorted from latest to oldest so that we publish the current version first.
      * This is important because older versions repeatedly reset the "latest" tag to the current version.
      */
     getAll(): Iterable<TypingsData> {
-        return Array.from(this.map.values()).reverse();
+        return this.map.values();
     }
 
-    get(majorVersion: DependencyVersion): TypingsData {
-        return majorVersion === "*" ? this.getLatest() : this.getExact(majorVersion);
+    // TODO: Is find by major version enough?
+    get(version: DependencyVersion): TypingsData {
+        return version === "*" ? this.getLatest() : this.getLatestOfMajor(version);
     }
 
-    tryGet(majorVersion: DependencyVersion): TypingsData | undefined {
-        return majorVersion === "*" ? this.getLatest() : this.tryGetExact(majorVersion);
+    // TODO: Is find by major version enough?
+    tryGet(version: DependencyVersion): TypingsData | undefined {
+        return version === "*" ? this.getLatest() : this.tryGetLatestOfMajor(version);
     }
 
     getLatest(): TypingsData {
-        return this.getExact(this.latest);
+        return this.getExact(this.versions[0]);
     }
 
-    private getExact(majorVersion: number): TypingsData {
-        const data = this.tryGetExact(majorVersion);
+    private getExact(version: semver.SemVer): TypingsData {
+        const data = this.tryGetExact(version);
+        if (!data) {
+            throw new Error(`Could not find version ${version}`);
+        }
+        return data;
+    }
+
+    private tryGetExact(version: semver.SemVer): TypingsData | undefined {
+        return this.map.get(version);
+    }
+
+    private getLatestOfMajor(majorVersion: number): TypingsData {
+        const data = this.tryGetLatestOfMajor(majorVersion);
         if (!data) {
             throw new Error(`Could not find version ${majorVersion}`);
         }
         return data;
     }
 
-    private tryGetExact(majorVersion: number): TypingsData | undefined {
-        return this.map.get(majorVersion);
+    private tryGetLatestOfMajor(majorVersion: number): TypingsData | undefined {
+        const version = this.versions.find(v => v.major === majorVersion);
+        return version && this.map.get(version);
     }
 }
 
@@ -423,7 +456,7 @@ export class TypingsData extends PackageBase {
 
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
     get subDirectoryPath(): string {
-        return this.isLatest ? this.name : `${this.name}/v${this.data.libraryMajorVersion}`;
+        return this.isLatest ? this.name : `${this.name}/v${this.data.libraryVersionDirectoryName}`;
     }
 }
 
