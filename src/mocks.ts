@@ -1,16 +1,35 @@
-import { Dir, InMemoryDT } from "./get-definitely-typed";
+import { Dir, FS, InMemoryDT } from "./get-definitely-typed";
+
+class DTMock {
+    public readonly fs: FS;
+    private readonly root: Dir;
+
+    constructor() {
+        this.root = new Dir(undefined);
+        this.root.set("notNeededPackages.json", `{
+            "packages": [{
+            "libraryName": "Angular 2",
+            "typingsPackageName": "angular",
+            "asOfVersion": "1.2.3",
+            "sourceRepoURL": "https://github.com/angular/angular2"
+          }]
+        }`);
+        this.fs = new InMemoryDT(this.root, "DefinitelyTyped");
+    }
+
+    public pkgDir(packageName: string): Dir {
+        return this.root.subdir("types").subdir(packageName);
+    }
+
+    public pkgFS(packageName: string): FS {
+        return this.fs.subDir("types").subDir(packageName);
+    }
+}
+
 export function createMockDT() {
-    const root = new Dir(undefined);
-    root.set("notNeededPackages.json", `{
-    "packages": [{
-    "libraryName": "Angular 2",
-    "typingsPackageName": "angular",
-    "asOfVersion": "1.2.3",
-    "sourceRepoURL": "https://github.com/angular/angular2"
-  }]
-}`);
-    const types = root.subdir("types");
-    const boring = types.subdir("boring");
+    const dt = new DTMock();
+
+    const boring = dt.pkgDir("boring");
     boring.set("index.d.ts", `// Type definitions for boring 1.0
 // Project: https://boring.com
 // Definitions by: Some Guy From Space <https://github.com/goodspaceguy420>
@@ -85,7 +104,7 @@ untested.d.ts
     ]
 }`);
 
-    const globby = types.subdir("globby");
+    const globby = dt.pkgDir("globby");
     globby.set("index.d.ts", `// Type definitions for globby 0.1
 // Project: https://globby-gloopy.com
 // Definitions by: The Dragon Quest Slime <https://github.com/gloopyslime>
@@ -135,7 +154,7 @@ var z = y;
         "test/other-tests.ts"
     ]
 }`);
-    const jquery = types.subdir("jquery");
+    const jquery = dt.pkgDir("jquery");
     jquery.set("JQuery.d.ts", `
 declare var jQuery: 1;
 `);
@@ -180,5 +199,5 @@ console.log(jQuery);
 
 `);
 
-    return new InMemoryDT(root, "DefinitelyTyped");
+    return dt;
 }

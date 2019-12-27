@@ -65,7 +65,7 @@ testo({
         expect(createReadme(typing)).toEqual(expect.stringContaining("Global values: none"));
     },
     basicPackageJson() {
-        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT()));
+        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT().fs));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         expect(createPackageJSON(typing, "1.0", packages, Registry.NPM)).toEqual(`{
     "name": "@types/jquery",
@@ -93,13 +93,13 @@ testo({
 }`);
     },
     githubPackageJsonName() {
-        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT()));
+        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT().fs));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         expect(createPackageJSON(typing, "1.0", packages, Registry.Github)).toEqual(
             expect.stringContaining('"name": "@types/jquery"'));
     },
     githubPackageJsonRegistry() {
-        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT()));
+        const packages = AllPackages.from(createTypesData(), readNotNeededPackages(createMockDT().fs));
         const typing = new TypingsData(createRawPackage(License.MIT), /*isLatest*/ true);
         const s = createPackageJSON(typing, "1.0", packages, Registry.Github);
         expect(s).toEqual(expect.stringContaining("publishConfig"));
