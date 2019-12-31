@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const yargs = require("yargs");
 const appInsights = require("applicationinsights");
+const yargs = require("yargs");
 const calculate_versions_1 = require("./calculate-versions");
 const clean_1 = require("./clean");
 const create_search_index_1 = require("./create-search-index");
@@ -18,8 +18,10 @@ const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 const validate_1 = require("./validate");
 if (!module.parent) {
-    appInsights.setup();
-    appInsights.start();
+    if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+        appInsights.setup();
+        appInsights.start();
+    }
     const dry = !!yargs.argv.dry;
     util_1.logUncaughtErrors(full(dry, util_1.currentTimeStamp(), process.env.GH_API_TOKEN || "", new io_1.Fetcher(), common_1.Options.defaults, logging_1.loggerWithErrors()[0]));
 }

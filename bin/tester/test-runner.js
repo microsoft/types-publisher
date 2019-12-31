@@ -1,18 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
+const fs_1 = require("fs");
 const fs_extra_1 = require("fs-extra");
 const os = require("os");
-const fs_1 = require("fs");
 const fold = require("travis-fold");
 const yargs = require("yargs");
-const versions_1 = require("../lib/versions");
-const definition_parser_1 = require("../lib/definition-parser");
-const settings_1 = require("../lib/settings");
 const get_definitely_typed_1 = require("../get-definitely-typed");
 const common_1 = require("../lib/common");
-const packages_1 = require("../lib/packages");
+const definition_parser_1 = require("../lib/definition-parser");
 const npm_client_1 = require("../lib/npm-client");
+const packages_1 = require("../lib/packages");
+const settings_1 = require("../lib/settings");
+const versions_1 = require("../lib/versions");
 const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
@@ -268,7 +268,7 @@ async function gitDiff(log, definitelyTypedPath) {
         diff = (await run(`git diff ${settings_1.sourceBranch}~1 --name-status`)).trim();
     }
     return diff.split("\n").map(line => {
-        var [status, file] = line.split(/\s+/, 2);
+        const [status, file] = line.split(/\s+/, 2);
         return { status: status.trim(), file: file.trim() };
     });
     async function run(cmd) {

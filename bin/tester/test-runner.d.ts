@@ -1,7 +1,7 @@
 import { FS } from "../get-definitely-typed";
 import { TesterOptions } from "../lib/common";
-import { AllPackages, PackageId, NotNeededPackage } from "../lib/packages";
 import { NpmInfo } from "../lib/npm-client";
+import { AllPackages, NotNeededPackage, PackageId } from "../lib/packages";
 import { Logger } from "../util/logging";
 export interface GitDiff {
     status: "A" | "D" | "M";

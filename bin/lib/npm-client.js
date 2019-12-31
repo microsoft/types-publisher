@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
-const common_1 = require("./common");
 const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");
 const url_1 = require("url");
@@ -9,6 +8,7 @@ const io_1 = require("../util/io");
 const logging_1 = require("../util/logging");
 const tgz_1 = require("../util/tgz");
 const util_1 = require("../util/util");
+const common_1 = require("./common");
 const secrets_1 = require("./secrets");
 const settings_1 = require("./settings");
 const cacheFile = util_1.joinPaths(__dirname, "..", "..", "cache", "npmInfo.json");

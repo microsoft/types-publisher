@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const yargs = require("yargs");
 const appInsights = require("applicationinsights");
+const yargs = require("yargs");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
 const npm_client_1 = require("./lib/npm-client");
@@ -21,7 +21,7 @@ if (!module.parent) {
             // Normally this should not be needed.
             const log = logging_1.logger()[0];
             try {
-                await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.Github), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), /*dry*/ false, log);
+                await package_publisher_1.deprecateNotNeededPackage(await npm_client_1.NpmPublishClient.create(undefined, common_1.Registry.Github), packages_1.AllPackages.readSingleNotNeeded(deprecateName, dt), false, /*dry*/ log);
             }
             catch (e) {
                 // log and continue
@@ -104,7 +104,7 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             }
         }
     }
-    npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
+    await npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (infoClient) => {
         for (const n of changedPackages.changedNotNeededPackages) {
             const target = versions_1.skipBadPublishes(n, infoClient, log);
             try {

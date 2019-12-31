@@ -6,13 +6,13 @@ const crypto = require("crypto");
 const moment = require("moment");
 const os = require("os");
 const sourceMapSupport = require("source-map-support");
+const progress_1 = require("./progress");
 sourceMapSupport.install();
 function assertDefined(x, message) {
     assert(x !== undefined, message);
     return x;
 }
 exports.assertDefined = assertDefined;
-const progress_1 = require("./progress");
 const DEFAULT_CRASH_RECOVERY_MAX_OLD_SPACE_SIZE = 4096;
 function parseJson(text) {
     try {

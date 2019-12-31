@@ -8,7 +8,7 @@ function testo(o) {
 exports.testo = testo;
 function createTypingsVersionRaw(name, dependencies, testDependencies) {
     return {
-        "1": {
+        1: {
             libraryName: name,
             typingsPackageName: name,
             dependencies,
@@ -17,7 +17,7 @@ function createTypingsVersionRaw(name, dependencies, testDependencies) {
             libraryMajorVersion: 1,
             libraryMinorVersion: 0,
             pathMappings: [],
-            contributors: [{ name: "Bender", url: "futurama.com", githubUsername: "bender" },],
+            contributors: [{ name: "Bender", url: "futurama.com", githubUsername: "bender" }],
             minTsVersion: "2.3",
             typesVersions: [],
             license: "MIT" /* MIT */,

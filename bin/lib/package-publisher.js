@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const common_1 = require("./common");
 const util_1 = require("../util/util");
+const common_1 = require("./common");
 async function publishTypingsPackage(client, changedTyping, dry, log, registry) {
     const { pkg, version, latestVersion } = changedTyping;
     await common(client, pkg, log, dry, registry);

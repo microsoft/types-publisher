@@ -1,6 +1,6 @@
-import { Registry } from "./common";
 import RegClient = require("npm-registry-client");
 import { Logger } from "../util/logging";
+import { Registry } from "./common";
 export declare type NpmInfoCache = ReadonlyMap<string, NpmInfo>;
 export interface NpmInfoRaw {
     readonly "dist-tags": {
@@ -35,9 +35,9 @@ export declare class UncachedNpmInfoClient {
     getDownloads(packageNames: ReadonlyArray<string>): Promise<ReadonlyArray<number>>;
 }
 export declare class NpmPublishClient {
-    private client;
-    private auth;
-    private registry;
+    private readonly client;
+    private readonly auth;
+    private readonly registry;
     static create(config?: RegClient.Config, registry?: Registry): Promise<NpmPublishClient>;
     private constructor();
     publish(publishedDirectory: string, packageJson: {}, dry: boolean, log: Logger): Promise<void>;

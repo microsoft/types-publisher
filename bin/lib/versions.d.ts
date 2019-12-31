@@ -1,6 +1,6 @@
 import { Logger } from "../util/logging";
-import { AllPackages, NotNeededPackage, PackageId, TypingsData } from "./packages";
 import { CachedNpmInfoClient } from "./npm-client";
+import { AllPackages, NotNeededPackage, PackageId, TypingsData } from "./packages";
 export declare const versionsFilename = "versions.json";
 export interface ChangedTyping {
     readonly pkg: TypingsData;

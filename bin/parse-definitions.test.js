@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const mocks_1 = require("./mocks");
 const parse_definitions_1 = require("./parse-definitions");
 const logging_1 = require("./util/logging");
 const test_1 = require("./util/test");
-const mocks_1 = require("./mocks");
 test_1.testo({
     // async parseDefinitions() {
     //     const log = loggerWithErrors()[0]
@@ -27,6 +27,6 @@ test_1.testo({
         expect(j.fullNpmName).toContain("types");
         expect(j.fullNpmName).toContain("jquery");
         expect(defs.allPackages().length).toEqual(defs.allTypings().length + defs.allNotNeeded().length);
-    }
+    },
 });
 //# sourceMappingURL=parse-definitions.test.js.map

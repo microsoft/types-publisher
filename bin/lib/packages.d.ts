@@ -1,4 +1,4 @@
-import { Author, TypeScriptVersion, AllTypeScriptVersion } from "definitelytyped-header-parser";
+import { AllTypeScriptVersion, Author, TypeScriptVersion } from "definitelytyped-header-parser";
 import { FS } from "../get-definitely-typed";
 import { Semver } from "./versions";
 export declare class AllPackages {

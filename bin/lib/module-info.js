@@ -10,8 +10,9 @@ function getModuleInfo(packageName, all) {
     const declaredModules = [];
     const globals = new Set();
     function addDependency(ref) {
-        if (ref.startsWith("."))
+        if (ref.startsWith(".")) {
             return;
+        }
         const dependency = rootName(ref, all);
         if (dependency !== packageName) {
             dependencies.add(dependency);
@@ -202,7 +203,7 @@ function findReferencedFiles(src, packageName, subDirectory, baseDirectory) {
         const full = util_1.normalizeSlashes(path.normalize(util_1.joinPaths(subDirectory, assertNoWindowsSlashes(src.fileName, ref.text))));
         // allow files in typesVersions directories (i.e. 'ts3.1') to reference files in parent directory
         if (full.startsWith("../" + packageName + "/")) {
-            ref.text = full.slice(4 + packageName.length);
+            ref.text = full.slice(packageName.length + 4);
             refs.push(ref);
             return;
         }

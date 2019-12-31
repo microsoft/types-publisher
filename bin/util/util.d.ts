@@ -1,5 +1,5 @@
-export declare function assertDefined<T>(x: T | undefined, message?: string | Error | undefined): T;
 import { Options } from "../lib/common";
+export declare function assertDefined<T>(x: T | undefined, message?: string | Error | undefined): T;
 export declare function parseJson(text: string): object;
 export declare function currentTimeStamp(): string;
 export declare const numberOfOsProcesses: number;

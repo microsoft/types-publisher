@@ -108,7 +108,7 @@ function getTypingDataForSingleTypesVersion(typescriptVersion, packageName, pack
     const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
     const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
     checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
-    for (const untestedTypeFile of util_1.filter(otherFiles, name => name.endsWith('.d.ts'))) {
+    for (const untestedTypeFile of util_1.filter(otherFiles, name => name.endsWith(".d.ts"))) {
         // add d.ts files from OTHER_FILES.txt in order get their dependencies
         types.set(untestedTypeFile, module_info_1.createSourceFile(untestedTypeFile, fs.readFile(untestedTypeFile)));
     }
@@ -119,7 +119,16 @@ function getTypingDataForSingleTypesVersion(typescriptVersion, packageName, pack
     const testDependencies = Array.from(util_1.filter(module_info_1.getTestDependencies(packageName, types, tests.keys(), dependenciesSet, fs), m => !declaredModulesSet.has(m)));
     const { dependencies, pathMappings } = calculateDependencies(packageName, tsconfig, dependenciesSet, oldMajorVersion);
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
-    return { typescriptVersion, dependencies, testDependencies, pathMappings, globals, declaredModules, declFiles: util_1.sort(types.keys()), tsconfigPathsForHash };
+    return {
+        typescriptVersion,
+        dependencies,
+        testDependencies,
+        pathMappings,
+        globals,
+        declaredModules,
+        declFiles: util_1.sort(types.keys()),
+        tsconfigPathsForHash,
+    };
 }
 function checkPackageJsonDependencies(dependencies, path) {
     if (dependencies === undefined) { // tslint:disable-line strict-type-predicates (false positive)
@@ -175,7 +184,8 @@ Other d.ts files must either be referenced through index.d.ts, tests, or added t
             if (file !== expectedName && file !== `${expectedName}x`) {
                 const message = file.endsWith(".ts") || file.endsWith(".tsx")
                     ? `Expected file '${file}' to be named '${expectedName}' or to be inside a '${directoryPath}/test/' directory`
-                    : `Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files", but OTHER_FILES.txt)`;
+                    : (`Unexpected file extension for '${file}' -- expected '.ts' or '.tsx' (maybe this should not be in "files", but ` +
+                        "OTHER_FILES.txt)");
                 throw new Error(message);
             }
         }

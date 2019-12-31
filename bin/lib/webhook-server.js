@@ -20,8 +20,9 @@ async function webhookServer(key, githubAccessToken, dry, fetcher, options) {
     });
     timers_1.setInterval((log, timestamp) => {
         const result = fullOne(log, timestamp);
-        if (!result)
-            return; // already working, so do nothing.
+        if (!result) {
+            return;
+        } // already working, so do nothing.
         result.catch(e => { log.info(e.toString()); console.error(e); });
     }, 2000000, logging_1.loggerWithErrors()[0], util_1.currentTimeStamp());
     return listenToGithub(key, fullOne);

@@ -13,8 +13,10 @@ const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const util_1 = require("./util/util");
 if (!module.parent) {
-    appInsights.setup();
-    appInsights.start();
+    if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+        appInsights.setup();
+        appInsights.start();
+    }
     const dry = !!yargs.argv.dry;
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
     util_1.logUncaughtErrors(async () => {

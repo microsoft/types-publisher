@@ -1,8 +1,8 @@
-import { Registry } from "./common";
-import { ChangedTyping } from "./versions";
 import { Logger } from "../util/logging";
+import { Registry } from "./common";
 import { NpmPublishClient } from "./npm-client";
 import { AnyPackage, NotNeededPackage } from "./packages";
+import { ChangedTyping } from "./versions";
 export declare function publishTypingsPackage(client: NpmPublishClient, changedTyping: ChangedTyping, dry: boolean, log: Logger, registry: Registry): Promise<void>;
 export declare function publishNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry: boolean, log: Logger, registry: Registry): Promise<void>;
 export declare function deprecateNotNeededPackage(client: NpmPublishClient, pkg: NotNeededPackage, dry: boolean | undefined, log: Logger): Promise<void>;

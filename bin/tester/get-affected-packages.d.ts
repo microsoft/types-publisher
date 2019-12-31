@@ -1,4 +1,4 @@
-import { AllPackages, TypingsData, PackageId } from "../lib/packages";
+import { AllPackages, PackageId, TypingsData } from "../lib/packages";
 export interface Affected {
     readonly changedPackages: ReadonlyArray<TypingsData>;
     readonly dependentPackages: ReadonlyArray<TypingsData>;

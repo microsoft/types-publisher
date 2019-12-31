@@ -1,4 +1,4 @@
-import { TypingsVersionsRaw, PackageId } from "../lib/packages";
+import { PackageId, TypingsVersionsRaw } from "../lib/packages";
 export declare function testo(o: {
     [s: string]: () => void;
 }): void;

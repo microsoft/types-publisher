@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const fs_extra_1 = require("fs-extra");
+const path = require("path");
 const yargs = require("yargs");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");
+const npm_client_1 = require("./lib/npm-client");
 const packages_1 = require("./lib/packages");
 const settings_1 = require("./lib/settings");
 const versions_1 = require("./lib/versions");
@@ -11,11 +14,7 @@ const io_1 = require("./util/io");
 const logging_1 = require("./util/logging");
 const tgz_1 = require("./util/tgz");
 const util_1 = require("./util/util");
-const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
-const fs_extra_2 = require("fs-extra");
-const path = require("path");
-const npm_client_1 = require("./lib/npm-client");
-const mitLicense = fs_extra_2.readFileSync(util_1.joinPaths(__dirname, "..", "LICENSE"), "utf-8");
+const mitLicense = fs_extra_1.readFileSync(util_1.joinPaths(__dirname, "..", "LICENSE"), "utf-8");
 if (!module.parent) {
     const tgz = !!yargs.argv.tgz;
     util_1.logUncaughtErrors(async () => {
@@ -37,7 +36,7 @@ async function generatePackages(dt, allPackages, changedPackages, tgz = false) {
         log(` * ${pkg.libraryName}`);
     }
     log("## Generating deprecated packages");
-    npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (client) => {
+    await npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (client) => {
         for (const pkg of changedPackages.changedNotNeededPackages) {
             log(` * ${pkg.libraryName}`);
             await generateNotNeededPackage(pkg, client, log);
@@ -60,7 +59,7 @@ async function generateNotNeededPackage(pkg, client, log) {
     await writeCommonOutputs(pkg, createNotNeededPackageJSON(pkg, common_1.Registry.Github), pkg.readme(), common_1.Registry.Github);
 }
 async function writeCommonOutputs(pkg, packageJson, readme, registry) {
-    await fs_extra_2.mkdir(pkg.outputDirectory + (registry === common_1.Registry.Github ? "-github" : ""));
+    await fs_extra_1.mkdir(pkg.outputDirectory + (registry === common_1.Registry.Github ? "-github" : ""));
     await Promise.all([
         writeOutputFile("package.json", packageJson),
         writeOutputFile("README.md", readme),
@@ -74,7 +73,7 @@ async function outputFilePath(pkg, registry, filename) {
     const full = util_1.joinPaths(pkg.outputDirectory + (registry === common_1.Registry.Github ? "-github" : ""), filename);
     const dir = path.dirname(full);
     if (dir !== pkg.outputDirectory) {
-        await fs_extra_2.mkdirp(dir);
+        await fs_extra_1.mkdirp(dir);
     }
     return full;
 }
@@ -129,7 +128,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version }, registry) {
+function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version, }, registry) {
     const out = {
         name: fullNpmName,
         version: version.versionString,
