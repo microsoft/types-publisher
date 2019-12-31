@@ -1,6 +1,6 @@
+import appInsights = require("applicationinsights");
 import * as yargs from "yargs";
 
-import appInsights = require("applicationinsights");
 import calculateVersions from "./calculate-versions";
 import { clean } from "./clean";
 import createSearchIndex from "./create-search-index";
@@ -18,8 +18,10 @@ import { assertDefined, currentTimeStamp, logUncaughtErrors, numberOfOsProcesses
 import validate from "./validate";
 
 if (!module.parent) {
-    appInsights.setup();
-    appInsights.start();
+    if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+        appInsights.setup();
+        appInsights.start();
+    }
     const dry = !!yargs.argv.dry;
     logUncaughtErrors(full(dry, currentTimeStamp(), process.env.GH_API_TOKEN || "", new Fetcher(), Options.defaults, loggerWithErrors()[0]));
 }

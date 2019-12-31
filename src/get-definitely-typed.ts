@@ -1,6 +1,6 @@
 import appInsights = require("applicationinsights");
 import assert = require("assert");
-import { ensureDir, readdirSync, statSync, pathExistsSync } from "fs-extra";
+import { ensureDir, pathExistsSync, readdirSync, statSync } from "fs-extra";
 import https = require("https");
 import tarStream = require("tar-stream");
 import * as yargs from "yargs";
@@ -33,8 +33,10 @@ export interface FS {
 }
 
 if (!module.parent) {
-    appInsights.setup();
-    appInsights.start();
+    if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+        appInsights.setup();
+        appInsights.start();
+    }
     const dry = !!yargs.argv.dry;
     console.log("gettingDefinitelyTyped: " + (dry ? "from github" : "locally"));
     logUncaughtErrors(async () => {
@@ -255,11 +257,9 @@ class DiskFS implements FS {
 function validatePath(path: string): void {
     if (path.startsWith(".") && path !== ".editorconfig" && !path.startsWith("../")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form './x'.`);
-    }
-    else if (path.startsWith("/")) {
+    } else if (path.startsWith("/")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form '/xxx'.`);
-    }
-    else if (path.endsWith("/")) {
+    } else if (path.endsWith("/")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form 'xxx/'.`);
     }
 }

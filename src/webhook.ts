@@ -1,6 +1,6 @@
+import appInsights = require("applicationinsights");
 import * as yargs from "yargs";
 
-import appInsights = require("applicationinsights");
 import { Options } from "./lib/common";
 import { getSecret, Secret } from "./lib/secrets";
 import webhookServer from "./lib/webhook-server";
@@ -21,8 +21,10 @@ export default async function main(): Promise<void> {
         console.log("The environment variables GITHUB_SECRET and GITHUB_ACCESS_TOKEN and PORT must be set.");
     } else {
         console.log(`=== ${dry ? "DRY" : "PRODUCTION"} RUN ===`);
-        appInsights.setup(process.env.APPINSIGHTS_INSTRUMENTATIONKEY).start();
-        console.log("Done initialising App Insights");
+        if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+            appInsights.setup().start();
+            console.log("Done initialising App Insights");
+        }
         const fetcher = new Fetcher();
         try {
             const s = await webhookServer(key, githubAccessToken, dry, fetcher, Options.azure);
