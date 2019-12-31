@@ -75,7 +75,7 @@ of time if the filesystem is very slow.
 You can manually run this step locally with `npm run get-definitely-typed`.
 Pass `--dry` to download the DefinitelyTyped copy and unzip it into memory.
 
-> `node bin/parse-definitions.js`
+> `npm run parse`
 
 This generates the data file `data/definitions.json`.
 All future steps depend on this file.
@@ -179,7 +179,7 @@ This warning might not be appropriate; consider logging an issue.
 
 # Check for conflicts
 
-> `node bin/check-parse-results.js`
+> `npm run check`
 
 This is an optional script that checks for multiple declaration packages with the same library name or same project name.
 
@@ -209,7 +209,7 @@ This argument may be needed during development, but should not be used during ro
 
 # Create a search index
 
-> `node bin/create-search-index.js`
+> `npm run index`
 
 This script creates `data/search-index-min.json`, which (in the upload step) will be uploaded to Azure and used by [TypeSearch](https://github.com/microsoft/typesearch).
 This step is not necessary for other steps in the process.
@@ -251,21 +251,21 @@ Empty arrays may be elided in future versions of the minified files.
 
 # Generate packages on disk
 
-> `node bin/generate-packages.js`
+> `npm run generate`
 
 This step writes all type packages to disk.
 The output folder is specified in `settings.json` (see section "Settings").
 
-You can also output a single package with e.g. `node bin/generate-packages.js --single abs`.
+You can also output a single package with e.g. `npm run generate -- --single abs`.
 (This will still require parsing every package first, as we may need information about referenced packages.)
 
-## Arguments to `generate-packages`
+## Arguments to `generate`
 
 Use the `--single foo` option to generate just the package named "foo".
 Use the `--all` option to generate even packages that have not changed.
 Use the `--tgz` option to create `.tgz` archives as well. These should represent what is actually uploaded to NPM.
 
-## Outputs of `generate-packages`
+## Outputs of `generate`
 
 ### Package Folders
 
@@ -289,7 +289,7 @@ This file is currently uninteresting.
 
 # Publish packages on disk
 
-> `node bin/publish-packages.js`
+> `npm run publish`
 
 This step publishes the files to the NPM registry.
 
@@ -298,7 +298,7 @@ Several keys in `settings.json` affect this step; be sure to read this section.
 Before publishing, the script checks the NPM registry to see if a package with the same version number has already been published.
 If so, the publishing is skipped.
 
-## Outputs of `publish-packages.js`
+## Outputs of `publish`
 
 ### `logs/publishing.md`
 
@@ -310,7 +310,7 @@ Scripts should save this log under a unique filename so any errors may be review
 
 # Publish registry
 
-> `node bin/publish-registry.js [--dry]`
+> `npm run publish -- [--dry]`
 
 This step publishes the `types-registry` package on NPM, which keeps a list of all `@types` packages.
 This step only happens if there are some new packages to register.
@@ -350,7 +350,7 @@ The script `npm run make-server-run` will trigger the local webhook just like Gi
 		"sourceRepository": "https://github.com/your/dummy-repo"
 	* Set the `GITHUB_SECRET` environment variable to `swordfish`
 	* `npm install; npm run build`
-	* `node bin/webhook.js --dry`
+	* `npm run webhook-dry`
 
 * Make a test change:
 	* git clone https://github.com/your/dummy-repo.git
@@ -455,7 +455,7 @@ npm run validate [<package>]
 for instance:
 
 ```sh
-npm run validate node exress jquery
+npm run validate node express jquery
 ```
 
 will try to install the three packages, and run the tsc compiler on them.
