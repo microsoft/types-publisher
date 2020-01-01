@@ -374,8 +374,8 @@ function calculateDependencies(
                 dependencies.push({ name: dependencyName, majorVersion: pathMappingVersion.majorVersion });
             }
         }
-        // Else, the path mapping may be necessary if it is for a dependency-of-a-dependency. We will check this in check-parse-results.
-        pathMappings.push({ packageName: dependencyName, majorVersion: pathMappingVersion.majorVersion });
+        // Else, the path mapping may be necessary if it is for a transitive dependency. We will check this in check-parse-results.
+        pathMappings.push({ packageName: dependencyName, ...pathMappingVersion });
     }
 
     if (directoryVersion !== undefined && !(paths && packageName in paths)) {

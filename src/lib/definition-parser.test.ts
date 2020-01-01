@@ -86,5 +86,33 @@ describe(getTypingInfo, () => {
                 }),
             });
         });
+
+        it("records a path mapping to the version directory", () => {
+            const dt = createMockDT();
+            dt.addOldVersionOfPackage("jquery", "2");
+            dt.addOldVersionOfPackage("jquery", "1.5");
+            const info = getTypingInfo("jquery", dt.pkgFS("jquery"));
+
+            expect(info).toEqual({
+                "1.5": expect.objectContaining({
+                    pathMappings: [{
+                        packageName: "jquery",
+                        majorVersion: 1,
+                        minorVersion: 5,
+                    }],
+                }),
+                "2.0": expect.objectContaining({
+                    pathMappings: [{
+                        packageName: "jquery",
+                        majorVersion: 2,
+                        minorVersion: undefined,
+                    }],
+                }),
+                "3.3": expect.objectContaining({
+                    // The latest version does not have path mappings of its own
+                    pathMappings: [],
+                }),
+            });
+        });
     });
 });

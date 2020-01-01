@@ -406,6 +406,7 @@ export interface TypingsDataRaw extends BaseRaw {
 export interface PathMapping {
     readonly packageName: string;
     readonly majorVersion: number;
+    readonly minorVersion?: number;
 }
 
 // TODO: support BSD -- but must choose a *particular* BSD license from the list at https://spdx.org/licenses/
