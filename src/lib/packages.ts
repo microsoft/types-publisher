@@ -61,7 +61,7 @@ export class AllPackages {
 
     tryResolve(dep: PackageId): PackageId {
         const versions = this.data.get(getMangledNameForScopedPackage(dep.name));
-        return versions ? versions.get(dep.majorVersion).id : dep;
+        return versions ? versions.get(dep.version).id : dep;
     }
 
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
@@ -90,9 +90,9 @@ export class AllPackages {
         return pkg;
     }
 
-    tryGetTypingsData({ name, majorVersion }: PackageId): TypingsData | undefined {
+    tryGetTypingsData({ name, version }: PackageId): TypingsData | undefined {
         const versions = this.data.get(getMangledNameForScopedPackage(name));
-        return versions && versions.tryGet(majorVersion);
+        return versions && versions.tryGet(version);
     }
 
     allPackages(): ReadonlyArray<AnyPackage> {
@@ -114,10 +114,10 @@ export class AllPackages {
 
     /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
     *allDependencyTypings(pkg: TypingsData): Iterable<TypingsData> {
-        for (const { name, majorVersion } of pkg.dependencies) {
+        for (const { name, version } of pkg.dependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
-                yield versions.get(majorVersion);
+                yield versions.get(version);
             }
         }
 
@@ -210,9 +210,10 @@ export abstract class PackageBase {
     }
 
     abstract readonly major: number;
+    abstract readonly minor: number;
 
     get id(): PackageId {
-        return { name: this.name, majorVersion: this.major };
+        return { name: this.name, version: { major: this.major, minor: this.minor }};
     }
 
     get outputDirectory(): string {
@@ -280,8 +281,21 @@ export interface TypingsVersionsRaw {
     [version: string]: TypingsDataRaw;
 }
 
+export interface TypingVersion {
+    major: number;
+    minor?: number;
+}
+
+export function formatTypingVersion(version: TypingVersion) {
+    return `${version.major}${version.minor === undefined ? "" : `.${version.minor}`}`;
+}
+
 /** If no version is specified, uses "*". */
-export type DependencyVersion = number | "*";
+export type DependencyVersion = TypingVersion | "*";
+
+export function formatDependencyVersion(version: DependencyVersion) {
+    return version === "*" ? "*" : formatTypingVersion(version);
+}
 
 export interface PackageJsonDependency {
     readonly name: string;
@@ -405,8 +419,7 @@ export interface TypingsDataRaw extends BaseRaw {
  */
 export interface PathMapping {
     readonly packageName: string;
-    readonly majorVersion: number;
-    readonly minorVersion?: number;
+    readonly version: TypingVersion;
 }
 
 // TODO: support BSD -- but must choose a *particular* BSD license from the list at https://spdx.org/licenses/
@@ -458,28 +471,28 @@ export class TypingsVersions {
     }
 
     get(version: DependencyVersion): TypingsData {
-        return version === "*" ? this.getLatest() : this.getLatestOfMajor(version);
+        return version === "*" ? this.getLatest() : this.getLatestMatch(version);
     }
 
     tryGet(version: DependencyVersion): TypingsData | undefined {
-        return version === "*" ? this.getLatest() : this.tryGetLatestOfMajor(version);
+        return version === "*" ? this.getLatest() : this.tryGetLatestMatch(version);
     }
 
     getLatest(): TypingsData {
         return this.map.get(this.versions[0])!;
     }
 
-    private getLatestOfMajor(majorVersion: number): TypingsData {
-        const data = this.tryGetLatestOfMajor(majorVersion);
+    private getLatestMatch(version: TypingVersion): TypingsData {
+        const data = this.tryGetLatestMatch(version);
         if (!data) {
-            throw new Error(`Could not find version ${majorVersion}`);
+            throw new Error(`Could not find version ${version}`);
         }
         return data;
     }
 
-    private tryGetLatestOfMajor(majorVersion: number): TypingsData | undefined {
-        const version = this.versions.find(v => v.major === majorVersion);
-        return version && this.map.get(version);
+    private tryGetLatestMatch(version: TypingVersion): TypingsData | undefined {
+        const found = this.versions.find(v => v.major === version.major && (version.minor === undefined || v.minor === version.minor));
+        return found && this.map.get(found);
     }
 }
 
@@ -520,7 +533,7 @@ export class TypingsData extends PackageBase {
 /** Uniquely identifies a package. */
 export interface PackageId {
     readonly name: string;
-    readonly majorVersion: DependencyVersion;
+    readonly version: DependencyVersion;
 }
 
 export interface TypesDataFile {

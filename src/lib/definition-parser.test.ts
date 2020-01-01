@@ -97,15 +97,13 @@ describe(getTypingInfo, () => {
                 "1.5": expect.objectContaining({
                     pathMappings: [{
                         packageName: "jquery",
-                        majorVersion: 1,
-                        minorVersion: 5,
+                        version: { major: 1, minor: 5 },
                     }],
                 }),
                 "2.0": expect.objectContaining({
                     pathMappings: [{
                         packageName: "jquery",
-                        majorVersion: 2,
-                        minorVersion: undefined,
+                        version: { major: 2, minor: undefined },
                     }],
                 }),
                 "3.3": expect.objectContaining({

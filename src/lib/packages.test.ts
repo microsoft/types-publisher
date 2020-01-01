@@ -27,7 +27,12 @@ describe(TypingsVersions, () => {
     });
 
     it("finds the latest minor version for the given major version", () => {
-        expect(versions.get(2).major).toEqual(2);
-        expect(versions.get(2).minor).toEqual(5);
+        expect(versions.get({ major: 2 }).major).toEqual(2);
+        expect(versions.get({ major: 2 }).minor).toEqual(5);
+    });
+
+    it("finds a specific version", () => {
+        expect(versions.get({ major: 2, minor: 0 }).major).toEqual(2);
+        expect(versions.get({ major: 2, minor: 0 }).minor).toEqual(0);
     });
 });

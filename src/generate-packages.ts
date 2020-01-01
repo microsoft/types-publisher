@@ -139,7 +139,7 @@ function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDepen
         const typesDependency = getFullNpmName(dependency.name);
         // A dependency "foo" is already handled if we already have a dependency on the package "foo" or "@types/foo".
         if (!packageJsonDependencies.some(d => d.name === dependency.name || d.name === typesDependency) && allPackages.hasTypingFor(dependency)) {
-            dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
+            dependencies[typesDependency] = dependencySemver(dependency.version);
         }
     }
     return sortObjectKeys(dependencies);
