@@ -39,7 +39,7 @@ export default async function generatePackages(dt: FS, allPackages: AllPackages,
         if (tgz) {
             await writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
         }
-        log(` * ${pkg.libraryName}`);
+        log(` * ${pkg.desc}`);
     }
     log("## Generating deprecated packages");
     await withNpmCache(new UncachedNpmInfoClient(), async client => {
@@ -52,7 +52,7 @@ export default async function generatePackages(dt: FS, allPackages: AllPackages,
 }
 async function generateTypingPackage(typing: TypingsData, packages: AllPackages, version: string, dt: FS): Promise<void> {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
-    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
+    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(typing.versionDirectoryName!);
 
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.NPM), createReadme(typing), Registry.NPM);
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, Registry.Github), createReadme(typing), Registry.Github);

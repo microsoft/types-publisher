@@ -181,7 +181,7 @@ export abstract class PackageBase {
 
     /** Short description for debug output. */
     get desc(): string {
-        return this.isLatest ? this.name : `${this.name} v${this.major}`;
+        return this.isLatest ? this.name : `${this.name} v${this.major}.${this.minor}`;
     }
 
     constructor(data: BaseRaw) {
@@ -524,9 +524,13 @@ export class TypingsData extends PackageBase {
         return this.data.dependencies;
     }
 
+    get versionDirectoryName() {
+        return this.data.libraryVersionDirectoryName && `v${this.data.libraryVersionDirectoryName}`;
+    }
+
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
     get subDirectoryPath(): string {
-        return this.isLatest ? this.name : `${this.name}/v${this.data.libraryVersionDirectoryName}`;
+        return this.isLatest ? this.name : `${this.name}/v${this.versionDirectoryName}`;
     }
 }
 
