@@ -1,13 +1,12 @@
 import assert = require("assert");
 import { AllTypeScriptVersion, Author, TypeScriptVersion } from "definitelytyped-header-parser";
-import * as semver from "semver";
 
 import { FS } from "../get-definitely-typed";
 import { assertSorted, joinPaths, mapValues, unmangleScopedPackage } from "../util/util";
 
 import { readDataFile } from "./common";
 import { outputDirPath, scopeName } from "./settings";
-import { Semver } from "./versions";
+import { compare as compareSemver, Semver } from "./versions";
 
 export class AllPackages {
     static async read(dt: FS): Promise<AllPackages> {
@@ -355,23 +354,23 @@ export function getLicenseFromPackageJson(packageJsonLicense: unknown): License 
 }
 
 export class TypingsVersions {
-    private readonly map: ReadonlyMap<semver.SemVer, TypingsData>;
+    private readonly map: ReadonlyMap<Semver, TypingsData>;
 
     /**
      * Sorted from latest to oldest.
      */
-    private readonly versions: semver.SemVer[];
+    private readonly versions: Semver[];
 
     constructor(data: TypingsVersionsRaw) {
         const versionMappings = new Map(Object.keys(data).map(key => {
-            const version = semver.coerce(key);
+            const version = Semver.parse(key, true);
             if (version) {
                 return [version, key];
             } else {
                 throw new Error(`Unable to parse version ${key}`);
             }
         }));
-        this.versions = Array.from(versionMappings.keys()).sort(semver.compare).reverse();
+        this.versions = Array.from(versionMappings.keys()).sort(compareSemver).reverse();
         this.map = new Map(this.versions.map(version => {
             const dataKey = versionMappings.get(version)!;
             return [version, new TypingsData(data[dataKey], version === this.versions[0])];
@@ -400,7 +399,7 @@ export class TypingsVersions {
         return this.getExact(this.versions[0]);
     }
 
-    private getExact(version: semver.SemVer): TypingsData {
+    private getExact(version: Semver): TypingsData {
         const data = this.tryGetExact(version);
         if (!data) {
             throw new Error(`Could not find version ${version}`);
@@ -408,7 +407,7 @@ export class TypingsVersions {
         return data;
     }
 
-    private tryGetExact(version: semver.SemVer): TypingsData | undefined {
+    private tryGetExact(version: Semver): TypingsData | undefined {
         return this.map.get(version);
     }
 

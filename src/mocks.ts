@@ -1,8 +1,8 @@
 import assert = require("assert");
 import { parseHeaderOrFail } from "definitelytyped-header-parser";
-import * as semver from "semver";
 
 import { Dir, FS, InMemoryDT } from "./get-definitely-typed";
+import { Semver } from "./lib/versions";
 
 class DTMock {
     public readonly fs: FS;
@@ -44,11 +44,11 @@ class DTMock {
         const latestHeader = parseHeaderOrFail(index);
         const latestVersion = `${latestHeader.libraryMajorVersion}.${latestHeader.libraryMinorVersion}`;
 
-        const olderVersionParsed = semver.coerce(olderVersion)!;
-        const latestVersionParsed = semver.coerce(latestVersion)!;
+        const olderVersionParsed = Semver.parse(olderVersion, true)!;
+        const latestVersionParsed = Semver.parse(latestVersion, true)!;
 
         assert(
-            semver.gt(latestVersionParsed, olderVersionParsed),
+            latestVersionParsed.greaterThan(olderVersionParsed),
             `Version to be added (${olderVersion}) must be older than latest (${latestVersion}).`,
         );
 
