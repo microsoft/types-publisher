@@ -152,10 +152,18 @@ function* flattenData(data: ReadonlyMap<string, TypingsVersions>): Iterable<Typi
 export type AnyPackage = NotNeededPackage | TypingsData;
 
 interface BaseRaw {
-    // The name of the library (human readable, e.g. might be "Moment.js" even though packageName is "moment")
+    /**
+     * The name of the library.
+     *
+     * A human readable version, e.g. it might be "Moment.js" even though `packageName` is "moment".
+     */
     readonly libraryName: string;
 
-    // The NPM name to publish this under, e.g. "jquery". Does not include "@types".
+    /**
+     * The NPM name to publish this under, e.g. "jquery".
+     *
+     * This does not include "@types".
+     */
     readonly typingsPackageName: string;
 }
 
@@ -281,56 +289,119 @@ export interface PackageJsonDependency {
 }
 
 export interface TypingsDataRaw extends BaseRaw {
+    /**
+     * Other definitions, that exist in the same typings repo, that this package depends on.
+     *
+     * These will refer to *package names*, not *folder names*.
+     */
     readonly dependencies: ReadonlyArray<PackageId>;
-    // These are always the latest version.
-    // Will not include anything already in `dependencies`.
+
+    /**
+     * Other definitions, that exist in the same typings repo, that the tests of this package depend on.
+     *
+     * These are always the latest version and will not include anything already in `dependencies`.
+     */
     readonly testDependencies: ReadonlyArray<string>;
+
+    /**
+     * External packages, from outside the typings repo, that provide definitions that this package depends on.
+     */
+    readonly packageJsonDependencies: ReadonlyArray<PackageJsonDependency>;
+
+    /**
+     * Represents that there was a path mapping to a package.
+     *
+     * Not all path mappings are direct dependencies, they may be necessary for transitive dependencies. However, where `dependencies` and
+     * `pathMappings` share a key, they *must* share the same value.
+     */
     readonly pathMappings: ReadonlyArray<PathMapping>;
 
-    // Parsed from "Definitions by:"
+    /**
+     * List of people that have contributed to the definitions in this package.
+     *
+     * These people will be requested for issue/PR review in the https://github.com/DefinitelyTyped/DefinitelyTyped repo.
+     */
     readonly contributors: ReadonlyArray<Author>;
 
-    // TODO: Comment
+    /**
+     * Whether or not any of the older versions of the package used a minor version in its `libraryVersionDirectoryName` and thus logic needs to take
+     * minor versions into account when reasoning about this package.
+     *
+     * TODO: See if this is really needed in the end.
+     */
     readonly considerLibraryMinorVersion: boolean;
+
+    /**
+     * The [older] version of the library that this definition package refers to, as represented *on-disk*.
+     *
+     * @note The latest version always exists in the root of the package tree and thus does not have a value for this property.
+     */
     readonly libraryVersionDirectoryName?: string;
 
-    // The major version of the library (e.g. "1" for 1.0, "2" for 2.0)
+    /**
+     * Major version of the library.
+     *
+     * This data is parsed from a header comment in the entry point `.d.ts` and will be `0` if the file did not specify a version.
+     */
     readonly libraryMajorVersion: number;
-    // The minor version of the library
+
+    /**
+     * Minor version of the library.
+     *
+     * This data is parsed from a header comment in the entry point `.d.ts` and will be `0` if the file did not specify a version.
+     */
     readonly libraryMinorVersion: number;
 
+    /**
+     * Minimum required TypeScript version to consumer the definitions from this package.
+     */
     readonly minTsVersion: AllTypeScriptVersion;
+
     /**
      * List of TS versions that have their own directories, and corresponding "typesVersions" in package.json.
      * Usually empty.
      */
     readonly typesVersions: ReadonlyArray<TypeScriptVersion>;
 
-    // Files that should be published with this definition, e.g. ["jquery.d.ts", "jquery-extras.d.ts"]
-    // Does *not* include a partial `package.json` because that will not be copied directly.
+    /**
+     * Files that should be published with this definition, e.g. ["jquery.d.ts", "jquery-extras.d.ts"]
+     *
+     * Does *not* include a partial `package.json` because that will not be copied directly.
+     */
     readonly files: ReadonlyArray<string>;
 
-    // Whether a "package.json" exists
+    /**
+     * The license that this definition package is released under.
+     *
+     * Can be either MIT or Apache v2, defaults to MIT when not explicitly defined in this package’s "package.json".
+     */
     readonly license: License;
-    readonly packageJsonDependencies: ReadonlyArray<PackageJsonDependency>;
 
-    // A hash computed from all files from this definition
+    /**
+     * A hash of the names and contents of the `files` list, used for versioning.
+     */
     readonly contentHash: string;
 
-    // Optionally-present name or URL of the project, e.g. "http://cordova.apache.org"
+    /**
+     * Name or URL of the project, e.g. "http://cordova.apache.org".
+     */
     readonly projectName: string;
 
-    // Names introduced into the global scope by this definition set
+    /**
+     * A list of *values* declared in the global namespace.
+     *
+     * @note This does not include *types* declared in the global namespace.
+     */
     readonly globals: ReadonlyArray<string>;
 
-    // External modules declared by this package. Includes the containing folder name when applicable (e.g. proper module)
+    /**
+     * External modules declared by this package. Includes the containing folder name when applicable (e.g. proper module).
+     */
     readonly declaredModules: ReadonlyArray<string>;
 }
 
 /**
- * Represents that there was a path mapping to a package.
- * Not all path mappings are direct dependencies: They may be necessary for dependencies-of-dependencies.
- * But, where dependencies and pathMappings share a key, they must share the same value
+ * @see {TypingsDataRaw.pathMappings}
  */
 export interface PathMapping {
     readonly packageName: string;

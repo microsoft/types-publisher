@@ -116,30 +116,9 @@ This file is a key/value mapping used by other steps in the process.
 
 ### Fields in `data/definitions.json`
 
-* `"jquery"` (i.e. the property name): The name of the *folder* from the source repo
-* `authors`: Author data parsed from a header comment in the entry point .d.ts file
-* `definitionFilename`: The filename of the entry point .d.ts file. This file must be either `index.d.ts`, `folderName.d.ts` (where `folderName` is the folder name), or the only .d.ts file in the folder
-* `libraryDependencies`: Which other definitions this file depends on. These will refer to *package names*, not *folder names*
-* `libraryMajorVersion` / `libraryMinorVersion`: Version data parsed from a header comment in the entry point .d.ts. These values will be `0` if the entry point .d.ts file did not specify a version
-* `libraryName`: Library name parsed from a header comment in the entry point .d.ts file
-* `typingsPackageName`: The name on NPM that the type package will be published under
-* `projectName`: Project name or URL information parsed from a header comment in the entry point .d.ts file
-* `sourceRepoURL`: The URL to the originating type definition repo. Currently hardcoded to DefinitelyType's URL
-* `kind`: One of the following strings based on the declarations in the folder:
-	* `Unknown`: The type of declaration could not be detected
-	* `MultipleModules`: Multiple ambient module declarations (`declare module "modName" {`) were found
-	* `Mixed`: At least one global declaration and exactly one ambient module declaration
-	* `DeclareModule`: Exactly one ambient module declaration and zero global declarations
-	* `Global`: Only global declarations. **Preferred**
-	* `ProperModule`: Only top-level `import` and `export` declarations. **Preferred**
-	* `ModuleAugmentation`: An ambient module declaration and at top-level `import` or `export` declaration. **Preferred**
-	* `UMD`: Only top-level `import` and `export` declarations, as well as a UMD declaration. **Preferred**
-	* `OldUMD`: Exactly one namespace declaration and exactly one ambient module declaration
-* `globals`: A list of *values* declared in the global namespace. Note that this does not include types declared in the global namespace
-* `declaredModules`: A list of modules declared. If `kind` is `ProperModule`, this list will explicitly list the containing folder name
-* `root`: A full path to the declaration folder
-* `files`: A list of the .d.ts files in the declaration folder
-* `contentHash`: A hash of the names and contents of the `files` list, used for versioning
+A key of the root object represents the name of the *folder* of a definition package, as it exists in the source repo. Its corresponding value holds a
+an object that represents the versions of the package for which definitions are provided in parallel. Each version entry holds data about the package;
+refer to [the `TypingsDataRaw` interface declaration](./src/lib/packages.ts) for details on this data.
 
 ## Contents of `logs/parser-log-summary.md`
 
