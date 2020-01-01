@@ -385,30 +385,16 @@ export class TypingsVersions {
         return this.map.values();
     }
 
-    // TODO: Is find by major version enough?
     get(version: DependencyVersion): TypingsData {
         return version === "*" ? this.getLatest() : this.getLatestOfMajor(version);
     }
 
-    // TODO: Is find by major version enough?
     tryGet(version: DependencyVersion): TypingsData | undefined {
         return version === "*" ? this.getLatest() : this.tryGetLatestOfMajor(version);
     }
 
     getLatest(): TypingsData {
-        return this.getExact(this.versions[0]);
-    }
-
-    private getExact(version: Semver): TypingsData {
-        const data = this.tryGetExact(version);
-        if (!data) {
-            throw new Error(`Could not find version ${version}`);
-        }
-        return data;
-    }
-
-    private tryGetExact(version: Semver): TypingsData | undefined {
-        return this.map.get(version);
+        return this.map.get(this.versions[0])!;
     }
 
     private getLatestOfMajor(majorVersion: number): TypingsData {
