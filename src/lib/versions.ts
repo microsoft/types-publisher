@@ -7,7 +7,6 @@ import { AllPackages, NotNeededPackage, PackageId, TypingsData } from "./package
 
 export const versionsFilename = "versions.json";
 
-
 export interface ChangedTyping {
     readonly pkg: TypingsData;
     /** This is the version to be published, meaning it's the version that doesn't exist yet. */
