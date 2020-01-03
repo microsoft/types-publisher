@@ -186,7 +186,6 @@ interface TypingDataFromIndividualTypeScriptVersion {
     readonly declaredModules: ReadonlyArray<string>;
 }
 
-// TODO: Rename oldMajorVersion var
 /**
  * @param typescriptVersion Set if this is in e.g. a `ts3.1` directory.
  * @param packageName Name of the outermost directory; e.g. for "node/v4" this is just "node".
@@ -393,8 +392,9 @@ const nodeBuiltins: ReadonlySet<string> = new Set([
     "string_decoder", "timers", "tls", "tty", "url", "util", "v8", "vm", "zlib",
 ]);
 
-// TODO: Update comment
-// e.g. parseDependencyVersionFromPath("../../foo/v0", "foo") should return "0"
+// e.g.
+// parseDependencyVersionFromPath("../../foo/v1", "foo") should return "{ major: 1 }"
+// parseDependencyVersionFromPath("../../foo/v0.61", "foo") should return "{ major: 0, minor: 61 }"
 function parseDependencyVersionFromPath(packageName: string, dependencyName: string, dependencyPath: string): TypingVersion {
     const versionString = withoutStart(dependencyPath, `${dependencyName}/`);
     const version = versionString === undefined ? undefined : parseVersionFromDirectoryName(versionString);
