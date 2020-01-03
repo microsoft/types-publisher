@@ -358,8 +358,6 @@ function getDependencyFromFile(file: string): PackageId | undefined {
     }
 
     if (subDirName) {
-        // TODO:
-        // Looks like "types/a/v3/c"
         const version = parseVersionFromDirectoryName(subDirName);
         if (version !== undefined) {
             return { name, version };

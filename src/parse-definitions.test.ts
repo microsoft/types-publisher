@@ -17,8 +17,6 @@ testo({
     //     expect(defs.allPackages().length).toEqual(defs.allTypings().length + defs.allNotNeeded().length)
     // },
     async mockParse() {
-        // console.log("waiting");
-        // await new Promise(resolve => setTimeout(resolve, 5000));
         const log = loggerWithErrors()[0];
         const defs = await parseDefinitions(createMockDT().fs, undefined, log);
         expect(defs.allNotNeeded().length).toBe(1);

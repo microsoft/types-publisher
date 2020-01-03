@@ -107,6 +107,16 @@ function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypes
     return { remainingLs, typesVersions, hasPackageJson: withoutPackageJson.length !== ls.length };
 }
 
+/**
+ * Parses a directory name into a version that either holds a single major version or a major and minor version.
+ *
+ * @example
+ *
+ * ```ts
+ * parseVersionFromDirectoryName("v1") // { major: 1 }
+ * parseVersionFromDirectoryName("v0.61") // { major: 0, minor: 61 }
+ * ```
+ */
 export function parseVersionFromDirectoryName(directoryName: string): TypingVersion | undefined {
     const match = /^v(\d+)(\.(\d+))?$/.exec(directoryName);
     if (match === null) {
@@ -390,9 +400,6 @@ const nodeBuiltins: ReadonlySet<string> = new Set([
     "string_decoder", "timers", "tls", "tty", "url", "util", "v8", "vm", "zlib",
 ]);
 
-// e.g.
-// parseDependencyVersionFromPath("../../foo/v1", "foo") should return "{ major: 1 }"
-// parseDependencyVersionFromPath("../../foo/v0.61", "foo") should return "{ major: 0, minor: 61 }"
 function parseDependencyVersionFromPath(packageName: string, dependencyName: string, dependencyPath: string): TypingVersion {
     const versionString = withoutStart(dependencyPath, `${dependencyName}/`);
     const version = versionString === undefined ? undefined : parseVersionFromDirectoryName(versionString);
