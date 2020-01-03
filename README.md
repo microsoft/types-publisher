@@ -86,32 +86,56 @@ One can also pass `--single=package_name` to test this on a single package.
 This file is a key/value mapping used by other steps in the process.
 
 ### Example entry
-```js
-"jquery": {
-	"authors": "Boris Yankov <https://github.com/borisyankov/>",
-	"definitionFilename": "jquery.d.ts",
-	"libraryDependencies": [],
-	"moduleDependencies": [],
-	"libraryMajorVersion": "1",
-	"libraryMinorVersion": "10",
-	"libraryName": "jQuery 1.10.x / 2.0.x",
-	"typingsPackageName": "jquery",
-	"projectName": "http://jquery.com/",
-	"sourceRepoURL": "https://www.github.com/DefinitelyTyped/DefinitelyTyped",
-	"kind": "Mixed",
-	"globals": [
-		"jQuery",
-		"$"
-	],
-	"declaredModules": [
-		"jquery"
-	],
-	"root": "C:\\github\\DefinitelyTyped\\jquery",
-	"files": [
-		"jquery.d.ts"
-	],
-	"contentHash": "5cfce9ba1a777bf2eecb20d0830f4f4bcd5eee2e1fd9936ca6c2f2201a44b618"
+```json
+{
+    "jquery": {
+        "3.3": {
+            "considerLibraryMinorVersion": false,
+            "libraryName": "jquery",
+            "typingsPackageName": "jquery",
+            "projectName": "https://jquery.com",
+            "contributors": [
+                {
+                    "name": "Boris Yankov",
+                    "url": "https://github.com/borisyankov",
+                    "githubUsername": "borisyankov"
+                }
+            ],
+            "libraryMajorVersion": 3,
+            "libraryMinorVersion": 3,
+            "minTsVersion": "2.3",
+            "typesVersions": [],
+            "files": [
+                "JQuery.d.ts",
+                "JQueryStatic.d.ts",
+                "dist/jquery.slim.d.ts",
+                "index.d.ts",
+                "legacy.d.ts",
+                "misc.d.ts"
+            ],
+            "license": "MIT",
+            "dependencies": [
+                {
+                    "name": "sizzle",
+                    "version": "*"
+                }
+            ],
+            "testDependencies": [],
+            "pathMappings": [],
+            "packageJsonDependencies": [],
+            "contentHash": "6f3ac74aa9f284b3450b4dcbcabc842bfc2a70fa2d92e745851044d2bb78e94b",
+            "globals": [
+                "$",
+                "Symbol",
+                "jQuery"
+            ],
+            "declaredModules": [
+                "jquery",
+                "jquery/dist/jquery.slim"
+            ]
+		}
 	}
+}
 ```
 
 ### Fields in `data/definitions.json`
