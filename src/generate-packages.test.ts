@@ -12,7 +12,6 @@ function createRawPackage(license: License): TypingsDataRaw {
         testDependencies: [],
         pathMappings: [],
         contributors: [{ name: "A", url: "b@c.d", githubUsername: "e" }],
-        considerLibraryMinorVersion: false,
         libraryMajorVersion: 1,
         libraryMinorVersion: 0,
         minTsVersion: "3.0",

@@ -1,4 +1,3 @@
-import assert = require("assert");
 import { parseHeaderOrFail } from "definitelytyped-header-parser";
 
 import { Dir, FS, InMemoryDT } from "./get-definitely-typed";
@@ -43,14 +42,7 @@ class DTMock {
         const index = latestDir.get("index.d.ts") as string;
         const latestHeader = parseHeaderOrFail(index);
         const latestVersion = `${latestHeader.libraryMajorVersion}.${latestHeader.libraryMinorVersion}`;
-
         const olderVersionParsed = Semver.parse(olderVersion, true)!;
-        const latestVersionParsed = Semver.parse(latestVersion, true)!;
-
-        assert(
-            latestVersionParsed.greaterThan(olderVersionParsed),
-            `Version to be added (${olderVersion}) must be older than latest (${latestVersion}).`,
-        );
 
         const oldDir = latestDir.subdir(`v${olderVersion}`);
         const tsconfig = JSON.parse(latestDir.get("tsconfig.json") as string);

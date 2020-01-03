@@ -338,14 +338,6 @@ export interface TypingsDataRaw extends BaseRaw {
     readonly contributors: ReadonlyArray<Author>;
 
     /**
-     * Whether or not any of the older versions of the package used a minor version in its `libraryVersionDirectoryName` and thus logic needs to take
-     * minor versions into account when reasoning about this package.
-     *
-     * TODO: See if this is really needed in the end.
-     */
-    readonly considerLibraryMinorVersion: boolean;
-
-    /**
      * The [older] version of the library that this definition package refers to, as represented *on-disk*.
      *
      * @note The latest version always exists in the root of the package tree and thus does not have a value for this property.

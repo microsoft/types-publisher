@@ -16,7 +16,6 @@ export function createTypingsVersionRaw(
             dependencies,
             testDependencies,
             files: ["index.d.ts"],
-            considerLibraryMinorVersion: false,
             libraryMajorVersion: 1,
             libraryMinorVersion: 0,
             pathMappings: [],

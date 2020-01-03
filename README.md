@@ -90,7 +90,6 @@ This file is a key/value mapping used by other steps in the process.
 {
     "jquery": {
         "3.3": {
-            "considerLibraryMinorVersion": false,
             "libraryName": "jquery",
             "typingsPackageName": "jquery",
             "projectName": "https://jquery.com",

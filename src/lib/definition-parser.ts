@@ -19,9 +19,9 @@ import {
 } from "./packages";
 import { dependenciesWhitelist } from "./settings";
 
-function matchesVersion(typingsDataRaw: TypingsDataRaw, version: TypingVersion) {
+function matchesVersion(typingsDataRaw: TypingsDataRaw, version: TypingVersion, considerLibraryMinorVersion: boolean) {
     return typingsDataRaw.libraryMajorVersion === version.major
-        && (typingsDataRaw.considerLibraryMinorVersion ?
+        && (considerLibraryMinorVersion ?
             (version.minor === undefined || typingsDataRaw.libraryMinorVersion === version.minor)
             : true);
 }
@@ -44,13 +44,12 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
     const considerLibraryMinorVersion = olderVersionDirectories.some(({ version }) => version.minor !== undefined);
 
     const latestData: TypingsDataRaw = {
-        considerLibraryMinorVersion,
         libraryVersionDirectoryName: undefined,
         ...combineDataForAllTypesVersions(packageName, rootDirectoryLs, fs, undefined),
     };
 
     const older = olderVersionDirectories.map(({ directoryName, version: directoryVersion }) => {
-        if (matchesVersion(latestData, directoryVersion)) {
+        if (matchesVersion(latestData, directoryVersion, considerLibraryMinorVersion)) {
             throw new Error(
                 `The latest version is ${latestData.libraryMajorVersion}.${latestData.libraryMinorVersion}, but a directory ${directoryName} exists.`,
             );
@@ -58,13 +57,12 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
 
         const ls = fs.readdir(directoryName);
         const data: TypingsDataRaw = {
-            considerLibraryMinorVersion,
             libraryVersionDirectoryName: formatTypingVersion(directoryVersion),
             ...combineDataForAllTypesVersions(packageName, ls, fs.subDir(directoryName), directoryVersion),
         };
 
-        if (!matchesVersion(data, directoryVersion)) {
-            if (data.considerLibraryMinorVersion) {
+        if (!matchesVersion(data, directoryVersion, considerLibraryMinorVersion)) {
+            if (considerLibraryMinorVersion) {
                 throw new Error(
                     `Directory ${directoryName} indicates major.minor version ${directoryVersion.major}.${directoryVersion.minor}, ` +
                     `but header indicates major.minor version ${data.libraryMajorVersion}.${data.libraryMinorVersion}`,
@@ -126,7 +124,7 @@ function combineDataForAllTypesVersions(
     ls: ReadonlyArray<string>,
     fs: FS,
     directoryVersion: TypingVersion | undefined,
-): Omit<TypingsDataRaw, "considerLibraryMinorVersion" | "libraryVersionDirectoryName"> {
+): Omit<TypingsDataRaw, "libraryVersionDirectoryName"> {
     const { remainingLs, typesVersions, hasPackageJson } = getTypesVersionsAndPackageJson(ls);
 
     // Every typesVersion has an index.d.ts, but only the root index.d.ts should have a header.
