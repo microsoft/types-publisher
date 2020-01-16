@@ -10,7 +10,7 @@ import { Options } from "./lib/common";
 import { dataDirPath, definitelyTypedZipUrl } from "./lib/settings";
 import { readFileSync, readJsonSync, stringOfStream } from "./util/io";
 import { LoggerWithErrors, loggerWithErrors } from "./util/logging";
-import { assertDefined, assertSorted, exec, joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
+import { assertDefined, exec, joinPaths, logUncaughtErrors, withoutStart } from "./util/util";
 
 /**
  * Readonly filesystem.
