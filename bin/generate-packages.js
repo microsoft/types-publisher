@@ -128,7 +128,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
 function dependencySemver(dependency) {
     return dependency === "*" ? dependency : `^${dependency}`;
 }
-function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, sourceRepoURL, version, }, registry) {
+function createNotNeededPackageJSON({ libraryName, license, unescapedName, fullNpmName, sourceRepoURL, version, }, registry) {
     const out = {
         name: fullNpmName,
         version: version.versionString,
@@ -141,7 +141,7 @@ function createNotNeededPackageJSON({ libraryName, license, name, fullNpmName, s
         license,
         // No `typings`, that's provided by the dependency.
         dependencies: {
-            [name]: "*",
+            [unescapedName]: "*",
         },
     };
     if (registry === common_1.Registry.Github) {

@@ -197,7 +197,7 @@ class DiskFS {
         }
     }
     readdir(dirPath) {
-        return util_1.assertSorted(fs_extra_1.readdirSync(this.getPath(dirPath))).filter(name => name !== ".DS_STORE");
+        return util_1.assertSorted(fs_extra_1.readdirSync(this.getPath(dirPath))).filter(name => name !== ".DS_Store");
     }
     isDirectory(dirPath) {
         return fs_extra_1.statSync(this.getPath(dirPath)).isDirectory();
