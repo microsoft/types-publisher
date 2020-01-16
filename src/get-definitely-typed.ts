@@ -225,7 +225,7 @@ class DiskFS implements FS {
     }
 
     readdir(dirPath?: string): ReadonlyArray<string> {
-        return readdirSync(this.getPath(dirPath)).sort().filter(name => name !== ".DS_STORE");
+        return readdirSync(this.getPath(dirPath)).sort().filter(name => name !== ".DS_Store");
     }
 
     isDirectory(dirPath: string): boolean {
