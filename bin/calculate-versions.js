@@ -36,6 +36,9 @@ async function computeChangedPackages(allPackages, log, client) {
         const { version, needsPublish } = await fetchTypesPackageVersionInfo(pkg, client, /*publish*/ true, log);
         if (needsPublish) {
             log.info(`Changed: ${pkg.desc}`);
+            for (const { name } of pkg.packageJsonDependencies) {
+                util_1.assertDefined(await client.fetchAndCacheNpmInfo(name), `'${pkg.name}' depends on '${name}' which does not exist on npm. All dependencies must exist.`);
+            }
             const latestVersion = pkg.isLatest ?
                 undefined :
                 (await fetchTypesPackageVersionInfo(allPackages.getLatest(pkg), client, /*publish*/ true)).version;
@@ -46,6 +49,7 @@ async function computeChangedPackages(allPackages, log, client) {
     log.info("# Computing deprecated packages...");
     const changedNotNeededPackages = await util_1.mapDefinedAsync(allPackages.allNotNeeded(), async (pkg) => {
         if (!await isAlreadyDeprecated(pkg, client, log)) {
+            util_1.assertDefined(await client.fetchAndCacheNpmInfo(pkg.unescapedName), `To deprecate '@types/${pkg.name}', '${pkg.unescapedName}' must exist on npm.`);
             log.info(`To be deprecated: ${pkg.name}`);
             return pkg;
         }
