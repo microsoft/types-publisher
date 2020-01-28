@@ -50,8 +50,11 @@ export function getTypingInfo(packageName: string, fs: FS): TypingsVersionsRaw {
 
     const older = olderVersionDirectories.map(({ directoryName, version: directoryVersion }) => {
         if (matchesVersion(latestData, directoryVersion, considerLibraryMinorVersion)) {
+            const latest = `${latestData.libraryMajorVersion}.${latestData.libraryMinorVersion}`;
             throw new Error(
-                `The latest version is ${latestData.libraryMajorVersion}.${latestData.libraryMinorVersion}, but a directory ${directoryName} exists.`,
+                `The latest version is ${latest}, so the subdirectory '${directoryName}' is not allowed` +
+                    (`v${latest}` === directoryName ?
+                        "." : `; since it applies to any ${latestData.libraryMajorVersion}.* version, up to and including ${latest}.`),
             );
         }
 

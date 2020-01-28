@@ -68,7 +68,10 @@ describe(getTypingInfo, () => {
 
                 expect(() => {
                     getTypingInfo("jquery", dt.pkgFS("jquery"));
-                }).toThrow("The latest version is 3.3, but a directory v3 exists.");
+                }).toThrow(
+                    "The latest version is 3.3, so the subdirectory 'v3' is not allowed; " +
+                        "since it applies to any 3.* version, up to and including 3.3.",
+                );
             });
 
             it("throws if a directory exists for the latest minor version", () => {
@@ -77,7 +80,9 @@ describe(getTypingInfo, () => {
 
                 expect(() => {
                     getTypingInfo("jquery", dt.pkgFS("jquery"));
-                }).toThrow("The latest version is 3.3, but a directory v3.3 exists.");
+                }).toThrow(
+                    "The latest version is 3.3, so the subdirectory 'v3.3' is not allowed.",
+                );
             });
 
             it("does not throw when a minor version is older than the latest", () => {
