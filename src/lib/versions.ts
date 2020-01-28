@@ -126,12 +126,11 @@ export class Semver {
  */
 export function compare(x: Semver, y: Semver) {
     const versions: Array<[number, number]> = [[x.major, y.major], [x.minor, y.minor], [x.patch, y.patch]];
-    let component: [number, number] | undefined;
-    while (component = versions.shift()) { // tslint:disable-line:no-conditional-assignment
-        const [componentX, componentY] = component;
+    for (const [componentX, componentY] of versions) {
         if (componentX > componentY) {
             return 1;
-        } else if (componentX < componentY) {
+        }
+        if (componentX < componentY) {
             return -1;
         }
     }
