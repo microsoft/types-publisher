@@ -447,17 +447,19 @@ export class TypingsVersions {
                 throw new Error(`Unable to parse version ${key}`);
             }
         }));
+
+        /**
+         * Sorted from latest to oldest so that we publish the current version first.
+         * This is important because older versions repeatedly reset the "latest" tag to the current version.
+         */
         this.versions = Array.from(versionMappings.keys()).sort(compareSemver).reverse();
+
         this.map = new Map(this.versions.map(version => {
             const dataKey = versionMappings.get(version)!;
             return [version, new TypingsData(data[dataKey], version === this.versions[0])];
         }));
     }
 
-    /**
-     * Sorted from latest to oldest so that we publish the current version first.
-     * This is important because older versions repeatedly reset the "latest" tag to the current version.
-     */
     getAll(): Iterable<TypingsData> {
         return this.map.values();
     }
