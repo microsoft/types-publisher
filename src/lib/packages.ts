@@ -311,7 +311,7 @@ export interface TypingsDataRaw extends BaseRaw {
     readonly dependencies: ReadonlyArray<PackageId>;
 
     /**
-     * Other definitions, that exist in the same typings repo, that the tests of this package depend on.
+     * Other definitions, that exist in the same typings repo, that the tests, but not the types, of this package depend on.
      *
      * These are always the latest version and will not include anything already in `dependencies`.
      */
@@ -359,7 +359,7 @@ export interface TypingsDataRaw extends BaseRaw {
     readonly libraryMinorVersion: number;
 
     /**
-     * Minimum required TypeScript version to consumer the definitions from this package.
+     * Minimum required TypeScript version to consume the definitions from this package.
      */
     readonly minTsVersion: AllTypeScriptVersion;
 
