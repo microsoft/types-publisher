@@ -67,7 +67,7 @@ function getReverseDependencies(allPackages, changedPackages) {
             }
         }
         for (const dependencyName of typing.testDependencies) {
-            const latest = { name: dependencyName, majorVersion: "*" };
+            const latest = { name: dependencyName, version: "*" };
             const dependencies = map.get(packageIdToKey(allPackages.tryResolve(latest)));
             if (dependencies) {
                 dependencies[1].add(typing.id);
@@ -77,6 +77,6 @@ function getReverseDependencies(allPackages, changedPackages) {
     return new Map(map.values());
 }
 function packageIdToKey(pkg) {
-    return packages_1.getMangledNameForScopedPackage(pkg.name) + "/v" + pkg.majorVersion;
+    return packages_1.getMangledNameForScopedPackage(pkg.name) + "/v" + packages_1.formatDependencyVersion(pkg.version);
 }
 //# sourceMappingURL=get-affected-packages.js.map

@@ -33,7 +33,7 @@ async function generatePackages(dt, allPackages, changedPackages, tgz = false) {
         if (tgz) {
             await tgz_1.writeTgz(pkg.outputDirectory, `${pkg.outputDirectory}.tgz`);
         }
-        log(` * ${pkg.libraryName}`);
+        log(` * ${pkg.desc}`);
     }
     log("## Generating deprecated packages");
     await npm_client_1.withNpmCache(new npm_client_1.UncachedNpmInfoClient(), async (client) => {
@@ -47,7 +47,7 @@ async function generatePackages(dt, allPackages, changedPackages, tgz = false) {
 exports.default = generatePackages;
 async function generateTypingPackage(typing, packages, version, dt) {
     const typesDirectory = dt.subDir("types").subDir(typing.name);
-    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(`v${typing.major}`);
+    const packageFS = typing.isLatest ? typesDirectory : typesDirectory.subDir(typing.versionDirectoryName);
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.NPM), createReadme(typing), common_1.Registry.NPM);
     await writeCommonOutputs(typing, createPackageJSON(typing, version, packages, common_1.Registry.Github), createReadme(typing), common_1.Registry.Github);
     await Promise.all(typing.files.map(async (file) => io_1.writeFile(await outputFilePath(typing, common_1.Registry.NPM, file), packageFS.readFile(file))));
@@ -120,7 +120,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
         const typesDependency = packages_1.getFullNpmName(dependency.name);
         // A dependency "foo" is already handled if we already have a dependency on the package "foo" or "@types/foo".
         if (!packageJsonDependencies.some(d => d.name === dependency.name || d.name === typesDependency) && allPackages.hasTypingFor(dependency)) {
-            dependencies[typesDependency] = dependencySemver(dependency.majorVersion);
+            dependencies[typesDependency] = dependencySemver(dependency.version);
         }
     }
     return util_1.sortObjectKeys(dependencies);
@@ -173,7 +173,7 @@ function createReadme(typing) {
     lines.push(` * Global values: ${typing.globals.length ? typing.globals.map(g => `\`${g}\``).join(", ") : "none"}`);
     lines.push("");
     lines.push("# Credits");
-    const contributors = typing.contributors.map(({ name, url }) => `${name} (${url})`).join(", ").replace(/, ([^,]+)$/, ", and $1");
+    const contributors = typing.contributors.map(({ name, url }) => `[${name}](${url})`).join(", ").replace(/, ([^,]+)$/, ", and $1");
     lines.push(`These definitions were written by ${contributors}.`);
     lines.push("");
     return lines.join("\r\n");

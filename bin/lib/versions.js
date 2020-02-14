@@ -52,8 +52,8 @@ class Semver {
         this.minor = minor;
         this.patch = patch;
     }
-    static parse(semver) {
-        const result = Semver.tryParse(semver);
+    static parse(semver, coerce) {
+        const result = Semver.tryParse(semver, coerce);
         if (!result) {
             throw new Error(`Unexpected semver: ${semver}`);
         }
@@ -62,25 +62,54 @@ class Semver {
     static fromRaw({ major, minor, patch }) {
         return new Semver(major, minor, patch);
     }
-    // This must parse the output of `versionString`.
-    static tryParse(semver) {
-        // Per the semver spec <http://semver.org/#spec-item-2>:
-        // "A normal version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers, and MUST NOT contain leading zeroes."
-        const rgx = /^(\d+)\.(\d+)\.(\d+)$/;
+    /**
+     * Per the semver spec <http://semver.org/#spec-item-2>:
+     *
+     *   A normal version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers, and MUST NOT contain leading zeroes.
+     *
+     * @note This must parse the output of `versionString`.
+     *
+     * @param semver The version string.
+     * @param coerce Without this optional parameter the version MUST follow the above semver spec. However, when set to `true` components after the
+     *               major version may be omitted. I.e. `1` equals `1.0` and `1.0.0`.
+     */
+    static tryParse(semver, coerce) {
+        const rgx = /^(\d+)(\.(\d+))?(\.(\d+))?$/;
         const match = rgx.exec(semver);
-        return match ? new Semver(util_1.intOfString(match[1]), util_1.intOfString(match[2]), util_1.intOfString(match[3])) : undefined;
+        if (match) {
+            const { 1: major, 3: minor, 5: patch } = match;
+            if ((minor !== undefined && patch !== undefined) || coerce) { // tslint:disable-line:strict-type-predicates
+                return new Semver(util_1.intOfString(major), util_1.intOfString(minor || "0"), util_1.intOfString(patch || "0"));
+            }
+        }
+        return undefined;
     }
     get versionString() {
         const { major, minor, patch } = this;
         return `${major}.${minor}.${patch}`;
     }
-    equals(sem) {
-        return this.major === sem.major && this.minor === sem.minor && this.patch === sem.patch;
+    equals(other) {
+        return compare(this, other) === 0;
     }
-    greaterThan(sem) {
-        return this.major > sem.major || this.major === sem.major
-            && (this.minor > sem.minor || this.minor === sem.minor && this.patch > sem.patch);
+    greaterThan(other) {
+        return compare(this, other) === 1;
     }
 }
 exports.Semver = Semver;
+/**
+ * Returns 0 if equal, 1 if x > y, -1 if x < y
+ */
+function compare(x, y) {
+    const versions = [[x.major, y.major], [x.minor, y.minor], [x.patch, y.patch]];
+    for (const [componentX, componentY] of versions) {
+        if (componentX > componentY) {
+            return 1;
+        }
+        if (componentX < componentY) {
+            return -1;
+        }
+    }
+    return 0;
+}
+exports.compare = compare;
 //# sourceMappingURL=versions.js.map

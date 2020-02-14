@@ -5,9 +5,7 @@ const child_process_1 = require("child_process");
 const crypto = require("crypto");
 const moment = require("moment");
 const os = require("os");
-const sourceMapSupport = require("source-map-support");
 const progress_1 = require("./progress");
-sourceMapSupport.install();
 function assertDefined(x, message) {
     assert(x !== undefined, message);
     return x;

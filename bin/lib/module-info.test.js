@@ -5,7 +5,7 @@ const get_definitely_typed_1 = require("../get-definitely-typed");
 const mocks_1 = require("../mocks");
 const test_1 = require("../util/test");
 const module_info_1 = require("./module-info");
-const fs = mocks_1.createMockDT();
+const fs = mocks_1.createMockDT().fs;
 function getBoringReferences() {
     return module_info_1.allReferencedFiles(["index.d.ts", "boring-tests.ts"], fs.subDir("types").subDir("boring"), "boring", "types/boring");
 }

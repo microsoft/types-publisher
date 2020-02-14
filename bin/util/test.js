@@ -8,7 +8,7 @@ function testo(o) {
 exports.testo = testo;
 function createTypingsVersionRaw(name, dependencies, testDependencies) {
     return {
-        1: {
+        "1.0.0": {
             libraryName: name,
             typingsPackageName: name,
             dependencies,

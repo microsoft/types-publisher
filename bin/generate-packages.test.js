@@ -67,7 +67,7 @@ test_1.testo({
         expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("Global values: none"));
     },
     basicPackageJson() {
-        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT()));
+        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT().fs));
         const typing = new packages_1.TypingsData(createRawPackage("MIT" /* MIT */), /*isLatest*/ true);
         expect(generate_packages_1.createPackageJSON(typing, "1.0", packages, common_1.Registry.NPM)).toEqual(`{
     "name": "@types/jquery",
@@ -95,12 +95,12 @@ test_1.testo({
 }`);
     },
     githubPackageJsonName() {
-        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT()));
+        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT().fs));
         const typing = new packages_1.TypingsData(createRawPackage("MIT" /* MIT */), /*isLatest*/ true);
         expect(generate_packages_1.createPackageJSON(typing, "1.0", packages, common_1.Registry.Github)).toEqual(expect.stringContaining('"name": "@types/jquery"'));
     },
     githubPackageJsonRegistry() {
-        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT()));
+        const packages = packages_1.AllPackages.from(createTypesData(), packages_1.readNotNeededPackages(mocks_1.createMockDT().fs));
         const typing = new packages_1.TypingsData(createRawPackage("MIT" /* MIT */), /*isLatest*/ true);
         const s = generate_packages_1.createPackageJSON(typing, "1.0", packages, common_1.Registry.Github);
         expect(s).toEqual(expect.stringContaining("publishConfig"));

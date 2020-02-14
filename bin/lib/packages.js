@@ -52,7 +52,7 @@ class AllPackages {
     }
     tryResolve(dep) {
         const versions = this.data.get(getMangledNameForScopedPackage(dep.name));
-        return versions ? versions.get(dep.majorVersion).id : dep;
+        return versions ? versions.get(dep.version).id : dep;
     }
     /** Gets the latest version of a package. E.g. getLatest(node v6) was node v10 (before node v11 came out). */
     getLatest(pkg) {
@@ -76,9 +76,9 @@ class AllPackages {
         }
         return pkg;
     }
-    tryGetTypingsData({ name, majorVersion }) {
+    tryGetTypingsData({ name, version }) {
         const versions = this.data.get(getMangledNameForScopedPackage(name));
-        return versions && versions.tryGet(majorVersion);
+        return versions && versions.tryGet(version);
     }
     allPackages() {
         return [...this.allTypings(), ...this.allNotNeeded()];
@@ -95,10 +95,10 @@ class AllPackages {
     }
     /** Returns all of the dependences *that have typings*, ignoring others, and including test dependencies. */
     *allDependencyTypings(pkg) {
-        for (const { name, majorVersion } of pkg.dependencies) {
+        for (const { name, version } of pkg.dependencies) {
             const versions = this.data.get(getMangledNameForScopedPackage(name));
             if (versions) {
-                yield versions.get(majorVersion);
+                yield versions.get(version);
             }
         }
         for (const name of pkg.testDependencies) {
@@ -139,7 +139,7 @@ class PackageBase {
     }
     /** Short description for debug output. */
     get desc() {
-        return this.isLatest ? this.name : `${this.name} v${this.major}`;
+        return this.isLatest ? this.name : `${this.name} v${this.major}.${this.minor}`;
     }
     isNotNeeded() {
         return this instanceof NotNeededPackage;
@@ -153,7 +153,7 @@ class PackageBase {
         return `@${settings_1.scopeName}%2f${this.name}`;
     }
     get id() {
-        return { name: this.name, majorVersion: this.major };
+        return { name: this.name, version: { major: this.major, minor: this.minor } };
     }
     get outputDirectory() {
         return util_1.joinPaths(settings_1.outputDirPath, this.desc);
@@ -194,6 +194,14 @@ ${this.libraryName} provides its own type definitions, so you don't need ${getFu
     }
 }
 exports.NotNeededPackage = NotNeededPackage;
+function formatTypingVersion(version) {
+    return `${version.major}${version.minor === undefined ? "" : `.${version.minor}`}`;
+}
+exports.formatTypingVersion = formatTypingVersion;
+function formatDependencyVersion(version) {
+    return version === "*" ? "*" : formatTypingVersion(version);
+}
+exports.formatDependencyVersion = formatDependencyVersion;
 const allLicenses = ["MIT" /* MIT */, "Apache-2.0" /* Apache20 */];
 function getLicenseFromPackageJson(packageJsonLicense) {
     if (packageJsonLicense === undefined) { // tslint:disable-line strict-type-predicates (false positive)
@@ -210,37 +218,50 @@ function getLicenseFromPackageJson(packageJsonLicense) {
 exports.getLicenseFromPackageJson = getLicenseFromPackageJson;
 class TypingsVersions {
     constructor(data) {
-        const versions = Object.keys(data).map(Number);
-        this.latest = Math.max(...versions);
-        this.map = new Map(versions.map((version) => [version, new TypingsData(data[version], version === this.latest)]));
+        const versionMappings = new Map(Object.keys(data).map(key => {
+            const version = versions_1.Semver.parse(key, true);
+            if (version) {
+                return [version, key];
+            }
+            else {
+                throw new Error(`Unable to parse version ${key}`);
+            }
+        }));
+        /**
+         * Sorted from latest to oldest so that we publish the current version first.
+         * This is important because older versions repeatedly reset the "latest" tag to the current version.
+         */
+        this.versions = Array.from(versionMappings.keys()).sort(versions_1.compare).reverse();
+        this.map = new Map(this.versions.map(version => {
+            const dataKey = versionMappings.get(version);
+            return [version, new TypingsData(data[dataKey], version === this.versions[0])];
+        }));
     }
-    /**
-     * Values are reversed so that we publish the current version first.
-     * This is important because older versions repeatedly reset the "latest" tag to the current version.
-     */
     getAll() {
-        return Array.from(this.map.values()).reverse();
+        return this.map.values();
     }
-    get(majorVersion) {
-        return majorVersion === "*" ? this.getLatest() : this.getExact(majorVersion);
+    get(version) {
+        return version === "*" ? this.getLatest() : this.getLatestMatch(version);
     }
-    tryGet(majorVersion) {
-        return majorVersion === "*" ? this.getLatest() : this.tryGetExact(majorVersion);
+    tryGet(version) {
+        return version === "*" ? this.getLatest() : this.tryGetLatestMatch(version);
     }
     getLatest() {
-        return this.getExact(this.latest);
+        return this.map.get(this.versions[0]);
     }
-    getExact(majorVersion) {
-        const data = this.tryGetExact(majorVersion);
+    getLatestMatch(version) {
+        const data = this.tryGetLatestMatch(version);
         if (!data) {
-            throw new Error(`Could not find version ${majorVersion}`);
+            throw new Error(`Could not find version ${version}`);
         }
         return data;
     }
-    tryGetExact(majorVersion) {
-        return this.map.get(majorVersion);
+    tryGetLatestMatch(version) {
+        const found = this.versions.find(v => v.major === version.major && (version.minor === undefined || v.minor === version.minor));
+        return found && this.map.get(found);
     }
 }
+exports.TypingsVersions = TypingsVersions;
 class TypingsData extends PackageBase {
     constructor(data, isLatest) {
         super(data);
@@ -266,9 +287,12 @@ class TypingsData extends PackageBase {
     get dependencies() {
         return this.data.dependencies;
     }
+    get versionDirectoryName() {
+        return this.data.libraryVersionDirectoryName && `v${this.data.libraryVersionDirectoryName}`;
+    }
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
     get subDirectoryPath() {
-        return this.isLatest ? this.name : `${this.name}/v${this.data.libraryMajorVersion}`;
+        return this.isLatest ? this.name : `${this.name}/v${this.versionDirectoryName}`;
     }
 }
 exports.TypingsData = TypingsData;

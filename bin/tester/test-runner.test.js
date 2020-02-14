@@ -5,10 +5,10 @@ const test_1 = require("../util/test");
 const test_runner_1 = require("./test-runner");
 const typesData = {
     jquery: test_1.createTypingsVersionRaw("jquery", [], []),
-    known: test_1.createTypingsVersionRaw("known", [{ name: "jquery", majorVersion: 1 }], []),
+    known: test_1.createTypingsVersionRaw("known", [{ name: "jquery", version: { major: 1 } }], []),
     "known-test": test_1.createTypingsVersionRaw("known-test", [], ["jquery"]),
-    "most-recent": test_1.createTypingsVersionRaw("most-recent", [{ name: "jquery", majorVersion: "*" }], []),
-    unknown: test_1.createTypingsVersionRaw("unknown", [{ name: "COMPLETELY-UNKNOWN", majorVersion: 1 }], []),
+    "most-recent": test_1.createTypingsVersionRaw("most-recent", [{ name: "jquery", version: "*" }], []),
+    unknown: test_1.createTypingsVersionRaw("unknown", [{ name: "COMPLETELY-UNKNOWN", version: { major: 1 } }], []),
     "unknown-test": test_1.createTypingsVersionRaw("unknown-test", [], ["WAT"]),
 };
 const jestNotNeeded = [

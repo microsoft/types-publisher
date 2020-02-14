@@ -34,11 +34,26 @@ export declare class Semver {
     readonly major: number;
     readonly minor: number;
     readonly patch: number;
-    static parse(semver: string): Semver;
+    static parse(semver: string, coerce?: boolean): Semver;
     static fromRaw({ major, minor, patch }: Semver): Semver;
-    static tryParse(semver: string): Semver | undefined;
+    /**
+     * Per the semver spec <http://semver.org/#spec-item-2>:
+     *
+     *   A normal version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers, and MUST NOT contain leading zeroes.
+     *
+     * @note This must parse the output of `versionString`.
+     *
+     * @param semver The version string.
+     * @param coerce Without this optional parameter the version MUST follow the above semver spec. However, when set to `true` components after the
+     *               major version may be omitted. I.e. `1` equals `1.0` and `1.0.0`.
+     */
+    static tryParse(semver: string, coerce?: boolean): Semver | undefined;
     constructor(major: number, minor: number, patch: number);
     get versionString(): string;
-    equals(sem: Semver): boolean;
-    greaterThan(sem: Semver): boolean;
+    equals(other: Semver): boolean;
+    greaterThan(other: Semver): boolean;
 }
+/**
+ * Returns 0 if equal, 1 if x > y, -1 if x < y
+ */
+export declare function compare(x: Semver, y: Semver): 1 | 0 | -1;

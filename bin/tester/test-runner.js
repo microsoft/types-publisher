@@ -88,7 +88,7 @@ function getNotNeededPackages(allPackages, diffs) {
 When removing packages, you should only delete files that are a part of removed packages.`)
         .name));
     return util_1.mapIter(deletedPackages, p => {
-        if (allPackages.hasTypingFor({ name: p, majorVersion: "*" })) {
+        if (allPackages.hasTypingFor({ name: p, version: "*" })) {
             throw new Error(`Please delete all files in ${p} when adding it to notNeededPackages.json.`);
         }
         return util_1.assertDefined(allPackages.getNotNeededPackage(p), `Deleted package ${p} is not in notNeededPackages.json.`);
@@ -231,14 +231,14 @@ function gitChanges(diffs) {
         if (dep) {
             const versions = changedPackages.get(dep.name);
             if (!versions) {
-                changedPackages.set(dep.name, new Set([dep.majorVersion]));
+                changedPackages.set(dep.name, new Map([[packages_1.formatDependencyVersion(dep.version), dep.version]]));
             }
             else {
-                versions.add(dep.majorVersion);
+                versions.set(packages_1.formatDependencyVersion(dep.version), dep.version);
             }
         }
     }
-    return Array.from(util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, majorVersion => ({ name, majorVersion }))));
+    return Array.from(util_1.flatMap(changedPackages, ([name, versions]) => util_1.mapIter(versions, ([_, version]) => ({ name, version }))));
 }
 exports.gitChanges = gitChanges;
 /*
@@ -295,12 +295,11 @@ function getDependencyFromFile(file) {
         return undefined;
     }
     if (subDirName) {
-        // Looks like "types/a/v3/c"
-        const majorVersion = definition_parser_1.parseMajorVersionFromDirectoryName(subDirName);
-        if (majorVersion !== undefined) {
-            return { name, majorVersion };
+        const version = definition_parser_1.parseVersionFromDirectoryName(subDirName);
+        if (version !== undefined) {
+            return { name, version };
         }
     }
-    return { name, majorVersion: "*" };
+    return { name, version: "*" };
 }
 //# sourceMappingURL=test-runner.js.map

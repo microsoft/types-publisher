@@ -49,16 +49,20 @@ function checkTypeScriptVersions(allPackages) {
 }
 function checkPathMappings(allPackages) {
     for (const pkg of allPackages.allTypings()) {
-        const pathMappings = new Map(pkg.pathMappings.map((p) => [p.packageName, p.majorVersion]));
+        const pathMappings = new Map(pkg.pathMappings.map(p => [p.packageName, p.version]));
         const unusedPathMappings = new Set(pathMappings.keys());
         // If A depends on B, and B has path mappings, A must have the same mappings.
         for (const dependency of allPackages.allDependencyTypings(pkg)) {
-            for (const { packageName, majorVersion } of dependency.pathMappings) {
-                if (pathMappings.get(packageName) !== majorVersion) {
-                    throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${packageName} v${majorVersion}. ` +
+            for (const { packageName: transitiveDependencyName, version: transitiveDependencyVersion } of dependency.pathMappings) {
+                const pathMappingVersion = pathMappings.get(transitiveDependencyName);
+                if (pathMappingVersion
+                    && (pathMappingVersion.major !== transitiveDependencyVersion.major
+                        || pathMappingVersion.minor !== transitiveDependencyVersion.minor)) {
+                    const expectedPathMapping = `${transitiveDependencyName}/v${packages_1.formatTypingVersion(transitiveDependencyVersion)}`;
+                    throw new Error(`${pkg.desc} depends on ${dependency.desc}, which has a path mapping for ${expectedPathMapping}. ` +
                         `${pkg.desc} must have the same path mappings as its dependencies.`);
                 }
-                unusedPathMappings.delete(packageName);
+                unusedPathMappings.delete(transitiveDependencyName);
             }
             unusedPathMappings.delete(dependency.name);
         }
