@@ -292,7 +292,7 @@ class TypingsData extends PackageBase {
     }
     /** Path to this package, *relative* to the DefinitelyTyped directory. */
     get subDirectoryPath() {
-        return this.isLatest ? this.name : `${this.name}/v${this.versionDirectoryName}`;
+        return this.isLatest ? this.name : `${this.name}/${this.versionDirectoryName}`;
     }
 }
 exports.TypingsData = TypingsData;

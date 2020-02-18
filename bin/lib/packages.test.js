@@ -29,5 +29,9 @@ describe(packages_1.TypingsVersions, () => {
         expect(versions.get({ major: 2, minor: 0 }).major).toEqual(2);
         expect(versions.get({ major: 2, minor: 0 }).minor).toEqual(0);
     });
+    it("formats a version directory names", () => {
+        expect(versions.get({ major: 2, minor: 0 }).versionDirectoryName).toEqual("v2");
+        expect(versions.get({ major: 2, minor: 0 }).subDirectoryPath).toEqual("jquery/v2");
+    });
 });
 //# sourceMappingURL=packages.test.js.map
