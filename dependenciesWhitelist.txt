@@ -23,6 +23,7 @@
 @storybook/addons
 @storybook/react
 @types/base-x
+@types/browserify
 @types/expect
 @types/firebase
 @types/highcharts
@@ -31,10 +32,13 @@
 @types/next-redux-wrapper
 @types/ink
 @types/js-data
+@types/jquery
+@types/jqueryui
 @types/react-native-tab-view
 @types/react-navigation
 @types/three
 @types/rsmq
+@types/sharepoint
 @types/vue
 @types/webdriverio
 @types/winston
