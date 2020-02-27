@@ -236,14 +236,16 @@ async function doRunTests(
     if (fold.isTravis()) { console.log(fold.end("tests")); }
 
     console.log("\n\n=== SUGGESTIONS ===\n");
+    console.log("{");
     for (const change of changed) {
         const pkgPath = change.versionDirectoryName ? change.name + change.versionDirectoryName : change.name;
         const path = joinPaths(suggestionsDir, pkgPath + ".txt");
         if (existsSync(path)) {
             const suggestions = readFileSync(path, "utf8").split("\n");
-            console.log(`Suggestions for ${change.subDirectoryPath}: [${suggestions.join(",")}]`);
+            console.log(`  "${change.subDirectoryPath}": [${suggestions.join(",")}],`);
         }
     }
+    console.log("}");
 
     console.log("\n\n=== PERFORMANCE ===\n");
     console.log("{");
