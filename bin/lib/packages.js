@@ -250,9 +250,10 @@ class TypingsVersions {
         return this.map.get(this.versions[0]);
     }
     getLatestMatch(version) {
+        var _a;
         const data = this.tryGetLatestMatch(version);
         if (!data) {
-            throw new Error(`Could not find version ${version}`);
+            throw new Error(`Could not find version ${version.major}.${(_a = version.minor) !== null && _a !== void 0 ? _a : "*"}`);
         }
         return data;
     }
