@@ -30,6 +30,7 @@ import {
 import { allDependencies, getAffectedPackages } from "./get-affected-packages";
 
 const perfDir = joinPaths(os.homedir(), ".dts", "perf");
+const suggestionsDir = joinPaths(os.homedir(), ".dts", "suggestions");
 
 if (!module.parent) {
     if (yargs.argv.affected) {
@@ -232,6 +233,16 @@ async function doRunTests(
         },
     });
     if (fold.isTravis()) { console.log(fold.end("tests")); }
+
+    console.log("\n\n=== SUGGESTIONS ===\n");
+    for (const change of changed) {
+        const pkgPath = change.versionDirectoryName ? change.name + change.versionDirectoryName : change.name;
+        const path = joinPaths(suggestionsDir, pkgPath + ".txt");
+        if (existsSync(path)) {
+            const suggestions = readFileSync(path, "utf8").split("\n");
+            console.log(`Suggestions for ${change.subDirectoryPath}: [${suggestions.join(",")}]`);
+        }
+    }
 
     console.log("\n\n=== PERFORMANCE ===\n");
     console.log("{");
