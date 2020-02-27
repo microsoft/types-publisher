@@ -1,6 +1,6 @@
 import assert = require("assert");
 import { existsSync, readFileSync } from "fs";
-import { pathExists } from "fs-extra";
+import { pathExists, remove } from "fs-extra";
 import os = require("os");
 import * as fold from "travis-fold";
 import * as yargs from "yargs";
@@ -190,6 +190,7 @@ async function doRunTests(
     typesPath: string,
     nProcesses: number,
 ): Promise<void> {
+    await remove(suggestionsDir);
     const allFailures: Array<[string, string]> = [];
     if (fold.isTravis()) { console.log(fold.start("tests")); }
     await runWithListeningChildProcesses({
