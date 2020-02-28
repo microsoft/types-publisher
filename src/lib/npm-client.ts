@@ -120,7 +120,7 @@ export class UncachedNpmInfoClient {
                 retries: true,
             }) as { readonly error: string } | { readonly [key: string]: { readonly downloads: number } };
             if ("error" in data) { throw new Error(data.error as string); }
-            for (const key in data) {
+            for (const key of Object.keys(data)) {
                 assert(key === names[out.length], `at index ${out.length} of ${Object.keys(data)} : ${key} !== ${names[out.length]}`);
                 out.push(data[key] ? data[key].downloads : 0);
             }

@@ -247,7 +247,7 @@ export class NotNeededPackage extends PackageBase {
         super(raw);
         this.sourceRepoURL = raw.sourceRepoURL;
 
-        for (const key in raw) {
+        for (const key of Object.keys(raw)) {
             if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
                 throw new Error(`Unexpected key in not-needed package: ${key}`);
             }

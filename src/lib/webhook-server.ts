@@ -111,9 +111,8 @@ function updateOneAtATime(
         if (working) {
             log.info("Not starting update, because already performing one.");
             return undefined;
-        } else {
-            return work();
         }
+        return work();
 
         async function work(): Promise<void> {
             log.info("Starting update");

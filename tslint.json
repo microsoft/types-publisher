@@ -8,6 +8,7 @@
         "max-line-length": [true, 150],
         "object-literal-key-quotes": [true, "as-needed"],
         "only-arrow-functions": [true, "allow-declarations"],
+        "variable-name": [true, "check-format", "allow-leading-underscore"],
 
         // TODO
         "strict-boolean-expressions": false,
