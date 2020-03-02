@@ -47,7 +47,6 @@ export default async function checkParseResults(includeNpmChecks: boolean, dt: F
 function checkTypeScriptVersions(allPackages: AllPackages): void {
     for (const pkg of allPackages.allTypings()) {
         for (const dep of allPackages.allDependencyTypings(pkg)) {
-            // tslint:strict-comparisons:disable-next-line
             if (dep.minTypeScriptVersion > pkg.minTypeScriptVersion) {
                 throw new Error(`${pkg.desc} depends on ${dep.desc} but has a lower required TypeScript version.`);
             }
