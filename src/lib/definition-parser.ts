@@ -471,7 +471,7 @@ function checkAllUsedRecur(ls: Iterable<string>, usedFiles: Set<string>, unusedF
 
             const lssubdir = subdir.readdir();
             if (lssubdir.length === 0) {
-                // tslint:disable-next-line:strict-string-expressions
+                // tslint:disable-next-line strict-string-expressions
                 throw new Error(`Empty directory ${subdir} (${join(usedFiles)})`);
             }
 
