@@ -9,6 +9,13 @@
         "object-literal-key-quotes": [true, "as-needed"],
         "only-arrow-functions": [true, "allow-declarations"],
         "variable-name": [true, "check-format", "allow-leading-underscore"],
+        "strict-comparisons": [
+            true,
+            {
+                "allow-object-equal-comparison": true,
+                "allow-string-order-comparison": true
+            }
+        ],
 
         // TODO
         "strict-boolean-expressions": false,
