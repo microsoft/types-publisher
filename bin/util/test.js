@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createTypingsVersionRaw = exports.testo = void 0;
 function testo(o) {
     for (const k in o) {
         test(k, o[k], 100000);

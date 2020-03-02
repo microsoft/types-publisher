@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.urlOfBlob = exports.readJsonBlob = exports.readBlob = void 0;
 const azure_storage_1 = require("azure-storage");
 const fs = require("fs");
 const https = require("https");

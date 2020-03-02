@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createSourceFile = exports.getTestDependencies = exports.allReferencedFiles = exports.getModuleInfo = void 0;
 const assert = require("assert");
 const path = require("path");
 const ts = require("typescript");

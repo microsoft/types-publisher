@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.gitDiff = exports.gitChanges = exports.checkNotNeededPackage = exports.getNotNeededPackages = exports.getAffectedPackagesFromDiff = exports.testerOptions = exports.parseNProcesses = void 0;
 const assert = require("assert");
 const fs_1 = require("fs");
 const fs_extra_1 = require("fs-extra");
@@ -18,6 +19,7 @@ const logging_1 = require("../util/logging");
 const util_1 = require("../util/util");
 const get_affected_packages_1 = require("./get-affected-packages");
 const perfDir = util_1.joinPaths(os.homedir(), ".dts", "perf");
+const suggestionsDir = util_1.joinPaths(os.homedir(), ".dts", "suggestions");
 if (!module.parent) {
     if (yargs.argv.affected) {
         util_1.logUncaughtErrors(testAffectedOnly(common_1.Options.defaults));
@@ -138,6 +140,7 @@ function directoryPath(typesPath, pkg) {
     return util_1.joinPaths(typesPath, pkg.subDirectoryPath);
 }
 async function doRunTests(packages, changed, typesPath, nProcesses) {
+    await fs_extra_1.remove(suggestionsDir);
     const allFailures = [];
     if (fold.isTravis()) {
         console.log(fold.start("tests"));
@@ -186,6 +189,17 @@ async function doRunTests(packages, changed, typesPath, nProcesses) {
     if (fold.isTravis()) {
         console.log(fold.end("tests"));
     }
+    console.log("\n\n=== SUGGESTIONS ===\n");
+    const suggestionLines = [];
+    for (const change of changed) {
+        const pkgPath = change.versionDirectoryName ? change.name + change.versionDirectoryName : change.name;
+        const path = util_1.joinPaths(suggestionsDir, pkgPath + ".txt");
+        if (fs_1.existsSync(path)) {
+            const suggestions = fs_1.readFileSync(path, "utf8").split("\n");
+            suggestionLines.push(`"${change.subDirectoryPath}": [${suggestions.join(",")}]`);
+        }
+    }
+    console.log(`{${suggestionLines.join(",")}}`);
     console.log("\n\n=== PERFORMANCE ===\n");
     console.log("{");
     for (const change of changed) {

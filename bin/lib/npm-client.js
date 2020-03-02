@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.NpmPublishClient = exports.UncachedNpmInfoClient = exports.withNpmCache = void 0;
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");
 const RegClient = require("npm-registry-client");

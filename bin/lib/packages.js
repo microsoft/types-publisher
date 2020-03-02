@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.readNotNeededPackages = exports.TypingsData = exports.TypingsVersions = exports.getLicenseFromPackageJson = exports.formatDependencyVersion = exports.formatTypingVersion = exports.NotNeededPackage = exports.getFullNpmName = exports.PackageBase = exports.typesDataFilename = exports.getMangledNameForScopedPackage = exports.AllPackages = void 0;
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const util_1 = require("../util/util");

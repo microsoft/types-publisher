@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.readFileAndThrowOnBOM = exports.parseVersionFromDirectoryName = exports.getTypingInfo = void 0;
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const util_1 = require("../util/util");
 const module_info_1 = require("./module-info");

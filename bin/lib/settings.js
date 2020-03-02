@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.dependenciesWhitelist = exports.typesDirectoryName = exports.errorsIssue = exports.azureKeyvault = exports.azureContainer = exports.azureStorageAccount = exports.sourceBranch = exports.definitelyTypedZipUrl = exports.logDir = exports.validateOutputPath = exports.outputDirPath = exports.dataDirPath = exports.scopeName = exports.npmApi = exports.githubRegistry = exports.npmRegistry = exports.githubRegistryHostName = exports.npmRegistryHostName = void 0;
 const fs_1 = require("fs");
 const path_1 = require("path");
 /** URL of the NPM registry to upload to. */

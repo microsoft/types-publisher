@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getLatestTypingVersion = void 0;
 const assert = require("assert");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const common_1 = require("./lib/common");

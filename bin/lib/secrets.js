@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSecret = exports.allSecrets = exports.Secret = void 0;
 const adal_node_1 = require("adal-node");
 const azure_keyvault_1 = require("azure-keyvault");
 const util_1 = require("../util/util");

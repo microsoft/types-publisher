@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.allDependencies = exports.getAffectedPackages = void 0;
 const packages_1 = require("../lib/packages");
 const util_1 = require("../util/util");
 /** Gets all packages that have changed on this branch, plus all packages affected by the change. */

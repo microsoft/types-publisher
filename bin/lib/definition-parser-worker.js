@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.definitionParserWorkerFilename = void 0;
 const assert = require("assert");
 const process = require("process");
 const get_definitely_typed_1 = require("../get-definitely-typed");

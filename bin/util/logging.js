@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.joinLogWithErrors = exports.writeLog = exports.logPath = exports.moveLogsWithErrors = exports.moveLogs = exports.loggerWithErrors = exports.quietLoggerWithErrors = exports.logger = exports.quietLogger = exports.consoleLogger = void 0;
 const fs_extra_1 = require("fs-extra");
 const settings_1 = require("../lib/settings");
 const util_1 = require("../util/util");

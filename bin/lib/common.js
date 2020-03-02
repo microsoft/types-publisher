@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.dataFilePath = exports.writeDataFile = exports.readFileAndWarn = exports.readDataFile = exports.Options = exports.Registry = void 0;
 const fs_extra_1 = require("fs-extra");
 const io_1 = require("../util/io");
 const util_1 = require("../util/util");

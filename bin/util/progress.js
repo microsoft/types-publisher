@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.strProgress = void 0;
 const charm = require("charm");
 class ProgressBar {
     constructor(options) {
