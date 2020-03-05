@@ -89,8 +89,8 @@ class UncachedNpmInfoClient {
             if ("error" in data) {
                 throw new Error(data.error);
             }
-            for (const key in data) {
-                assert(key === names[out.length], `at index ${out.length} of ${Object.keys(data)} : ${key} !== ${names[out.length]}`);
+            for (const key of Object.keys(data)) {
+                assert(key === names[out.length], `at index ${out.length} of ${Object.keys(data).toString()} : ${key} !== ${names[out.length]}`);
                 out.push(data[key] ? data[key].downloads : 0);
             }
         }
@@ -114,9 +114,9 @@ class NpmPublishClient {
     static async create(config, registry = common_1.Registry.NPM) {
         switch (registry) {
             case common_1.Registry.NPM:
-                return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN) }, settings_1.npmRegistry);
+                return new NpmPublishClient(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.NPM_TOKEN) }, settings_1.npmRegistry);
             case common_1.Registry.Github:
-                return new this(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
+                return new NpmPublishClient(new RegClient(config), { token: await secrets_1.getSecret(secrets_1.Secret.GITHUB_PUBLISH_ACCESS_TOKEN) }, settings_1.githubRegistry);
             default:
                 util_1.assertNever(registry);
         }

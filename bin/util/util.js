@@ -220,6 +220,7 @@ exports.sort = sort;
 function join(values, joiner = ", ") {
     let s = "";
     for (const v of values) {
+        // tslint:disable-next-line strict-string-expressions
         s += `${v}${joiner}`;
     }
     return s.slice(0, s.length - joiner.length);
@@ -522,7 +523,7 @@ function assertNever(_) {
 exports.assertNever = assertNever;
 function recordToMap(record, cb) {
     const m = new Map();
-    for (const key in record) {
+    for (const key of Object.keys(record)) {
         m.set(key, cb ? cb(record[key]) : record[key]);
     }
     return m;

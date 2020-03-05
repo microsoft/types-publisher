@@ -169,7 +169,7 @@ class NotNeededPackage extends PackageBase {
     constructor(raw) {
         super(raw);
         this.sourceRepoURL = raw.sourceRepoURL;
-        for (const key in raw) {
+        for (const key of Object.keys(raw)) {
             if (!["libraryName", "typingsPackageName", "sourceRepoURL", "asOfVersion"].includes(key)) {
                 throw new Error(`Unexpected key in not-needed package: ${key}`);
             }
@@ -208,7 +208,7 @@ function getLicenseFromPackageJson(packageJsonLicense) {
     if (packageJsonLicense === undefined) { // tslint:disable-line strict-type-predicates (false positive)
         return "MIT" /* MIT */;
     }
-    if (packageJsonLicense === "MIT") {
+    if (typeof packageJsonLicense === "string" && packageJsonLicense === "MIT") {
         throw new Error(`Specifying '"license": "MIT"' is redundant, this is the default.`);
     }
     if (allLicenses.includes(packageJsonLicense)) {
@@ -224,9 +224,7 @@ class TypingsVersions {
             if (version) {
                 return [version, key];
             }
-            else {
-                throw new Error(`Unable to parse version ${key}`);
-            }
+            throw new Error(`Unable to parse version ${key}`);
         }));
         /**
          * Sorted from latest to oldest so that we publish the current version first.
@@ -235,7 +233,7 @@ class TypingsVersions {
         this.versions = Array.from(versionMappings.keys()).sort(versions_1.compare).reverse();
         this.map = new Map(this.versions.map(version => {
             const dataKey = versionMappings.get(version);
-            return [version, new TypingsData(data[dataKey], version === this.versions[0])];
+            return [version, new TypingsData(data[dataKey], version.equals(this.versions[0]))];
         }));
     }
     getAll() {

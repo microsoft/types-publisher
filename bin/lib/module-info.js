@@ -161,10 +161,10 @@ function resolveModule(importSpecifier, fs) {
         if (fs.exists(importSpecifier + ".d.ts")) {
             return importSpecifier + ".d.ts";
         }
-        else if (fs.exists(importSpecifier + ".ts")) {
+        if (fs.exists(importSpecifier + ".ts")) {
             return importSpecifier + ".ts";
         }
-        else if (fs.exists(importSpecifier + ".tsx")) {
+        if (fs.exists(importSpecifier + ".tsx")) {
             return importSpecifier + ".tsx";
         }
     }
@@ -208,7 +208,7 @@ function findReferencedFiles(src, packageName, subDirectory, baseDirectory) {
             refs.push(ref);
             return;
         }
-        else if (full.startsWith("..")
+        if (full.startsWith("..")
             && (baseDirectory === "" || path.normalize(util_1.joinPaths(baseDirectory, full)).startsWith(".."))) {
             throw new Error(`${src.fileName}: ` +
                 'Definitions must use global references to other packages, not parent ("../xxx") references.' +

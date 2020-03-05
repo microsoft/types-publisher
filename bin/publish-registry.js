@@ -136,7 +136,7 @@ async function validateIsSubset(notNeeded, log) {
     const indexJson = "index.json";
     const actual = await io_1.readJson(util_1.joinPaths(validateTypesRegistryPath, indexJson));
     const expected = await io_1.readJson(util_1.joinPaths(registryOutputPath, indexJson));
-    for (const key in actual.entries) {
+    for (const key of Object.keys(actual.entries)) {
         if (!(key in expected.entries) && !notNeeded.some(p => p.name === key)) {
             throw new Error(`Actual types-registry has unexpected key ${key}`);
         }
@@ -202,7 +202,7 @@ async function generateRegistry(typings, client) {
         const info = client.getNpmInfoFromCache(typing.fullEscapedNpmName);
         if (!info) {
             const missings = typings.filter(t => !client.getNpmInfoFromCache(t.fullEscapedNpmName)).map(t => t.fullEscapedNpmName);
-            throw new Error(`${missings} not found in cached npm info.`);
+            throw new Error(`${missings.toString()} not found in cached npm info.`);
         }
         entries[typing.name] = filterTags(info.distTags);
     }

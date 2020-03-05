@@ -40,10 +40,8 @@ function getTypingInfo(packageName, fs) {
                 throw new Error(`Directory ${directoryName} indicates major.minor version ${directoryVersion.major}.${directoryVersion.minor}, ` +
                     `but header indicates major.minor version ${data.libraryMajorVersion}.${data.libraryMinorVersion}`);
             }
-            else {
-                throw new Error(`Directory ${directoryName} indicates major version ${directoryVersion.major}, but header indicates major version ` +
-                    data.libraryMajorVersion.toString());
-            }
+            throw new Error(`Directory ${directoryName} indicates major version ${directoryVersion.major}, but header indicates major version ` +
+                data.libraryMajorVersion.toString());
         }
         return data;
     });
@@ -86,12 +84,10 @@ function parseVersionFromDirectoryName(directoryName) {
     if (match === null) {
         return undefined;
     }
-    else {
-        return {
-            major: Number(match[1]),
-            minor: match[3] !== undefined ? Number(match[3]) : undefined,
-        };
-    }
+    return {
+        major: Number(match[1]),
+        minor: match[3] !== undefined ? Number(match[3]) : undefined,
+    };
 }
 exports.parseVersionFromDirectoryName = parseVersionFromDirectoryName;
 function combineDataForAllTypesVersions(typingsPackageName, ls, fs, directoryVersion) {
@@ -175,7 +171,7 @@ function checkPackageJsonDependencies(dependencies, path) {
         throw new Error(`${path} should contain "dependencies" or not exist.`);
     }
     const deps = [];
-    for (const dependencyName in dependencies) {
+    for (const dependencyName of Object.keys(dependencies)) { // `dependencies` cannot be null because of check above.
         if (!settings_1.dependenciesWhitelist.has(dependencyName)) {
             const msg = dependencyName.startsWith("@types/")
                 ? `Dependency ${dependencyName} not in whitelist.
@@ -232,7 +228,7 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, directory
     const paths = tsconfig.compilerOptions && tsconfig.compilerOptions.paths || {};
     const dependencies = [];
     const pathMappings = [];
-    for (const dependencyName in paths) {
+    for (const dependencyName of Object.keys(paths)) {
         // Might have a path mapping for "foo/*" to support subdirectories
         const rootDirectory = withoutEnd(dependencyName, "/*");
         if (rootDirectory !== undefined) {
@@ -259,7 +255,7 @@ function calculateDependencies(packageName, tsconfig, dependencyNames, directory
             if (directoryVersion === undefined) {
                 throw new Error(`In ${packageName}: Latest version of a package should not have a path mapping for itself.`);
             }
-            else if (directoryVersion.major !== pathMappingVersion.major
+            if (directoryVersion.major !== pathMappingVersion.major
                 || directoryVersion.minor !== pathMappingVersion.minor) {
                 const correctPathMapping = [`${dependencyName}/v${packages_1.formatTypingVersion(directoryVersion)}`];
                 throw new Error(`In ${packageName}: Must have a "paths" entry of "${dependencyName}": ${JSON.stringify(correctPathMapping)}`);
@@ -352,6 +348,7 @@ function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
             }
             const lssubdir = subdir.readdir();
             if (lssubdir.length === 0) {
+                // tslint:disable-next-line strict-string-expressions
                 throw new Error(`Empty directory ${subdir} (${util_1.join(usedFiles)})`);
             }
             function takeSubdirectoryOutOfSet(originalSet) {
@@ -377,9 +374,7 @@ function checkAllUsedRecur(ls, usedFiles, unusedFiles, fs) {
         if (usedFiles.has(unusedFile)) {
             throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} is already reachable from tsconfig.json.`);
         }
-        else {
-            throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
-        }
+        throw new Error(`File ${fs.debugPath()}/${unusedFile} listed in ${unusedFilesName} does not exist.`);
     }
 }
 //# sourceMappingURL=definition-parser.js.map

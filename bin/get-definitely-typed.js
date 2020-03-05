@@ -32,20 +32,18 @@ async function getDefinitelyTyped(options, log) {
         await fs_extra_1.ensureDir(settings_1.dataDirPath);
         return downloadAndExtractFile(settings_1.definitelyTypedZipUrl);
     }
-    else {
-        const { error, stderr, stdout } = await util_1.exec("git diff --name-only", options.definitelyTypedPath);
-        if (error) {
-            throw error;
-        }
-        if (stderr) {
-            throw new Error(stderr);
-        }
-        if (stdout) {
-            throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
-        }
-        log.info(`Using local Definitely Typed at ${options.definitelyTypedPath}.`);
-        return new DiskFS(`${options.definitelyTypedPath}/`);
+    const { error, stderr, stdout } = await util_1.exec("git diff --name-only", options.definitelyTypedPath);
+    if (error) {
+        throw error;
     }
+    if (stderr) {
+        throw new Error(stderr);
+    }
+    if (stdout) {
+        throw new Error(`'git diff' should be empty. Following files changed:\n${stdout}`);
+    }
+    log.info(`Using local Definitely Typed at ${options.definitelyTypedPath}.`);
+    return new DiskFS(`${options.definitelyTypedPath}/`);
 }
 exports.getDefinitelyTyped = getDefinitelyTyped;
 function getLocallyInstalledDefinitelyTyped(path) {
@@ -136,7 +134,7 @@ class InMemoryDT {
                 return undefined;
             }
             if (!(entry instanceof Dir)) {
-                throw new Error(`No file system entry at ${this.pathToRoot}/${path}. Siblings are: ${Array.from(dir.keys())}`);
+                throw new Error(`No file system entry at ${this.pathToRoot}/${path}. Siblings are: ${Array.from(dir.keys()).toString()}`);
             }
             dir = entry;
         }
@@ -192,10 +190,8 @@ class DiskFS {
         if (path === undefined) {
             return this.rootPrefix;
         }
-        else {
-            validatePath(path);
-            return this.rootPrefix + path;
-        }
+        validatePath(path);
+        return this.rootPrefix + path;
     }
     readdir(dirPath) {
         return fs_extra_1.readdirSync(this.getPath(dirPath)).sort().filter(name => name !== ".DS_Store");
@@ -224,10 +220,10 @@ function validatePath(path) {
     if (path.startsWith(".") && path !== ".editorconfig" && !path.startsWith("../")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form './x'.`);
     }
-    else if (path.startsWith("/")) {
+    if (path.startsWith("/")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form '/xxx'.`);
     }
-    else if (path.endsWith("/")) {
+    if (path.endsWith("/")) {
         throw new Error(`${path}: filesystem doesn't support paths of the form 'xxx/'.`);
     }
 }

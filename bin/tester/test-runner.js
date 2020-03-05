@@ -75,8 +75,8 @@ async function getAffectedPackagesFromDiff(dt, definitelyTypedPath, selection) {
     const affected = selection === "all" ? { changedPackages: allPackages.allTypings(), dependentPackages: [], allPackages }
         : selection === "affected" ? get_affected_packages_1.getAffectedPackages(allPackages, gitChanges(diffs))
             : { changedPackages: allPackages.allTypings().filter(t => selection.test(t.name)), dependentPackages: [], allPackages };
-    console.log(`Testing ${affected.changedPackages.length} changed packages: ${affected.changedPackages.map(t => t.desc)}`);
-    console.log(`Testing ${affected.dependentPackages.length} dependent packages: ${affected.dependentPackages.map(t => t.desc)}`);
+    console.log(`Testing ${affected.changedPackages.length} changed packages: ${affected.changedPackages.map(t => t.desc).toString()}`);
+    console.log(`Testing ${affected.dependentPackages.length} dependent packages: ${affected.dependentPackages.map(t => t.desc).toString()}`);
     return affected;
 }
 exports.getAffectedPackagesFromDiff = getAffectedPackagesFromDiff;

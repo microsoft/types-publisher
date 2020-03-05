@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTypingsVersionRaw = exports.testo = void 0;
 function testo(o) {
-    for (const k in o) {
+    for (const k of Object.keys(o)) {
         test(k, o[k], 100000);
     }
 }

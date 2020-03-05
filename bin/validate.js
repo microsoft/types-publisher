@@ -79,7 +79,7 @@ async function validatePackages(packageNames, outPath, log) {
     log.info(`Failed ${failed.length}`);
     log.info("");
     if (failed.length) {
-        log.info(`These packages failed: ${failed}`);
+        log.info(`These packages failed: ${failed.toString()}`);
     }
 }
 async function validatePackage(packageName, outputDirecory, mainLog) {
@@ -144,9 +144,7 @@ async function runCommand(commandDescription, log, directory, cmd, ...args) {
         log.info(`${commandDescription} failed, refer to error log`);
         return false;
     }
-    else {
-        log.info(stdout);
-        return true;
-    }
+    log.info(stdout);
+    return true;
 }
 //# sourceMappingURL=validate.js.map

@@ -12,6 +12,7 @@ if (!module.parent) {
     process.on("message", message => {
         assert(process.argv.length === 3);
         const typesPath = process.argv[2];
+        // tslint:disable-next-line no-async-without-await
         util_1.logUncaughtErrors(async () => {
             for (const packageName of message) {
                 const data = definition_parser_1.getTypingInfo(packageName, get_definitely_typed_1.getLocallyInstalledDefinitelyTyped(typesPath).subDir(packageName));

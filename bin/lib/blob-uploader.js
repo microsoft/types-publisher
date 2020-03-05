@@ -62,7 +62,7 @@ async function uploadFile(container, blobName, filePath) {
 async function deleteDirectory(container, uploadedDirPath, log) {
     const blobs = await container.listBlobs(uploadedDirPath);
     const blobNames = blobs.map(b => b.name);
-    log(`Deleting directory ${uploadedDirPath}: delete files ${blobNames}`);
+    log(`Deleting directory ${uploadedDirPath}: delete files ${blobNames.toString()}`);
     await Promise.all(blobNames.map(b => container.deleteBlob(b)));
 }
 async function removeOldDirectories(container, prefix, maxDirectories, log) {
@@ -78,7 +78,7 @@ async function removeOldDirectories(container, prefix, maxDirectories, log) {
     // For ISO 8601 times, sorting lexicographically *is* sorting by time.
     const sortedNames = dirNames.sort();
     const toDelete = sortedNames.slice(0, sortedNames.length - maxDirectories);
-    log(`Too many old logs, so removing the following directories: [${toDelete}]`);
+    log(`Too many old logs, so removing the following directories: [${toDelete.toString()}]`);
     await Promise.all(toDelete.map(d => deleteDirectory(container, prefix + d, log)));
 }
 // Provides links to the latest blobs.

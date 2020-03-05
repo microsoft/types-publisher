@@ -72,8 +72,8 @@ async function publishPackages(changedPackages, dry, githubAccessToken, fetcher)
             const latest = await queryGithub(`repos/DefinitelyTyped/DefinitelyTyped/pulls/${latestPr}`, githubAccessToken, fetcher);
             const latency = Date.now() - new Date(latest.merged_at).valueOf();
             const commitlatency = Date.now() - new Date(commits[0].commit.author.date).valueOf();
-            log("Current date is " + new Date(Date.now()));
-            log("  Merge date is " + new Date(latest.merged_at));
+            log("Current date is " + new Date(Date.now()).toString());
+            log("  Merge date is " + new Date(latest.merged_at).toString());
             const published = cp.pkg.fullNpmName + "@" + cp.version;
             const publishNotification = "I just published [`" + published + "` to npm](https://www.npmjs.com/package/" + cp.pkg.fullNpmName + ").";
             log(publishNotification);
