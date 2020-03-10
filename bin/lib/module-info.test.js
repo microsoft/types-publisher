@@ -57,6 +57,21 @@ test_1.testo({
         expect(Array.from(types.keys())).toEqual(["index.d.ts"]);
         expect(() => module_info_1.getModuleInfo("typeref-fails", types)).toThrow("do not directly import specific versions of another types package");
     },
+    selfVersionTypeRefAllowed() {
+        const fail = new get_definitely_typed_1.Dir(undefined);
+        const memFS = new get_definitely_typed_1.InMemoryDT(fail, "typeref-fails");
+        fail.set("index.d.ts", `// Type definitions for fail 1.0
+// Project: https://youtube.com/typeref-fails
+// Definitions by: Type Ref Fails <https://github.com/typeref-fails>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+/// <reference types="fail/v3" />
+`);
+        const { types } = module_info_1.allReferencedFiles(["index.d.ts"], memFS, "typeref-fails", "types/typeref-fails");
+        expect(Array.from(types.keys())).toEqual(["index.d.ts"]);
+        const i = module_info_1.getModuleInfo("fail", types);
+        expect(i.dependencies).toEqual(new Set([]));
+    },
     getTestDependenciesWorks() {
         const { types, tests } = getBoringReferences();
         const i = module_info_1.getModuleInfo("boring", types);
