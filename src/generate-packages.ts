@@ -7,7 +7,7 @@ import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options, Registry } from "./lib/common";
 import { CachedNpmInfoClient, UncachedNpmInfoClient, withNpmCache } from "./lib/npm-client";
 import {
-    AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
+    AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData, formatTypingVersion,
 } from "./lib/packages";
 import { outputDirPath, sourceBranch } from "./lib/settings";
 import { ChangedPackages, readChangedPackages, skipBadPublishes } from "./lib/versions";
@@ -146,8 +146,7 @@ function getDependencies(packageJsonDependencies: ReadonlyArray<PackageJsonDepen
 }
 
 function dependencySemver(dependency: DependencyVersion): string {
-    // tslint:disable-next-line strict-string-expressions
-    return dependency === "*" ? dependency : `^${dependency}`;
+    return dependency === "*" ? dependency : "^" + formatTypingVersion(dependency);
 }
 
 export function createNotNeededPackageJSON(
