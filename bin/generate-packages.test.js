@@ -9,7 +9,7 @@ function createRawPackage(license) {
     return {
         libraryName: "jquery",
         typingsPackageName: "jquery",
-        dependencies: [],
+        dependencies: [{ name: "madeira", version: { major: 1 } }],
         testDependencies: [],
         pathMappings: [],
         contributors: [{ name: "A", url: "b@c.d", githubUsername: "e" }],
@@ -19,17 +19,20 @@ function createRawPackage(license) {
         typesVersions: [],
         files: ["index.d.ts", "jquery.test.ts"],
         license,
-        packageJsonDependencies: [],
+        packageJsonDependencies: [{ name: "balzac", version: "~3" }],
         contentHash: "11",
         projectName: "jquery.org",
         globals: [],
-        declaredModules: ["juqery"],
+        declaredModules: ["jquery"],
     };
 }
 function createTypesData() {
     return {
         jquery: {
             1: createRawPackage("MIT" /* MIT */),
+        },
+        madeira: {
+            1: createRawPackage("Apache-2.0" /* Apache20 */),
         },
     };
 }
@@ -58,9 +61,9 @@ test_1.testo({
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
         expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("jquery.org"));
     },
-    readmeNoDependencies() {
+    readmeOneDependency() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
-        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("Dependencies: none"));
+        expect(generate_packages_1.createReadme(typing)).toEqual(expect.stringContaining("Dependencies: [@types/madeira](https://npmjs.com/package/@types/madeira)"));
     },
     readmeNoGlobals() {
         const typing = new packages_1.TypingsData(createRawPackage("Apache-2.0" /* Apache20 */), /*isLatest*/ true);
@@ -89,7 +92,10 @@ test_1.testo({
         "directory": "types/jquery"
     },
     "scripts": {},
-    "dependencies": {},
+    "dependencies": {
+        "@types/madeira": "^1",
+        "balzac": "~3"
+    },
     "typesPublisherContentHash": "11",
     "typeScriptVersion": "3.0"
 }`);

@@ -127,8 +127,7 @@ function getDependencies(packageJsonDependencies, typing, allPackages) {
     return util_1.sortObjectKeys(dependencies);
 }
 function dependencySemver(dependency) {
-    // tslint:disable-next-line strict-string-expressions
-    return dependency === "*" ? dependency : `^${dependency}`;
+    return dependency === "*" ? dependency : "^" + packages_1.formatTypingVersion(dependency);
 }
 function createNotNeededPackageJSON({ libraryName, license, unescapedName, fullNpmName, sourceRepoURL, version, }, registry) {
     const out = {
