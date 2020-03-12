@@ -7,7 +7,7 @@ import { FS, getDefinitelyTyped } from "./get-definitely-typed";
 import { Options, Registry } from "./lib/common";
 import { CachedNpmInfoClient, UncachedNpmInfoClient, withNpmCache } from "./lib/npm-client";
 import {
-    AllPackages, AnyPackage, DependencyVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData, formatTypingVersion,
+    AllPackages, AnyPackage, DependencyVersion, formatTypingVersion, getFullNpmName, License, NotNeededPackage, PackageJsonDependency, TypingsData,
 } from "./lib/packages";
 import { outputDirPath, sourceBranch } from "./lib/settings";
 import { ChangedPackages, readChangedPackages, skipBadPublishes } from "./lib/versions";

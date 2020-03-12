@@ -32,7 +32,7 @@ function createTypesData(): TypesDataFile {
         },
         madeira: {
             1: createRawPackage(License.Apache20),
-        }
+        },
     };
 }
 function createUnneededPackage() {
