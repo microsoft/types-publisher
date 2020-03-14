@@ -22,6 +22,7 @@
 @sentry/browser
 @storybook/addons
 @storybook/react
+@types/amqplib
 @types/base-x
 @types/expect
 @types/firebase
