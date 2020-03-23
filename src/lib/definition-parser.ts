@@ -1,4 +1,4 @@
-import { isTypeScriptVersion, parseHeaderOrFail, TypeScriptVersion } from "definitelytyped-header-parser";
+import { parseHeaderOrFail, TypeScriptVersion } from "definitelytyped-header-parser";
 import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
@@ -102,7 +102,7 @@ function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypes
         if (match === null) { return undefined; }
 
         const version = match[1];
-        if (parseInt(version) < 3) {
+        if (parseInt(version, 10) < 3) {
             throw new Error(`Directory name starting with 'ts' should be a TypeScript version newer than 3.0. Got: ${version}`);
         }
         return version as TypeScriptVersion;
