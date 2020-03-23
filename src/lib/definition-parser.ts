@@ -1,4 +1,4 @@
-import { isTypeScriptVersion, parseHeaderOrFail, TypeScriptVersion } from "definitelytyped-header-parser";
+import { parseHeaderOrFail, TypeScriptVersion } from "definitelytyped-header-parser";
 import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
@@ -94,6 +94,7 @@ interface LsMinusTypesVersionsAndPackageJson {
     readonly typesVersions: ReadonlyArray<TypeScriptVersion>;
     readonly hasPackageJson: boolean;
 }
+
 function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypesVersionsAndPackageJson {
     const withoutPackageJson = ls.filter(name => name !== packageJsonName);
     const [remainingLs, typesVersions] = split(withoutPackageJson, fileOrDirectoryName => {
@@ -101,10 +102,10 @@ function getTypesVersionsAndPackageJson(ls: ReadonlyArray<string>): LsMinusTypes
         if (match === null) { return undefined; }
 
         const version = match[1];
-        if (!isTypeScriptVersion(version)) {
-            throw new Error(`Directory name starting with 'ts' should be a valid TypeScript version. Got: ${version}`);
+        if (parseInt(version, 10) < 3) {
+            throw new Error(`Directory name starting with 'ts' should be a TypeScript version newer than 3.0. Got: ${version}`);
         }
-        return version;
+        return version as TypeScriptVersion;
     });
     return { remainingLs, typesVersions, hasPackageJson: withoutPackageJson.length !== ls.length };
 }
