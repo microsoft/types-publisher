@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.npmInstallFlags = exports.isDirectory = exports.sleep = exports.makeHttpRequest = exports.Fetcher = exports.streamDone = exports.stringOfStream = exports.streamOfString = exports.writeJson = exports.writeFile = exports.readJson = exports.readJsonSync = exports.readFileSync = exports.readFile = void 0;
 const fs_extra_1 = require("fs-extra");
 const http_1 = require("http");
 const https_1 = require("https");

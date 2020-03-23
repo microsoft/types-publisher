@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InMemoryDT = exports.Dir = exports.getLocallyInstalledDefinitelyTyped = exports.getDefinitelyTyped = void 0;
 const appInsights = require("applicationinsights");
 const assert = require("assert");
 const fs_extra_1 = require("fs-extra");

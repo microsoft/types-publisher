@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clean = void 0;
 const fs_extra_1 = require("fs-extra");
 if (!module.parent) {
     clean();

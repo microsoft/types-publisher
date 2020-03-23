@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLicenseFileText = exports.createReadme = exports.createNotNeededPackageJSON = exports.createPackageJSON = void 0;
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const fs_extra_1 = require("fs-extra");
 const path = require("path");

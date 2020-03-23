@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readFileAndThrowOnBOM = exports.parseVersionFromDirectoryName = exports.getTypingInfo = void 0;
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const util_1 = require("../util/util");
 const module_info_1 = require("./module-info");
@@ -62,8 +61,8 @@ function getTypesVersionsAndPackageJson(ls) {
             return undefined;
         }
         const version = match[1];
-        if (!definitelytyped_header_parser_1.isTypeScriptVersion(version)) {
-            throw new Error(`Directory name starting with 'ts' should be a valid TypeScript version. Got: ${version}`);
+        if (parseInt(version, 10) < 3) {
+            throw new Error(`Directory name starting with 'ts' should be a TypeScript version newer than 3.0. Got: ${version}`);
         }
         return version;
     });

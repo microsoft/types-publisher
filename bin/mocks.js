@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMockDT = void 0;
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const get_definitely_typed_1 = require("./get-definitely-typed");
 const versions_1 = require("./lib/versions");

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateLatestTag = exports.updateTypeScriptVersionTags = exports.deprecateNotNeededPackage = exports.publishNotNeededPackage = exports.publishTypingsPackage = void 0;
 const assert = require("assert");
 const definitelytyped_header_parser_1 = require("definitelytyped-header-parser");
 const util_1 = require("../util/util");
