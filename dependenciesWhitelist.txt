@@ -132,6 +132,7 @@ moment-range
 mqtt
 next
 nock
+node-php-password
 normalize-url
 objection
 opentracing
