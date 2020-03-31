@@ -108,6 +108,7 @@ i18next
 immutable
 indefinite-observable
 inversify
+jest-cucumber
 jest-diff
 jest-environment-node
 jest-environment-jsdom
