@@ -45,6 +45,7 @@
 abort-controller
 actions-on-google
 activex-helpers
+acorn
 adal-node
 ajv
 anydb-sql
