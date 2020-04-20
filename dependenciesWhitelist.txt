@@ -184,6 +184,7 @@ sw-toolbox
 swagger-parser
 terser
 three
+treat
 tslint
 ts-toolbelt
 tweetnacl
