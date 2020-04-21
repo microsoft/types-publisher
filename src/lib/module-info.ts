@@ -3,7 +3,7 @@ import * as path from "path";
 import * as ts from "typescript";
 
 import { FS } from "../get-definitely-typed";
-import { hasWindowsSlashes, joinPaths, normalizeSlashes, sort } from "../util/util";
+import { hasWindowsSlashes, joinPaths, normalizeSlashes, sort, unmangleScopedPackage } from "../util/util";
 
 import { readFileAndThrowOnBOM } from "./definition-parser";
 
@@ -219,7 +219,7 @@ function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirecto
         // only <reference types="../packagename/x" /> references are local (or "packagename/x", though in 3.7 that doesn't work in DT).
         if (ref.fileName.startsWith("../" + packageName + "/")) {
             addReference({ text: ref.fileName, exact: false });
-        } else if (ref.fileName.startsWith(packageName + "/")) {
+        } else if (ref.fileName.startsWith((unmangleScopedPackage(packageName) || packageName) + "/")) {
             addReference({ text: convertToRelativeReference(ref.fileName), exact: false });
         }
     }
@@ -227,8 +227,7 @@ function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirecto
     for (const ref of imports(src)) {
         if (ref.startsWith(".")) {
             addReference({ text: ref, exact: false });
-        }
-        if (ref.startsWith(packageName + "/")) {
+        } else if (ref.startsWith((unmangleScopedPackage(packageName) || packageName) + "/")) {
             addReference({ text: convertToRelativeReference(ref), exact: false });
         }
     }
