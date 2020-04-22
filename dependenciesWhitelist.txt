@@ -23,6 +23,7 @@
 @storybook/addons
 @storybook/react
 @types/base-x
+@types/chai
 @types/expect
 @types/firebase
 @types/highcharts
