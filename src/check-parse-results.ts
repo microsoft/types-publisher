@@ -24,8 +24,8 @@ export default async function checkParseResults(includeNpmChecks: boolean, dt: F
     const packages = allPackages.allPackages();
     for (const pkg of packages) {
         if (pkg instanceof TypingsData) {
-            for (const dep of pkg.dependencies) {
-                dependedOn.add(dep.name);
+            for (const dep of Object.keys(pkg.dependencies)) {
+                dependedOn.add(dep);
             }
             for (const dep of pkg.testDependencies) {
                 dependedOn.add(dep);

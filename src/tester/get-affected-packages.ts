@@ -72,8 +72,8 @@ function getReverseDependencies(allPackages: AllPackages, changedPackages: Packa
         }
     }
    for (const typing of allPackages.allTypings()) {
-        for (const dependency of typing.dependencies) {
-            const dependencies = map.get(packageIdToKey(allPackages.tryResolve(dependency)));
+        for (const [name, version] of Object.entries(typing.dependencies)) {
+            const dependencies = map.get(packageIdToKey(allPackages.tryResolve({ name, version })));
             if (dependencies) {
                 dependencies[1].add(typing.id);
             }
