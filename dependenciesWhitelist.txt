@@ -64,6 +64,7 @@ cac
 cassandra-driver
 chalk
 chokidar
+cids
 commander
 connect-mongo
 cordova-plugin-camera
