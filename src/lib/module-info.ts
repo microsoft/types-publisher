@@ -146,12 +146,13 @@ function withoutExtension(str: string, ext: string): string {
 /** Returns a map from filename (path relative to `directory`) to the SourceFile we parsed for it. */
 export function allReferencedFiles(
     entryFilenames: ReadonlyArray<string>, fs: FS, packageName: string, baseDirectory: string,
-): { types: Map<string, ts.SourceFile>, tests: Map<string, ts.SourceFile> } {
+): { types: Map<string, ts.SourceFile>, tests: Map<string, ts.SourceFile>, hasNonRelativeImport: boolean } {
     const seenReferences = new Set<string>();
     const types = new Map<string, ts.SourceFile>();
     const tests = new Map<string, ts.SourceFile>();
+    let hasNonRelativeImport = false;
     entryFilenames.forEach(text => recur({ text, exact: true }));
-    return { types, tests };
+    return { types, tests, hasNonRelativeImport };
 
     function recur({ text, exact }: Reference): void {
         if (seenReferences.has(text)) {
@@ -168,13 +169,14 @@ export function allReferencedFiles(
                 tests.set(resolvedFilename, src);
             }
 
-            const refs = findReferencedFiles(
+            const { refs, hasNonRelativeImport: result } = findReferencedFiles(
                 src,
                 packageName,
                 path.dirname(resolvedFilename),
                 normalizeSlashes(path.relative(baseDirectory, fs.debugPath())),
             );
             refs.forEach(recur);
+            hasNonRelativeImport = hasNonRelativeImport || result;
         }
     }
 
@@ -210,6 +212,7 @@ interface Reference {
  */
 function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirectory: string, baseDirectory: string) {
     const refs: Reference[] = [];
+    let hasNonRelativeImport = false;
 
     for (const ref of src.referencedFiles) {
         // Any <reference path="foo"> is assumed to be local
@@ -230,9 +233,10 @@ function findReferencedFiles(src: ts.SourceFile, packageName: string, subDirecto
         }
         if (ref.startsWith(packageName + "/")) {
             addReference({ text: convertToRelativeReference(ref), exact: false });
+            hasNonRelativeImport = true;
         }
     }
-    return refs;
+    return { refs, hasNonRelativeImport };
 
     function addReference(ref: Reference): void {
         // `path.normalize` may add windows slashes
