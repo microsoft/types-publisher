@@ -48,6 +48,8 @@ actions-on-google
 activex-helpers
 adal-node
 ajv
+algoliasearch
+algoliasearch-helper
 anydb-sql
 aphrodite
 apollo-client
