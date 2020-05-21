@@ -24,6 +24,7 @@
 @storybook/addons
 @storybook/react
 @types/base-x
+@types/cash
 @types/expect
 @types/firebase
 @types/highcharts
@@ -64,7 +65,6 @@ bignumber.js
 bookshelf
 broadcast-channel
 cac
-cash-dom
 cassandra-driver
 chalk
 chokidar
