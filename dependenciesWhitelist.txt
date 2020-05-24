@@ -5,6 +5,7 @@
 @babel/template
 @babel/traverse
 @babel/types
+@elastic/elasticsearch
 @electron/get
 @emotion/core
 @emotion/serialize
