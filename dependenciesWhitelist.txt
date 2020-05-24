@@ -135,6 +135,7 @@ knockout
 magic-string
 mali
 meteor-typings
+mini-html-webpack-plugin
 moment
 monaco-editor
 moment-range
