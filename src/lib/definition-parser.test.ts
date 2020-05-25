@@ -81,7 +81,7 @@ describe(getTypingInfo, () => {
                 expect(() => {
                     getTypingInfo("jquery", dt.pkgFS("jquery"));
                 }).toThrow(
-                    "The latest version is 3.3, so the subdirectory 'v3.3' is not allowed.",
+                    "The latest version of the 'jquery' package is 3.3, so the subdirectory 'v3.3' is not allowed.",
                 );
             });
 
