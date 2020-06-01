@@ -43,6 +43,7 @@
 @types/wonder-frp
 @uirouter/angularjs
 @vue/test-utils
+@wordpress/element
 abort-controller
 actions-on-google
 activex-helpers
