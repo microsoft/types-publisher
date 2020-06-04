@@ -101,6 +101,7 @@ fastify
 final-form
 flatpickr
 form-data
+gl-matrix
 glaze
 globby
 google-auth-library
