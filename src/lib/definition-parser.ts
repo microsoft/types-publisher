@@ -212,7 +212,7 @@ function getTypingDataForSingleTypesVersion(
 ): TypingDataFromIndividualTypeScriptVersion {
     const tsconfig = fs.readJson("tsconfig.json") as TsConfig;
     checkFilesFromTsConfig(packageName, tsconfig, fs.debugPath());
-    const { types, tests } = allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
+    const { types, tests, hasNonRelativeImport } = allReferencedFiles(tsconfig.files!, fs, packageName, packageDirectory);
     const usedFiles = new Set([...types.keys(), ...tests.keys(), "tsconfig.json", "tslint.json"]);
     const otherFiles = ls.indexOf(unusedFilesName) > -1 ? (fs.readFile(unusedFilesName)).split(/\r?\n/g).filter(Boolean) : [];
     checkAllFilesUsed(ls, usedFiles, otherFiles, packageName, fs);
@@ -231,6 +231,14 @@ function getTypingDataForSingleTypesVersion(
             m => !declaredModulesSet.has(m),
         ),
     );
+
+    const { paths } = tsconfig.compilerOptions;
+    if (directoryVersion !== undefined && !(paths && `${packageName}/*` in paths) && hasNonRelativeImport) {
+        const mapping = JSON.stringify([`${packageName}/v${formatTypingVersion(directoryVersion)}/*`]);
+        throw new Error(
+            `${packageName}: Older version ${formatTypingVersion(directoryVersion)} must have a "paths" entry of "${packageName}/*": ${mapping}`,
+        );
+    }
 
     const { dependencies, pathMappings } = calculateDependencies(packageName, tsconfig, dependenciesSet, directoryVersion);
     const tsconfigPathsForHash = JSON.stringify(tsconfig.compilerOptions.paths);
