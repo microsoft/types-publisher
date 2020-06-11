@@ -3,6 +3,10 @@ language: node_js
 node_js:
   - 'node'
 
+cache:
+  directories:
+    - cache/
+
 sudo: false
 
 branches:
@@ -11,6 +15,14 @@ branches:
 
 install:
   - npm ci
+  - git clone https://github.com/DefinitelyTyped/DefinitelyTyped ../DefinitelyTyped
+
+script:
+  - npm tes
+  - npm run build
+  - npm run clean
+  - npm run parse
+  - npm run check
 
 git:
   depth: 1
