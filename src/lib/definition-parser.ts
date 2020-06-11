@@ -397,10 +397,9 @@ function calculateDependencies(
 }
 
 const nodeBuiltins: ReadonlySet<string> = new Set([
-    "assert", "async_hooks", "buffer", "child_process", "cluster", "console", "constants", "crypto",
-    "dgram", "dns", "domain", "events", "fs", "http", "http2", "https", "module", "net", "os",
-    "path", "perf_hooks", "process", "punycode", "querystring", "readline", "repl", "stream",
-    "string_decoder", "timers", "tls", "tty", "url", "util", "v8", "vm", "zlib",
+    "assert",
+    "events",
+    "punycode",
 ]);
 
 function parseDependencyVersionFromPath(packageName: string, dependencyName: string, dependencyPath: string): TypingVersion {
